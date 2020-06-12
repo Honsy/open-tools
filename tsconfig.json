@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "sourceMap": false,
+        "noImplicitAny": false,//允许使用any
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "module": "commonjs",
+        "target": "es6",
+        "jsx": "react",
+    }
+}

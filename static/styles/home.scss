@@ -1,0 +1,10 @@
+@import "./component/toolitem.scss";
+
+.home{
+    background-color: #fff;
+    margin: 20px auto;
+    .tools{
+        display: flex;
+        flex-wrap: wrap;
+    }
+}

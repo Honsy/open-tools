@@ -1,0 +1,43 @@
+.calculator{
+    margin: 30px auto;
+    width: 500px;
+    height: 600px;
+    .top{
+        height: 10%;
+    }
+    .console{
+        height: 20%;
+        .last-input{
+            height: 50%;
+            text-align: right;
+            font-size: 20px;
+            padding-right: 6px;
+            line-height: 60px;
+        }
+        .input{
+            height: 50%;
+            text-align: right;
+            font-size: 20px;
+            padding-right: 6px;
+            line-height: 60px;
+        }
+    }
+    .row{
+        margin-bottom: 0;
+        height: 14%;
+    }
+    .list{
+        .col{
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .num{
+            background: #fafafa;
+        }
+        .other{
+            background: #f0f0f0;
+        }
+    }
+}
