@@ -11,6 +11,9 @@
   margin: 0 5px;
   background-color: #e9e9e9; }
 
+html, body {
+  background: #363636; }
+
 .crypto {
   margin: 20px auto; }
   .crypto .types a {

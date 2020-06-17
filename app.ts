@@ -52,7 +52,6 @@ router.get('/rgb',async (ctx) =>{
     await ctx.render('rgb', render(data.title,data.data,data.ssrData.html,data.state))
 })
 
-
 app.use(router.routes());
 
 
