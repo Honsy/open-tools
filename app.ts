@@ -10,6 +10,11 @@ var logger = require('./utils/logger')
 var Router = require('koa-router');
 var router = new Router();
 
+// 特殊页面 独立打包
+import Prettier from './client/pages/prettier/prettier'
+// 特殊页面 独立打包
+import Home from './client/pages/home/home'
+
 // 加载模板引擎
 app.use(views(path.join(__dirname, './templates'), {extension: 'ejs'}))
 // 静态文件访问
@@ -18,7 +23,7 @@ app.use(koaStatic(path.join(__dirname,'./static')));
 app.on('error', (err:any) =>  {logger.errlogger.error('ERR',err)});
 // Page Router
 router.get('/',async (ctx) =>{
-    let data = await client.reactComponentHandle(ctx)
+    let data = await client.specReactComponentHandle(ctx,Home)
     await ctx.render('home', render(data.title,data.data,data.ssrData.html,data.state))
 })
 
@@ -36,7 +41,7 @@ router.get('/crypto',async (ctx) =>{
 
 // Spec Page Router
 router.get('/prettier',async (ctx) =>{
-    let data = await client.specReactComponentHandle(ctx)
+    let data = await client.specReactComponentHandle(ctx,Prettier)
     await ctx.render('prettier', render(data.title,data.data,data.ssrData.html,data.state))
 })
 

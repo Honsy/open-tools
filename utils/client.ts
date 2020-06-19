@@ -6,8 +6,6 @@ import { matchRoutes } from "react-router-config";
 import routes from './../client/router.config'
 // redux同构
 import { createServerStore } from './../client/redux/store'
-// 特殊页面 独立打包
-import Prettier from './../client/pages/prettier/prettier'
 
 // 常规RouterConfig获取数据模板
 async function reactComponentHandle(ctx:any){
@@ -44,6 +42,7 @@ async function reactComponentHandle(ctx:any){
     let dynamicTitle = data?data.hasOwnProperty('dynamicTitle')?data.dynamicTitle:null:null
     let title = dynamicTitle?dynamicTitle:normalTitle
     let ssrData = ssr({componentName:"SPA",data:{url:ctx.URL.pathname,data:data}},store)
+
     return {
         title,
         data,
@@ -53,18 +52,17 @@ async function reactComponentHandle(ctx:any){
 }
 
 // 特殊非单页独立页面获取组件数据
-async function specReactComponentHandle(ctx:any){
+async function specReactComponentHandle(ctx:any,ownComponent:any){
     if(ctx.URL.pathname.indexOf('.')>-1) { 
         return false;
     }
-    console.log(routes,ctx.URL.pathname)
     // redux state
     let state:any = {}
     // 数据预取data
     let data:any = {};
     let params:any = {};
     let component:any
-    component = Prettier
+    component = ownComponent
     try {
         data = await component.initData()
 

@@ -5,7 +5,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = (env) => ({
     entry: {
       react:path.resolve(__dirname, './../../client/index.tsx'),
-      prettierPage:path.resolve(__dirname, './../../client/pages/prettier/index.tsx')
+      prettierPage:path.resolve(__dirname, './../../client/pages/prettier/index.tsx'),
+      home:path.resolve(__dirname, './../../client/pages/home/index.tsx')
     },
     output: {
         path: path.resolve(__dirname, './../../static/js/'),
@@ -46,6 +47,11 @@ module.exports = (env) => ({
           prettier: {
             test: /[\\/]node_modules[\\/](prettier)[\\/]/,
             filename:"prettier.js",
+            chunks: 'all',
+          },
+          babylon: {
+            test: /[\\/]node_modules[\\/](babylon|babylonjs)[\\/]/,
+            filename:"babylon.js",
             chunks: 'all',
           }
         }

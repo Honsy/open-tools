@@ -1,4 +1,4 @@
-import Home from './pages/home'
+// import Home from './pages/home'
 import Test from './pages/test'
 import Calculator from './pages/calculator'
 import Crypto from './pages/crypto'
@@ -14,10 +14,6 @@ import Translate from './pages/translate'
 
 export default [
     {
-        path: "/",
-        exact: true,
-        component: Home
-    },{
         path: "/test",
         exact: true,
         component: Test

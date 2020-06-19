@@ -1,34 +1,39 @@
-import "@babel/polyfill"
-// import "core-js/stable";
-// import "regenerator-runtime/runtime";
 import * as React from 'react'
-import * as ReactDOM from 'react-dom'
+import {renderToString} from 'react-dom/server'
+import {StaticRouter} from 'react-router-dom'
 import App from './app'
-import {BrowserRouter} from 'react-router-dom'
 import GAProvider from './ga-provider'
-import { Provider } from 'react-redux'
-import { createClientStore }  from './redux/store'
+import { Provider } from 'react-redux';
 
-let preloadState = window.STATE_FROM_SERVER
-// 创建store
-const store = createClientStore(preloadState)
+interface ComponentProps {
+    url:string,
+    data:object
+}
 
-let container = document.getElementById('react-container');
+interface SSRProps {
+    componentName:string,
+    data:ComponentProps
+}
 
-if (container) {
-    let APP_DATA = {}
-    let jsData = document.getElementById("js-data")
-    if (jsData) {
-        APP_DATA = jsData.textContent !== "undefined"?JSON.parse(jsData.textContent):{}
+export default function ssr(data:SSRProps,store:any){
+    var html
+    const context = {};
+    switch (data.componentName) {
+        case 'SPA':
+            html =  renderToString(
+                <StaticRouter location={data.data.url}>
+                    <GAProvider data={data.data.data}>
+                        <Provider store={store}>
+                            <App/>
+                        </Provider>
+                    </GAProvider>
+                </StaticRouter>
+            )
+            break;
+    
+        default:
+            break;
     }
-    ReactDOM.hydrate(
-        <BrowserRouter>
-            <GAProvider data={APP_DATA}>
-                <Provider store={store}>
-                    <App/>
-                </Provider>
-            </GAProvider>
-        </BrowserRouter>
-        ,document.getElementById('react-container')
-    )
+
+    return {html:html}
 }

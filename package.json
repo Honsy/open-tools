@@ -35,6 +35,7 @@
     "axios": "^0.19.2",
     "babel-loader": "^8.1.0",
     "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babylonjs": "^4.1.0",
     "concurrently": "^5.2.0",
     "crypto-js": "^4.0.0",
     "css-loader": "^3.5.0",

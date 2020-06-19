@@ -88,7 +88,6 @@ export default class Crypto extends React.Component<{},CryptoState> {
     const { list } = this.context;
     const { selectIndex,decryptText } = this.state;
     let selectItem = list[selectIndex]
-
     switch (selectItem.type) {
       case 0:
         this.setState({
@@ -215,7 +214,6 @@ export default class Crypto extends React.Component<{},CryptoState> {
   // 子组件数据接收
   aesConfigChange = (cfg:AESConfig) =>{
     this.aesCfg = cfg
-    console.log(cfg,this.aesCfg)
   }
 
   rc4ConfigChange = (cfg:AESConfig) =>{
@@ -226,7 +224,6 @@ export default class Crypto extends React.Component<{},CryptoState> {
     const { list } = this.context;
     const { decryptText,encryptText,selectIndex} = this.state
     let selectItem = list[selectIndex]
-
     return (
       <Layout>
         <div className="container crypto">

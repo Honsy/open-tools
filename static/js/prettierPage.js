@@ -148,7 +148,7 @@
 /******/
 /******/
 /******/ 	// add entry module to deferred list
-/******/ 	deferredModules.push(["./client/pages/prettier/index.tsx","react~prettierPage~react","prettier~prettierPage"]);
+/******/ 	deferredModules.push(["./client/pages/prettier/index.tsx","react~home~prettierPage~react","prettier~prettierPage"]);
 /******/ 	// run deferred modules when ready
 /******/ 	return checkDeferredModules();
 /******/ })

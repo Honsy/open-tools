@@ -5,7 +5,7 @@ module.exports = () => ({
     entry: path.resolve(__dirname, './../../client/ssr.tsx'),
     output: {
         filename: 'ssr.js',
-        path: path.resolve(__dirname, './../../client/build/'),
+        path: path.resolve(__dirname, './../../utils/'),
         libraryExport: 'default',
         libraryTarget: 'commonjs2'
     }

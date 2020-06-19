@@ -2,9 +2,12 @@ import * as React from 'react'
 import {renderToString} from 'react-dom/server'
 import {StaticRouter} from 'react-router-dom'
 import App from './app'
+import GAProvider from './ga-provider'
+import { Provider } from 'react-redux';
 
 interface ComponentProps {
-    url:string
+    url:string,
+    data:object
 }
 
 interface SSRProps {
@@ -12,14 +15,18 @@ interface SSRProps {
     data:ComponentProps
 }
 
-export default function ssr(data:SSRProps){
+export default function ssr(data:SSRProps,store:any){
     var html
     const context = {};
     switch (data.componentName) {
         case 'SPA':
             html =  renderToString(
-                <StaticRouter location={data.data.url} context={context}>
-                    <App/>
+                <StaticRouter location={data.data.url}>
+                    <GAProvider data={data.data.data}>
+                        <Provider store={store}>
+                            <App/>
+                        </Provider>
+                    </GAProvider>
                 </StaticRouter>
             )
             break;
