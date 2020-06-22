@@ -8,9 +8,6 @@
     display: block;
     overflow: hidden; }
 
-html, body {
-  background: #363636; }
-
 .home {
   background-color: #fff;
   margin: 20px auto;

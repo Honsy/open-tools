@@ -15,14 +15,8 @@ function templateHead(){
 // 模板尾部
 function templateFoot(){
     var foot = 
-    // '<script src="'+config.staticHost+'/js/1.react.js"></script>' +
-    // '<script defer type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>'+
     '<script src="'+config.staticHost+'/js/react-vendors.js"></script>' +
-    // '<script src="'+config.staticHost+'/js/prettier.js"></script>' +
     '<script src="'+config.staticHost+'/js/react.js"></script>'
-
-    // '<script defer src="'+config.staticHost+'/js/materialize.min.js"></script>' 
-    // '<script defer src="'+config.staticHost+'/js/materialize.js"></script>' 
     return foot
 }
 

@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom'
 
 function Header() {
   return (
-    <nav className="navbar container has-background-dark" role="navigation" aria-label="main navigation">
+    <nav className="navbar container is-transparent" role="navigation" aria-label="main navigation">
       <div id="navbarBasicExample" className="navbar-menu">
         <div className="navbar-start">
           <a className="navbar-item" href="/">Home</a>

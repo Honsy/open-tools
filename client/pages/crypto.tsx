@@ -120,7 +120,6 @@ export default class Crypto extends React.Component<{},CryptoState> {
     const { list } = this.context;
     const { selectIndex,encryptText } = this.state;
     let selectItem = list[selectIndex]
-
     switch (selectItem.type) {
         // BASE64
       case 0:

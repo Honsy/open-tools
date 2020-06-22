@@ -39,7 +39,7 @@ module.exports = (env) => ({
         maxInitialRequests: 4,
         automaticNameDelimiter: '~',
         cacheGroups: {
-          react: {
+          reactVendors: {
             test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
             filename:"react-vendors.js",
             chunks: 'all',
