@@ -43,7 +43,7 @@ export default class Home extends React.Component{
         return (
             <Layout>
                 <div className="container home">
-                    <BGCanvas2></BGCanvas2>
+                    {/* <BGCanvas2></BGCanvas2> */}
                     <div className="tools">
                         {list?list.map((item,index)=>{
                             return <ToolItem

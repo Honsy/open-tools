@@ -3,10 +3,10 @@ import {Link} from 'react-router-dom'
 
 function Header() {
   return (
-    <nav className="navbar container is-transparent" role="navigation" aria-label="main navigation">
+    <nav className="navbar is-transparent is-black" role="navigation" aria-label="main navigation">
       <div id="navbarBasicExample" className="navbar-menu">
         <div className="navbar-start">
-          <a className="navbar-item" href="/">Home</a>
+          <a className="navbar-item" href="/">首页</a>
           <a className="navbar-item">Documentation</a>
         </div>
         <div className="navbar-end">
