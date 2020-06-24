@@ -32,7 +32,7 @@ html, body {
   .base .base-container {
     flex-shrink: 0;
     height: 100%;
-    width: calc(100% - $side-width);
+    width: calc(100% - 200px);
     bottom: 0; }
 
 .crypto {
