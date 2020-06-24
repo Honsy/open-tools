@@ -1,15 +1,22 @@
 import * as React from 'react'
 import Header from './header'
 import Footer from './footer'
-import Slide from './slide'
+import Slide from './sidebar'
+import config from "./../config";
+
 
 function Layout(props){
     const { children } = props
     return (
-        <div>
+        <div className="layout">
             <Header></Header>
-            {children}
-            <Footer></Footer>
+            <div className="base">
+                <Slide className="sidebar" data={config.tools}></Slide>
+                <div className="base-container">
+                    {children}
+                    <Footer></Footer>
+                </div>
+            </div>
         </div>
     )
 }

@@ -14,11 +14,12 @@
         top: 0;
     }
     .tools{
-        display: flex;
-        flex-wrap: wrap;
-        margin-top: 600px;
         position: relative;
         z-index: 2;
         padding: 0 65px;
+        .tool-list{
+            display: flex;
+            flex-wrap: wrap;
+        }
     }
 }

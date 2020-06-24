@@ -1,0 +1,20 @@
+
+.moment{
+    margin-top: 5px;
+    .time-convert{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .form-title{
+            width: 100px;
+            text-align: left;
+        }
+        .convert{
+            margin-left: 4px;
+        }
+        input{
+            width: 200px;
+            margin: 0 4px;
+        }
+    }
+}

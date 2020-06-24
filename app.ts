@@ -57,6 +57,18 @@ router.get('/rgb',async (ctx) =>{
     await ctx.render('rgb', render(data.title,data.data,data.ssrData.html,data.state))
 })
 
+// Page Router
+router.get('/moment',async (ctx) =>{
+    let data = await client.reactComponentHandle(ctx)
+    await ctx.render('moment', render(data.title,data.data,data.ssrData.html,data.state))
+})
+
+// Page Router
+router.get('/protobuf',async (ctx) =>{
+    let data = await client.reactComponentHandle(ctx)
+    await ctx.render('protobuf', render(data.title,data.data,data.ssrData.html,data.state))
+})
+
 app.use(router.routes());
 
 
