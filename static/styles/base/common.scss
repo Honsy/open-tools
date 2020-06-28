@@ -3,6 +3,7 @@
 html,body{
     width: 100%;
     height: 100%;
+    overflow: hidden;
     #react-container{
         height: 100%;
         .layout{
@@ -28,5 +29,7 @@ html,body{
         height: 100%;
         width: calc(100% - #{$side-width});
         bottom: 0;
+        overflow-y: scroll;
+        overflow-x: hidden;
     }
 }

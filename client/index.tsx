@@ -14,7 +14,6 @@ let preloadState = window.STATE_FROM_SERVER
 const store = createClientStore(preloadState)
 
 let container = document.getElementById('react-container');
-
 if (container) {
     let APP_DATA = {}
     let jsData = document.getElementById("js-data")

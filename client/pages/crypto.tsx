@@ -82,6 +82,7 @@ export default class Crypto extends React.Component<{},CryptoState> {
     this.setState({
       selectIndex:index
     })
+    console.log("asdasds")
   }
   // 解密
   decrypt = () =>{

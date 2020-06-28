@@ -1,4 +1,4 @@
-(window["webpackJsonp"] = window["webpackJsonp"] || []).push([["prettier~home~prettierPage~react"],{
+(window["webpackJsonp"] = window["webpackJsonp"] || []).push([["prettier~prettierPage"],{
 
 /***/ "./node_modules/prettier/parser-babel.js":
 /*!***********************************************!*\

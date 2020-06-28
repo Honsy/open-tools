@@ -21,7 +21,6 @@ app.on('error', (err:any) =>  {errlogger.error('ERR',err)});
 routes.map((item,index)=>{
     router.get(item.url,async (ctx) =>{
         let data = item.special?await specReactComponentHandle(ctx,item.component,item):await reactComponentHandle(ctx)
-        console.log(data)
         await ctx.render(item.key, render(data.title,data.data,data.ssrData.html,data.state))
     })
 })

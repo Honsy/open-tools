@@ -41,6 +41,10 @@ export const routes:RouteItem[] = [
         url:"/protobuf",
         key:"protobuf",
         special:false
+    },{
+        url:"/rmbconvert",
+        key:"rmbconvert",
+        special:false
     }
 ]
 

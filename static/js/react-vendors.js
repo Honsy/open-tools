@@ -1,4 +1,4 @@
-(window["webpackJsonp"] = window["webpackJsonp"] || []).push([["reactVendors~home~react"],{
+(window["webpackJsonp"] = window["webpackJsonp"] || []).push([["reactVendors~home~prettierPage~react"],{
 
 /***/ "./node_modules/react-dom/cjs/react-dom.development.js":
 /*!*************************************************************!*\

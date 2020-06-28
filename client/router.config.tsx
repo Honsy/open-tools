@@ -11,6 +11,7 @@ import PDF from './pages/pdf'
 import Xterm from './pages/xterm'
 import Canvas from './pages/canvas'
 import Translate from './pages/translate'
+import RMBConvert from './pages/rmbConvert'
 
 export default [
     {
@@ -57,5 +58,9 @@ export default [
         path: "/translate",
         exact: true,
         component: Translate
+    },{
+        path: "/rmbConvert",
+        exact: true,
+        component: RMBConvert
     }
 ]

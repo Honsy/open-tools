@@ -5,7 +5,7 @@ const list:ToolObj[] = [
       title: "常用工具",
       data: [
         { title: "计算器", href: "/calculator", color: "#FFB6C1" },
-        { title: "人民币大小写转换", href: "/translate", color: "#8FBC8F" },
+        { title: "人民币大小写转换", href: "/rmbconvert", color: "#8FBC8F" },
       ],
     },
     {
