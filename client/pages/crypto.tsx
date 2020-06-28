@@ -35,7 +35,7 @@ interface CryptoState {
 export default class Crypto extends React.Component<{},CryptoState> {
   static contextType = GAProvider.context;
 
-  static title = "加密解密-BASE64,AES,MD5,DC4....";
+  static title = "加密解密-OB工具-BASE64,AES,MD5,DC4....";
   // 数据获取
   static async initData(params: any) {
     let list:TypeItem[] = [{ title: "BASE64加密解密", type: 0 },

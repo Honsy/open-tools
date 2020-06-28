@@ -25,6 +25,7 @@ export default class HexConvert extends React.Component<{},HexConvertState>{
     { title: "16进制", type: 16 },
     { title: "32进制", type: 32 },
   ];
+  static title = "进制转换-OB工具"
 
   static initData() {
     let hexConver = new HexConvert(null);

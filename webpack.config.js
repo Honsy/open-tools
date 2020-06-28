@@ -33,6 +33,15 @@ module.exports = ({mode,presets} = {mode:"production",presets:[]})=> {
                                 loader: "ts-loader"
                             }
                         ]
+                    },
+                    {
+                        test: /\.ts?$/,
+                        exclude: /node_modules/,
+                        use: [
+                            {
+                                loader: "ts-loader"
+                            }
+                        ]
                     }
                 ]
             },

@@ -31,6 +31,8 @@ export default class Moment extends React.Component<{},MomentState>{
         }
     }
 
+    static title = "时间转换-OB工具-时间戳转标准时间,Moment转换"
+
     componentDidMount(){
         this.timeConvert(0)
         this.timeConvert(1)

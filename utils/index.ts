@@ -1,6 +1,7 @@
-var config = require('../config')
+import config from './../config'
+
 // 模板头部
-function templateHead(){
+export function templateHead(){
     var head = 
     '<meta charset="utf-8">'+
     '<meta http-equiv="X-UA-Compatible" content="ie=edge">' +
@@ -13,14 +14,9 @@ function templateHead(){
 }
 
 // 模板尾部
-function templateFoot(){
+export function templateFoot(){
     var foot = 
     '<script src="'+config.staticHost+'/js/react-vendors.js"></script>' +
     '<script src="'+config.staticHost+'/js/react.js"></script>'
     return foot
-}
-
-module.exports = {
-    templateHead,
-    templateFoot
 }

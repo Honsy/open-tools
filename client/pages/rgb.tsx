@@ -10,6 +10,9 @@ interface RGBState {
 }
 
 export default class RGB extends React.Component<{}, RGBState> {
+
+  static title = "RGB色值变换-OB工具";
+
   constructor(props: any) {
     super(props);
     this.state = {

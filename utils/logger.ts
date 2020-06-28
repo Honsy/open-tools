@@ -1,4 +1,4 @@
-var log4js = require('log4js');
+import log4js = require('log4js');
 log4js.configure({
     appenders: {
         //错误日志 type:过滤类型logLevelFilter,将过滤error日志写进指定文件
@@ -15,10 +15,5 @@ log4js.configure({
     }
 });
 
-var errlogger = log4js.getLogger('error');
-var infologger = log4js.getLogger('info');
-
-module.exports = {
-    errlogger,
-    infologger
-}
+export const errlogger = log4js.getLogger('error');
+export const infologger = log4js.getLogger('info');

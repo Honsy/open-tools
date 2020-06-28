@@ -25,6 +25,8 @@ interface PrettierState {
 export default class Prettier extends React.Component<{}, PrettierState> {
   static contextType = GAProvider.context;
 
+  static title = "格式化工具-OB工具-Prettier"
+
   static initData() {
     let list: FormatItem[] = [
       { title: "babel", type: "babel"},

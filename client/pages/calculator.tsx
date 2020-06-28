@@ -7,6 +7,8 @@ interface CalculatorState{
 
 export default class Calculator extends React.Component<{},CalculatorState>{
 
+    static title = "计算器-OB工具";
+
     static initData(){
 
     }
