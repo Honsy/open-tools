@@ -13,7 +13,9 @@ function Layout(props){
             <div className="base">
                 <Slide className="sidebar" data={config.tools}></Slide>
                 <div className="base-container">
-                    {children}
+                    <div className="children">
+                        {children}
+                    </div>
                     <Footer></Footer>
                 </div>
             </div>

@@ -27,7 +27,6 @@ routes.map((item,index)=>{
 
 app.use(router.routes());
 
-
 // 渲染配置
 function render(title:string,initData:any,body:any,state:any){
     return {

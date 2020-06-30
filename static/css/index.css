@@ -30,3 +30,5 @@ html, body {
     bottom: 0;
     overflow-y: scroll;
     overflow-x: hidden; }
+    .base .base-container .children {
+      padding: 12px; }

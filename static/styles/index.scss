@@ -39,5 +39,8 @@ html,body{
         bottom: 0;
         overflow-y: scroll;
         overflow-x: hidden;
+        .children{
+            padding: 12px;
+        }
     }
 }
