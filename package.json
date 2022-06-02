@@ -56,7 +56,7 @@
     "node-object-hash": "^2.0.0",
     "node-sass": "^4.14.1",
     "prettier": "^2.0.5",
-    "protobufjs": "^6.9.0",
+    "protobufjs": "^6.11.3",
     "raf": "^3.4.1",
     "rc-notification": "^4.3.0",
     "react": "^16.13.1",
