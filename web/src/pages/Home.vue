@@ -58,7 +58,7 @@ function focusHash(hash: string) {
 }
 
 onMounted(() => {
-  document.title = "开物 - 网址导航";
+  document.title = "开物录 - 网址导航";
   load();
   timer = window.setInterval(() => {
     const count = data.value?.boards.length || 0;

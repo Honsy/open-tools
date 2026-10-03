@@ -21,7 +21,7 @@ func Router(db *gorm.DB) *gin.Engine {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
 	})
 	r.GET("/api/nav", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"name": "开物", "sidebar": sidebar(db)})
+		c.JSON(http.StatusOK, gin.H{"name": "开物录", "sidebar": sidebar(db)})
 	})
 	r.GET("/api/home", func(c *gin.Context) { c.JSON(http.StatusOK, home(db)) })
 	r.GET("/api/categories/:slug", category(db))
@@ -119,10 +119,7 @@ func sidebar(db *gorm.DB) []sideItem {
 		}
 		items = append(items, item)
 	}
-	items = append(items,
-		sideItem{Name: "最新收录", Href: "/#sec-latest"},
-		sideItem{Name: "AI 工具", Href: "/c/ai"},
-	)
+	items = append(items, sideItem{Name: "最新收录", Href: "/#sec-latest"})
 	return items
 }
 
@@ -318,8 +315,15 @@ func goOut(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Model(&models.Link{}).Where("id = ?", link.ID).UpdateColumn("clicks", gorm.Expr("clicks + ?", 1))
+		q := u.Query()
+		if q.Get("from") == "" {
+			if from := requestHost(c); from != "" {
+				q.Set("from", from)
+			}
+		}
+		u.RawQuery = q.Encode()
 		c.Header("X-Robots-Tag", "noindex, nofollow")
-		c.Redirect(http.StatusFound, link.URL)
+		c.Redirect(http.StatusFound, u.String())
 	}
 }
 

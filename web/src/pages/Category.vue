@@ -17,10 +17,10 @@ async function load() {
     const data = await getJSON<Section>("/api/categories/" + route.params.slug);
     section.value = data;
     active.value = data.tabs?.[0]?.slug || "";
-    document.title = data.name + " - 开物";
+    document.title = data.name + " - 开物录";
   } catch (err) {
     error.value = err instanceof Error ? err.message : "没有这个分类";
-    document.title = "开物";
+    document.title = "开物录";
   }
 }
 

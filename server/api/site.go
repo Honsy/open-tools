@@ -2,6 +2,7 @@ package api
 
 import (
 	"html/template"
+	"net"
 	"net/http"
 	"strings"
 
@@ -41,6 +42,17 @@ func joinWords(parts ...string) string {
 		out = append(out, part)
 	}
 	return strings.Join(out, ",")
+}
+
+func requestHost(c *gin.Context) string {
+	host := headerFirst(c, "X-Forwarded-Host")
+	if host == "" {
+		host = strings.TrimSpace(c.Request.Host)
+	}
+	if name, _, err := net.SplitHostPort(host); err == nil {
+		return name
+	}
+	return host
 }
 
 func publicOrigin(c *gin.Context) string {

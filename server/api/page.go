@@ -164,11 +164,11 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			return boardFrom(popular), boardFrom(latest)
 		})
 		origin := publicOrigin(c)
-		desc := "开物是一个精选网址导航，收录常用网站、学习资料和工具。点进网站会先看到介绍，再决定是否打开。"
+		desc := "开物录收录常用网站，覆盖影视、游戏、工具、查询、学习和 AI。点进名字可以先看介绍，再打开原站。"
 		ld, _ := json.Marshal(map[string]any{
 			"@context":    "https://schema.org",
 			"@type":       "WebSite",
-			"name":        "开物",
+			"name":        "开物录",
 			"url":         origin + "/",
 			"description": desc,
 			"potentialAction": map[string]any{
@@ -181,9 +181,9 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			},
 		})
 		render(c, db, http.StatusOK, shell{
-			Title:       "开物 - 网址导航",
+			Title:       "开物录 - 网址导航",
 			Description: desc,
-			Keywords:    "网址导航,网址大全,开物",
+			Keywords:    "网址导航,网址大全,开物录,在线工具,小游戏,实用查询,AI工具",
 			Canonical:   "/",
 			JSONLD:      template.JS(ld),
 			Home:        true,
@@ -205,7 +205,7 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 		var cat models.Category
 		if err := db.Where("slug = ?", c.Param("slug")).First(&cat).Error; err != nil {
 			render(c, db, http.StatusNotFound, shell{
-				Title: "没有这个分类 - 开物", Robots: "noindex", Canonical: "/c/" + c.Param("slug"),
+				Title: "没有这个分类 - 开物录", Robots: "noindex", Canonical: "/c/" + c.Param("slug"),
 			}, "missing", map[string]string{"Heading": "没有这个分类", "Text": "这个分类不存在，或已经撤下。"})
 			return
 		}
@@ -233,7 +233,7 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 			"itemListElement": crumbLD(crumbs),
 		})
 		render(c, db, http.StatusOK, shell{
-			Title:       cat.Name + " - 开物",
+			Title:       cat.Name + " - 开物录",
 			Description: intro,
 			Keywords:    joinWords(cat.Name, parent.Name, "网址导航"),
 			Canonical:   "/c/" + cat.Slug,
@@ -250,7 +250,7 @@ func articlePage(db *gorm.DB) gin.HandlerFunc {
 		var item models.Article
 		if err := db.First(&item, c.Param("id")).Error; err != nil {
 			render(c, db, http.StatusNotFound, shell{
-				Title: "没有这篇文章 - 开物", Robots: "noindex", Canonical: "/a/" + c.Param("id"),
+				Title: "没有这篇文章 - 开物录", Robots: "noindex", Canonical: "/a/" + c.Param("id"),
 			}, "missing", map[string]string{"Heading": "没有这篇文章", "Text": "这篇说明不存在。"})
 			return
 		}
@@ -267,7 +267,7 @@ func articlePage(db *gorm.DB) gin.HandlerFunc {
 			"mainEntityOfPage": canonical,
 		})
 		render(c, db, http.StatusOK, shell{
-			Title:       item.Title + " - 开物",
+			Title:       item.Title + " - 开物录",
 			Description: clip(item.Summary, 120),
 			Canonical:   "/a/" + itoa(item.ID),
 			OGType:      "article",
@@ -284,7 +284,7 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 		var link models.Link
 		if err := db.Where("slug = ? AND status = ?", c.Param("slug"), "online").First(&link).Error; err != nil {
 			render(c, db, http.StatusNotFound, shell{
-				Title: "没有这个网站 - 开物", Robots: "noindex", Canonical: "/site/" + c.Param("slug"),
+				Title: "没有这个网站 - 开物录", Robots: "noindex", Canonical: "/site/" + c.Param("slug"),
 			}, "missing", map[string]string{"Heading": "没有这个网站", "Text": "这个网址不存在，或还没有上架。"})
 			return
 		}
@@ -303,9 +303,9 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 		canonical := origin + "/site/" + link.Slug
 		desc := strings.TrimSpace(link.Desc)
 		if desc == "" {
-			desc = link.Name + "，收录在开物导航。"
+			desc = link.Name + "，收录在开物录导航。"
 		}
-		intro := link.Name + "收录在开物"
+		intro := link.Name + "收录在开物录"
 		if parent.Name != "" {
 			intro += "的" + parent.Name + " / " + cat.Name
 		} else if cat.Name != "" {
@@ -346,7 +346,7 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 		ld, _ := json.Marshal(map[string]any{
 			"@context":    "https://schema.org",
 			"@type":       "WebPage",
-			"name":        title + " - 开物",
+			"name":        title + " - 开物录",
 			"description": summary,
 			"url":         canonical,
 			"breadcrumb": map[string]any{
@@ -362,7 +362,7 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 			scheme = "HTTP"
 		}
 		render(c, db, http.StatusOK, shell{
-			Title:       title + " - 开物",
+			Title:       title + " - 开物录",
 			Description: clip(summary, 140),
 			Keywords:    joinWords(append([]string{link.Name}, append(tags, cat.Name, parent.Name, "网址导航")...)...),
 			Canonical:   "/site/" + link.Slug,
@@ -386,16 +386,16 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 func searchPage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		q := strings.TrimSpace(c.Query("q"))
-		title := "搜索 - 开物"
-		desc := "在开物导航里搜索已收录的网站。"
+		title := "搜索 - 开物录"
+		desc := "在开物录导航里搜索已收录的网站。"
 		var links []models.Link
 		if q != "" && utf8Count(q) <= 40 {
 			safe := strings.NewReplacer("%", "", "_", "").Replace(q)
 			like := "%" + safe + "%"
 			db.Where("status = ? AND (name LIKE ? OR desc LIKE ?)", "online", like, like).
 				Order("clicks desc").Limit(50).Find(&links)
-			title = q + " - 搜索 - 开物"
-			desc = "开物导航里和「" + q + "」有关的网站。"
+			title = q + " - 搜索 - 开物录"
+			desc = "开物录导航里和「" + q + "」有关的网站。"
 		}
 		render(c, db, http.StatusOK, shell{
 			Title: title, Description: desc, Canonical: "/search", Robots: "noindex,follow", Query: q,
@@ -419,7 +419,7 @@ type submitView struct {
 
 func showSubmit(c *gin.Context, db *gorm.DB, status int, view submitView) {
 	render(c, db, status, shell{
-		Title: "提交网站 - 开物", Description: "把网站提交到开物导航，审核后才会出现在首页。",
+		Title: "提交网站 - 开物录", Description: "把网站提交到开物录导航，审核后才会出现在首页。",
 		Canonical: "/submit", Robots: "noindex,follow",
 	}, "submit", view)
 }
@@ -439,12 +439,12 @@ func toolPage(db *gorm.DB) gin.HandlerFunc {
 		item, ok := pages[c.Param("slug")]
 		if !ok {
 			render(c, db, http.StatusNotFound, shell{
-				Title: "没有这个工具 - 开物", Robots: "noindex", Canonical: "/tools/" + c.Param("slug"),
+				Title: "没有这个工具 - 开物录", Robots: "noindex", Canonical: "/tools/" + c.Param("slug"),
 			}, "missing", map[string]string{"Heading": "没有这个工具", "Text": "这个工具不在列表里。"})
 			return
 		}
 		render(c, db, http.StatusOK, shell{
-			Title: item.Name + " - 开物", Description: item.Desc, Canonical: "/tools/" + c.Param("slug"), Robots: "noindex,follow",
+			Title: item.Name + " - 开物录", Description: item.Desc, Canonical: "/tools/" + c.Param("slug"), Robots: "noindex,follow",
 		}, "tool", item)
 	}
 }
@@ -548,7 +548,7 @@ func describeSection(name string, view sectionView) string {
 			parts = append(parts, tab.Name)
 		}
 		if len(parts) == 0 {
-			return name + "，收录在开物导航。"
+			return name + "，收录在开物录导航。"
 		}
 		return name + "包括" + strings.Join(parts, "、") + "。"
 	}

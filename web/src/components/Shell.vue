@@ -5,7 +5,7 @@ import { getJSON, type SideItem } from "../api";
 
 const route = useRoute();
 const router = useRouter();
-const name = ref("开物");
+const name = ref("开物录");
 const sidebar = ref<SideItem[]>([]);
 const q = ref("");
 const engine = ref("site");

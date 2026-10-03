@@ -21,7 +21,7 @@ function logout() {
 <template>
   <div class="adm">
     <header class="adm-top">
-      <strong>开物管理</strong>
+      <strong>开物录管理</strong>
       <div>
         <a href="/">返回前台</a>
         <button type="button" @click="logout">退出</button>

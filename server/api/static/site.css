@@ -105,8 +105,8 @@ footer { margin-top: 28px; color: #7b8794; font-size: 13px; }
 
 .sc-list, .link-grid.tile {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
 }
 .sc-list { margin-top: 12px; }
 .link-grid.row { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
@@ -122,7 +122,9 @@ footer { margin-top: 28px; color: #7b8794; font-size: 13px; }
 }
 .link:hover { background: #f4f7f6; }
 .link.row, .link.mini { background: #fbfcfb; border: 1px solid #eef1f0; }
-.link.tile { flex-direction: column; align-items: center; text-align: center; }
+.link.tile { flex-direction: column; align-items: center; text-align: center; padding: 10px 8px 8px; }
+.link.tile .meta { width: 100%; align-items: center; }
+.link.tile .desc { -webkit-line-clamp: 1; }
 .mark {
   position: relative;
   width: 42px;

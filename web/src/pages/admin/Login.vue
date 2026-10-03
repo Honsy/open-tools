@@ -28,7 +28,7 @@ async function send() {
 
 <template>
   <form class="login-box" @submit.prevent="send">
-    <h1>开物管理</h1>
+    <h1>开物录管理</h1>
     <label>账号<input v-model="username" autocomplete="username" /></label>
     <label>密码<input v-model="password" type="password" autocomplete="current-password" /></label>
     <button type="submit">登录</button>

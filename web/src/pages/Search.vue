@@ -15,7 +15,7 @@ async function run() {
   q.value = typeof route.query.q === "string" ? route.query.q : "";
   ready.value = false;
   error.value = "";
-  document.title = (q.value ? q.value + " - " : "") + "搜索 - 开物";
+  document.title = (q.value ? q.value + " - " : "") + "搜索 - 开物录";
   try {
     const data = await getJSON<{ links: LinkItem[] }>("/api/search?q=" + encodeURIComponent(q.value));
     links.value = data.links;

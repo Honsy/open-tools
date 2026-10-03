@@ -61,12 +61,21 @@ func categories() []models.Category {
 		cat("disk", "网盘", "resource", "tab", "links", 2, false),
 		cat("webtool", "网页工具", "resource", "tab", "links", 3, false),
 		cat("query", "实用查询", "resource", "tab", "links", 4, false),
+		cat("res", "资源", "resource", "tab", "links", 5, false),
 
 		cat("collection", "网址集", "", "section", "tags", 4, true),
 
-		cat("ai", "AI 工具", "", "section", "links", 5, false),
+		cat("ai", "AI 工具", "", "section", "links", 5, true),
 		cat("chat", "对话", "ai", "tab", "links", 1, false),
 		cat("draw", "创作", "ai", "tab", "links", 2, false),
+
+		cat("life", "生活常用", "", "section", "links", 6, true),
+		cat("shop", "购物", "life", "tab", "links", 1, false),
+		cat("job", "招聘", "life", "tab", "links", 2, false),
+		cat("finance", "财经", "life", "tab", "links", 3, false),
+		cat("news", "资讯", "life", "tab", "links", 4, false),
+		cat("community", "社区", "life", "tab", "links", 5, false),
+		cat("mail", "邮箱", "life", "tab", "links", 6, false),
 	}
 }
 
@@ -113,73 +122,114 @@ func linkRows() []models.Link {
 		L("live", "斗鱼", "https://www.douyu.com", "游戏直播", 2, 9, 0),
 		L("live", "虎牙直播", "https://www.huya.com", "游戏直播", 3, 7, 0),
 
-		L("wallpaper", "Unsplash", "https://unsplash.com", "可免费使用的照片", 1, 11, 0),
-		L("wallpaper", "Pexels", "https://www.pexels.com", "免费图片和视频", 2, 6, 0),
+		L("video", "央视频", "https://www.yangshipin.cn", "央视正版直播和回看", 7, 0, 0),
+		L("video", "咪咕视频", "https://www.miguvideo.com", "体育和影视", 8, 0, 0),
+		L("video", "抖音", "https://www.douyin.com", "短视频", 9, 0, 0),
+
+		L("music", "酷我音乐", "https://www.kuwo.cn", "正版曲库", 4, 0, 0),
+		L("music", "喜马拉雅", "https://www.ximalaya.com", "有声书和播客", 5, 0, 0),
+
+		L("novel", "微信读书", "https://weread.qq.com", "电子书", 4, 0, 0),
+		L("novel", "纵横中文网", "https://www.zongheng.com", "网络小说", 5, 0, 0),
+		L("novel", "番茄小说", "https://fanqienovel.com", "免费网文", 6, 0, 0),
+
+		L("live", "快手", "https://www.kuaishou.com", "短视频和直播", 4, 0, 0),
+
+		L("wallpaper", "花瓣", "https://huaban.com", "图片采集和灵感", 1, 0, 0),
+		L("wallpaper", "图虫", "https://tuchong.com", "摄影师社区", 2, 0, 0),
 		L("wallpaper", "Wallhaven", "https://wallhaven.cc", "壁纸收藏", 3, 5, 0),
 
 		L("game", "Steam", "https://store.steampowered.com", "电脑游戏商店", 1, 21, 0),
 		L("game", "TapTap", "https://www.taptap.cn", "手机游戏社区", 2, 12, 0),
 		L("game", "4399", "https://www.4399.com", "小游戏", 3, 9, 0),
+		L("game", "7k7k", "https://www.7k7k.com", "小游戏", 4, 0, 0),
+		L("game", "腾讯游戏", "https://game.qq.com", "腾讯游戏官网", 5, 0, 0),
 
 		L("learn", "MDN", "https://developer.mozilla.org", "Web 开发文档", 1, 28, 9),
 		L("learn", "菜鸟教程", "https://www.runoob.com", "入门示例", 2, 19, 0),
 		L("learn", "中国大学MOOC", "https://www.icourse163.org", "大学公开课", 3, 14, 0),
-		L("learn", "可汗学院", "https://www.khanacademy.org", "基础学科课程", 4, 8, 0),
-		L("learn", "网易公开课", "https://open.163.com", "公开课程", 5, 7, 0),
+		L("learn", "学堂在线", "https://www.xuetangx.com", "大学公开课", 4, 0, 0),
+		L("learn", "网易云课堂", "https://study.163.com", "职业课程", 5, 0, 0),
+		L("learn", "可汗学院", "https://www.khanacademy.org", "基础学科课程", 6, 8, 0),
+		L("learn", "网易公开课", "https://open.163.com", "公开课程", 7, 7, 0),
+		L("learn", "掘金", "https://juejin.cn", "技术文章", 8, 0, 0),
+		L("learn", "廖雪峰", "https://www.liaoxuefeng.com", "编程教程", 9, 0, 0),
 
 		L("cool", "知乎", "https://www.zhihu.com", "问答社区", 1, 33, 2),
 		L("cool", "少数派", "https://sspai.com", "效率和工作方法", 2, 17, 0),
 		L("cool", "小众软件", "https://www.appinn.com", "软件和工具介绍", 3, 24, 10),
-		L("cool", "Product Hunt", "https://www.producthunt.com", "新产品发布", 4, 6, 0),
-		L("cool", "Hacker News", "https://news.ycombinator.com", "技术讨论", 5, 8, 0),
+		L("cool", "什么值得买", "https://www.smzdm.com", "商品价格和评测", 4, 0, 0),
+		L("cool", "V2EX", "https://www.v2ex.com", "技术社区", 5, 0, 0),
+		L("cool", "Product Hunt", "https://www.producthunt.com", "新产品发布", 6, 6, 0),
+		L("cool", "Hacker News", "https://news.ycombinator.com", "技术讨论", 7, 8, 0),
 
 		L("design", "iconfont", "https://www.iconfont.cn", "图标", 1, 18, 0),
 		L("design", "站酷", "https://www.zcool.com.cn", "设计作品", 2, 11, 0),
-		L("design", "Dribbble", "https://dribbble.com", "界面设计", 3, 7, 0),
+		L("design", "即时设计", "https://js.design", "在线界面设计", 3, 0, 0),
+		L("design", "稿定设计", "https://www.gaoding.com", "模板和图片编辑", 4, 0, 0),
+		L("design", "Dribbble", "https://dribbble.com", "界面设计", 5, 7, 0),
 
 		L("software", "GitHub", "https://github.com", "代码托管", 1, 40, 3),
 		L("software", "Gitee", "https://gitee.com", "代码托管", 2, 12, 0),
 		L("software", "腾讯文档", "https://docs.qq.com", "在线文档和表格", 3, 15, 6),
-		L("software", "Microsoft", "https://www.microsoft.com/zh-cn", "系统和官方软件", 4, 5, 0),
+		L("software", "飞书", "https://www.feishu.cn", "文档、表格和会议", 4, 0, 0),
+		L("software", "语雀", "https://www.yuque.com", "知识库和文档", 5, 0, 0),
+		L("software", "WPS", "https://www.wps.cn", "文字、表格和演示", 6, 0, 0),
+		L("software", "腾讯会议", "https://meeting.tencent.com", "视频会议", 7, 0, 0),
+		L("software", "Microsoft", "https://www.microsoft.com/zh-cn", "系统和官方软件", 8, 5, 0),
 
 		L("disk", "阿里云盘", "https://www.alipan.com", "网盘", 1, 26, 7),
 		L("disk", "百度网盘", "https://pan.baidu.com", "网盘", 2, 16, 0),
 		L("disk", "夸克网盘", "https://pan.quark.cn", "网盘", 3, 10, 0),
 		L("disk", "坚果云", "https://www.jianguoyun.com", "同步盘", 4, 6, 0),
+		L("disk", "天翼云盘", "https://cloud.189.cn", "网盘", 5, 0, 0),
 
-		L("webtool", "格式化", "/tools/prettier", "代码和 JSON 格式化，源码在 legacy", 1, 4, 0),
-		L("webtool", "加密解密", "/tools/crypto", "摘要和加解密，源码在 legacy", 2, 3, 0),
-		L("webtool", "进制转换", "/tools/hexconvert", "二、八、十、十六进制，源码在 legacy", 3, 5, 0),
-		L("webtool", "时间戳", "/tools/moment", "时间和时间戳互转，源码在 legacy", 4, 4, 0),
-		L("webtool", "颜色", "/tools/rgb", "颜色值换算，源码在 legacy", 5, 3, 0),
-		L("webtool", "计算器", "/tools/calculator", "计算器，源码在 legacy", 6, 2, 0),
-		L("webtool", "Protobuf", "/tools/protobuf", "Protobuf 解析，源码在 legacy", 7, 2, 0),
-		L("webtool", "人民币大写", "/tools/rmbconvert", "金额转中文大写，源码在 legacy", 8, 2, 0),
+		L("webtool", "格式化", "https://www.json.cn", "在线 JSON 格式化", 1, 4, 0),
+		L("webtool", "加密解密", "https://tool.oschina.net/encrypt", "MD5 和 Base64", 2, 3, 0),
+		L("webtool", "进制转换", "https://tool.oschina.net/hexconvert", "二、八、十、十六进制", 3, 5, 0),
+		L("webtool", "时间戳", "https://www.matools.com/timestamp", "时间和时间戳互转", 4, 4, 0),
+		L("webtool", "颜色", "https://zhongguose.com", "中国传统色对照", 5, 3, 0),
+		L("webtool", "计算器", "https://www.zxgj.cn/g/jisuanqi", "在线计算器", 6, 2, 0),
+		L("webtool", "正则", "https://c.runoob.com/front-end/854", "在线测试正则表达式", 7, 2, 0),
+		L("webtool", "人民币大写", "https://www.zxgj.cn/g/rmbdaxie", "金额转中文大写", 8, 2, 0),
 
 		L("query", "百度", "https://www.baidu.com", "网页搜索", 1, 30, 4),
 		L("query", "中国天气", "https://www.weather.com.cn", "天气预报查询", 2, 9, 0),
 		L("query", "12306", "https://www.12306.cn", "火车票查询", 3, 14, 0),
 		L("query", "快递100", "https://www.kuaidi100.com", "快递物流查询", 4, 8, 0),
-		L("query", "XE 汇率", "https://www.xe.com", "汇率换算", 5, 4, 0),
+		L("query", "高德地图", "https://www.amap.com", "地图和路线", 5, 0, 0),
+		L("query", "百度翻译", "https://fanyi.baidu.com", "在线翻译", 6, 0, 0),
+		L("query", "携程", "https://www.ctrip.com", "机票和酒店", 7, 0, 0),
+		L("query", "航旅纵横", "https://www.umetrip.com", "航班动态", 8, 0, 0),
+		L("query", "新浪外汇", "https://finance.sina.com.cn/forex/", "汇率行情", 9, 0, 0),
+		L("query", "天眼查", "https://www.tianyancha.com", "企业信息查询", 10, 0, 0),
+		L("query", "XE 汇率", "https://www.xe.com", "汇率换算", 11, 4, 0),
 
-		L("chat", "Kimi", "https://kimi.moonshot.cn", "对话", 1, 27, 8),
-		L("chat", "ChatGPT", "https://chatgpt.com", "对话", 2, 19, 0),
-		L("chat", "Claude", "https://claude.ai", "对话", 3, 11, 0),
+		L("chat", "Kimi", "https://kimi.moonshot.cn", "长文对话", 1, 27, 8),
+		L("chat", "DeepSeek", "https://chat.deepseek.com", "对话和代码", 2, 0, 0),
+		L("chat", "文心一言", "https://yiyan.baidu.com", "对话", 3, 0, 0),
 		L("chat", "通义千问", "https://tongyi.aliyun.com", "对话", 4, 9, 0),
 		L("chat", "豆包", "https://www.doubao.com", "对话", 5, 8, 0),
+		L("chat", "腾讯元宝", "https://yuanbao.tencent.com", "对话", 6, 0, 0),
+		L("chat", "智谱清言", "https://chatglm.cn", "对话", 7, 0, 0),
+		L("chat", "秘塔", "https://metaso.cn", "带来源的搜索", 8, 0, 0),
 		L("draw", "即梦", "https://jimeng.jianying.com", "图像和视频", 1, 7, 0),
-		L("draw", "Midjourney", "https://www.midjourney.com", "图像", 2, 5, 0),
+		L("draw", "可灵", "https://klingai.com", "图像和视频", 2, 0, 0),
+		L("draw", "文心一格", "https://yige.baidu.com", "图像", 3, 0, 0),
 	}
+	links = append(links, moreLinks()...)
 
 	now := time.Now()
 	fresh := map[string]int{
 		"即梦": 1, "豆包": 2, "夸克网盘": 3, "坚果云": 4,
 		"可汗学院": 5, "TapTap": 6, "快递100": 7, "iconfont": 8,
-		"虎牙直播": 9, "网易公开课": 10, "Midjourney": 11, "腾讯文档": 12,
+		"虎牙直播": 9, "网易公开课": 10, "可灵": 11, "腾讯文档": 12,
 	}
 	for i := range links {
 		if body, ok := intros[links[i].Name]; ok {
 			links[i].Body = body
+		} else if links[i].Desc != "" {
+			links[i].Body = links[i].Name + "，" + links[i].Desc + "。先看它是不是你要找的那一个，再打开。\n\n页面改版、要登录或分地区开放时，以网站自己的说明为准。"
 		}
 		links[i].CreatedAt = now.Add(-time.Hour * time.Duration(100+i))
 		if h, ok := fresh[links[i].Name]; ok {
@@ -232,6 +282,21 @@ func tags() []models.Tag {
 		{"工具", "时间戳"},
 		{"工具", "进制"},
 		{"工具", "颜色"},
+		{"资源", "软件"},
+		{"资源", "字体"},
+		{"资源", "模板"},
+		{"资源", "字幕"},
+		{"游戏", "平台"},
+		{"游戏", "资讯"},
+		{"AI", "对话"},
+		{"AI", "图像"},
+		{"AI", "视频"},
+		{"生活", "购物"},
+		{"生活", "招聘"},
+		{"生活", "财经"},
+		{"生活", "社区"},
+		{"查询", "备案"},
+		{"查询", "企业"},
 	}
 	out := make([]models.Tag, 0, len(rows))
 	for i, row := range rows {

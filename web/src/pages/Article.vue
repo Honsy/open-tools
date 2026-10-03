@@ -13,7 +13,7 @@ async function load() {
   article.value = null;
   try {
     article.value = await getJSON<Article>("/api/articles/" + route.params.id);
-    document.title = article.value.title + " - 开物";
+    document.title = article.value.title + " - 开物录";
   } catch (err) {
     error.value = err instanceof Error ? err.message : "没有这篇文章";
   }

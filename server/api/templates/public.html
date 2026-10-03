@@ -8,19 +8,19 @@
   {{if .Keywords}}<meta name="keywords" content="{{.Keywords}}">{{end}}
   <link rel="canonical" href="{{.Canonical}}">
   <meta property="og:type" content="{{.OGType}}">
-  <meta property="og:site_name" content="开物">
+  <meta property="og:site_name" content="开物录">
   <meta property="og:title" content="{{.Title}}">
   <meta property="og:description" content="{{.Description}}">
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=9">
+  <link rel="stylesheet" href="/static/site.css?v=10">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body>
   <header class="top">
     <div class="wrap top-row">
-      {{if .Home}}<h1 class="logo"><a href="/">开物</a></h1>{{else}}<a class="logo" href="/">开物</a>{{end}}
+      {{if .Home}}<h1 class="logo"><a href="/">开物录</a></h1>{{else}}<a class="logo" href="/">开物录</a>{{end}}
       <nav class="top-links">
         <a href="/#sec-boards">今日热榜</a>
         <a href="/c/ai">AI 工具</a>
@@ -29,8 +29,8 @@
       <div class="util">
         <a href="https://mail.qq.com" rel="nofollow noopener" target="_blank">邮箱</a>
         <a href="https://www.alipan.com" rel="nofollow noopener" target="_blank">网盘</a>
-        <a href="https://translate.google.com" rel="nofollow noopener" target="_blank">翻译</a>
-        <a href="https://map.baidu.com" rel="nofollow noopener" target="_blank">地图</a>
+        <a href="https://fanyi.baidu.com" rel="nofollow noopener" target="_blank">翻译</a>
+        <a href="https://www.amap.com" rel="nofollow noopener" target="_blank">地图</a>
       </div>
     </div>
     <form class="wrap search" action="/search" method="get">
@@ -67,7 +67,7 @@
 </body>
 </html>{{end}}
 
-{{define "link"}}<a class="link {{.Layout}}" href="{{.Href}}" title="{{.Desc}}" data-link="{{.JSON}}"><span class="mark">{{if .Host}}<img src="/ico?host={{.Host}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b></span><span class="meta"><span class="name">{{.Name}}</span>{{if eq .Layout "row"}}<span class="desc">{{.Desc}}</span>{{end}}</span><button class="star" type="button" data-star="{{.JSON}}" aria-label="收藏">★</button></a>{{end}}
+{{define "link"}}<a class="link {{.Layout}}" href="{{.Href}}" title="{{.Desc}}" data-link="{{.JSON}}"><span class="mark">{{if .Host}}<img src="/ico?host={{.Host}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b></span><span class="meta"><span class="name">{{.Name}}</span>{{if .Desc}}<span class="desc">{{.Desc}}</span>{{end}}</span><button class="star" type="button" data-star="{{.JSON}}" aria-label="收藏">★</button></a>{{end}}
 
 {{define "section"}}
 <section class="block" id="sec-{{.Slug}}" data-tabs>
@@ -107,7 +107,7 @@
 {{end}}
 
 {{define "home"}}
-<p class="kicker about">开物是一个精选网址导航，收录常用网站、学习资料和工具。点进网站会先看到介绍，再决定是否打开。</p>
+<p class="kicker about">点名字先看这个网站是做什么的，确认后再打开。影视、游戏、工具、查询、资源和 AI 按类分开。</p>
 <div class="hero">
   <section class="panel" id="sec-today">
     <h2>{{.TodayLabel}}</h2>
@@ -183,7 +183,7 @@
       <p class="lead">{{.Desc}}</p>
       <p class="tag-line">标签：{{range .Tags}}<a href="/search?q={{.}}">{{.}}</a>{{end}}{{if .CatName}}<a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}}</p>
       <p class="site-actions">
-        {{if .External}}<a class="go" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">链接直达</a>{{else}}<a class="go" href="{{.URL}}">打开页面</a>{{end}}
+        {{if .External}}<a class="go" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">打开网站</a>{{else}}<a class="go" href="{{.URL}}">打开页面</a>{{end}}
         <span class="host">{{.Host}}</span>
       </p>
     </div>
@@ -207,7 +207,7 @@
     <dt>收录</dt><dd><time datetime="{{.ISO}}">{{.Date}}</time></dd>
   </dl>
   <p>目前{{.Name}}的浏览人数已达到 {{.ViewsText}}，从本站打开过 {{.ClicksText}} 次。</p>
-  <p class="kicker">外部网站不受开物控制。地址失效或内容不合适时，可以到「提交网站」告诉我们。</p>
+  <p class="kicker">外部网站不受开物录控制。地址失效或内容不合适时，可以到「提交网站」告诉我们。</p>
   {{if .Related}}<h2>相关网站</h2><div class="link-grid row">{{range .Related}}{{template "link" .}}{{end}}</div>{{end}}
 </article>
 {{end}}

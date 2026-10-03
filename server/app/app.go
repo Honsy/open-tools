@@ -29,6 +29,9 @@ func Run() error {
 	if err := seed.Run(db); err != nil {
 		return err
 	}
+	if err := seed.EnsureCatalog(db); err != nil {
+		return err
+	}
 	if err := seed.EnsureSlugs(db); err != nil {
 		return err
 	}

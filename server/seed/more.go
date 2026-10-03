@@ -1,0 +1,213 @@
+package seed
+
+import "opentools/models"
+
+func init() {
+	for name, body := range moreIntros {
+		intros[name] = body
+	}
+	for name, tags := range moreSiteTags {
+		siteTags[name] = tags
+	}
+	for name, card := range moreProfiles {
+		profiles[name] = card
+	}
+}
+
+func moreLinks() []models.Link {
+	return []models.Link{
+		L("software", "吾爱破解", "https://www.52pojie.cn", "软件与安全社区", 9, 0, 0),
+		L("software", "异次元软件", "https://www.iplaysoft.com", "软件介绍", 10, 0, 0),
+		L("software", "苹果", "https://www.apple.com.cn", "设备和官方软件", 11, 0, 0),
+		L("software", "远景论坛", "https://bbs.pcbeta.com", "电脑讨论", 12, 0, 0),
+		L("software", "Notion", "https://www.notion.so", "笔记和文档", 13, 0, 0),
+		L("software", "Figma", "https://www.figma.com", "界面设计", 14, 0, 0),
+		L("software", "Linear", "https://linear.app", "问题和项目", 15, 0, 0),
+
+		L("res", "字由", "https://www.hellofont.cn", "字体", 1, 0, 0),
+		L("res", "猫啃网", "https://www.maoken.com", "可免费使用的字体", 2, 0, 0),
+		L("res", "第一PPT", "https://www.1ppt.com", "PPT 模板", 3, 0, 0),
+		L("res", "优品PPT", "https://www.ypppt.com", "PPT 模板", 4, 0, 0),
+		L("res", "OfficePLUS", "https://www.officeplus.cn", "微软官方模板", 5, 0, 0),
+		L("res", "Unsplash", "https://unsplash.com", "可免费使用的照片", 6, 0, 0),
+		L("res", "Pexels", "https://www.pexels.com", "免费图片和视频", 7, 0, 0),
+		L("res", "摄图网", "https://699pic.com", "图片素材", 8, 0, 0),
+		L("res", "千库网", "https://588ku.com", "设计素材", 9, 0, 0),
+		L("res", "伪射手", "https://assrt.net", "字幕", 10, 0, 0),
+		L("res", "字幕库", "https://zimuku.org", "字幕", 11, 0, 0),
+
+		L("game", "WeGame", "https://www.wegame.com.cn", "腾讯游戏平台", 6, 0, 0),
+		L("game", "Epic", "https://store.epicgames.com", "电脑游戏商店", 7, 0, 0),
+		L("game", "小黑盒", "https://www.xiaoheihe.cn", "游戏社区", 8, 0, 0),
+		L("game", "游民星空", "https://www.gamersky.com", "游戏资讯", 9, 0, 0),
+		L("game", "3DM", "https://www.3dmgame.com", "游戏资讯", 10, 0, 0),
+		L("game", "机核", "https://www.gcores.com", "游戏文化", 11, 0, 0),
+		L("game", "米哈游", "https://www.mihoyo.com", "游戏官网", 12, 0, 0),
+		L("game", "网易游戏", "https://game.163.com", "游戏官网", 13, 0, 0),
+		L("game", "GOG", "https://www.gog.com", "无 DRM 游戏商店", 14, 0, 0),
+		L("game", "itch.io", "https://itch.io", "独立游戏", 15, 0, 0),
+		L("game", "暴雪战网", "https://www.battlenet.com.cn", "暴雪游戏", 16, 0, 0),
+		L("game", "NGA", "https://bbs.nga.cn", "游戏论坛", 17, 0, 0),
+		L("game", "库洛游戏", "https://www.kurogames.com", "游戏官网", 18, 0, 0),
+		L("game", "鹰角网络", "https://ak.hypergryph.com", "明日方舟官网", 19, 0, 0),
+
+		L("webtool", "Photopea", "https://www.photopea.com", "在线修图", 9, 0, 0),
+		L("webtool", "TinyPNG", "https://tinypng.com", "压缩图片", 10, 0, 0),
+		L("webtool", "Squoosh", "https://squoosh.app", "压缩图片", 11, 0, 0),
+		L("webtool", "remove.bg", "https://www.remove.bg", "去掉图片背景", 12, 0, 0),
+		L("webtool", "草料二维码", "https://cli.im", "生成二维码", 13, 0, 0),
+		L("webtool", "draw.io", "https://app.diagrams.net", "流程图", 14, 0, 0),
+		L("webtool", "Excalidraw", "https://excalidraw.com", "手绘白板", 15, 0, 0),
+		L("webtool", "Cron表达式", "https://crontab.guru", "定时表达式", 16, 0, 0),
+		L("webtool", "Hoppscotch", "https://hoppscotch.io", "调试接口", 17, 0, 0),
+		L("webtool", "Carbon", "https://carbon.now.sh", "把代码做成图片", 18, 0, 0),
+
+		L("query", "IP查询", "https://www.ip138.com", "IP 和手机归属", 12, 0, 0),
+		L("query", "备案查询", "https://beian.miit.gov.cn", "网站备案", 13, 0, 0),
+		L("query", "学信网", "https://www.chsi.com.cn", "学历查询", 14, 0, 0),
+		L("query", "国家企业信用", "https://www.gsxt.gov.cn", "企业信用公示", 15, 0, 0),
+		L("query", "裁判文书网", "https://wenshu.court.gov.cn", "判决文书", 16, 0, 0),
+		L("query", "个人所得税", "https://etax.chinatax.gov.cn", "个税申报", 17, 0, 0),
+		L("query", "菜鸟", "https://www.cainiao.com", "快递查询", 18, 0, 0),
+		L("query", "中国银行汇率", "https://www.boc.cn/sourcedb/whpj/", "银行牌价", 19, 0, 0),
+		L("query", "邮编库", "https://www.youbianku.com", "邮政编码", 20, 0, 0),
+		L("query", "ICANN查询", "https://lookup.icann.org", "域名注册信息", 21, 0, 0),
+
+		L("chat", "ChatGPT", "https://chatgpt.com", "对话", 9, 0, 0),
+		L("chat", "Claude", "https://claude.ai", "对话", 10, 0, 0),
+		L("chat", "Gemini", "https://gemini.google.com", "对话", 11, 0, 0),
+		L("chat", "讯飞星火", "https://xinghuo.xfyun.cn", "对话", 12, 0, 0),
+		L("chat", "阶跃", "https://www.stepfun.com", "对话", 13, 0, 0),
+		L("chat", "Perplexity", "https://www.perplexity.ai", "带来源的搜索", 14, 0, 0),
+		L("chat", "Copilot", "https://copilot.microsoft.com", "对话", 15, 0, 0),
+		L("chat", "Poe", "https://poe.com", "多个模型对话", 16, 0, 0),
+
+		L("draw", "小云雀", "https://xyq.jianying.com", "短片和故事", 4, 0, 0),
+		L("draw", "剪映", "https://www.capcut.cn", "视频剪辑", 5, 0, 0),
+		L("draw", "海螺AI", "https://hailuoai.com", "视频", 6, 0, 0),
+		L("draw", "Suno", "https://suno.com", "音乐", 7, 0, 0),
+		L("draw", "Midjourney", "https://www.midjourney.com", "图像", 8, 0, 0),
+		L("draw", "Runway", "https://runwayml.com", "视频", 9, 0, 0),
+		L("draw", "Leonardo", "https://leonardo.ai", "图像", 10, 0, 0),
+		L("draw", "通义万相", "https://tongyi.aliyun.com/wanxiang", "图像和视频", 11, 0, 0),
+
+		L("shop", "淘宝", "https://www.taobao.com", "购物", 1, 0, 0),
+		L("shop", "天猫", "https://www.tmall.com", "品牌购物", 2, 0, 0),
+		L("shop", "京东", "https://www.jd.com", "购物", 3, 0, 0),
+		L("shop", "拼多多", "https://www.pinduoduo.com", "购物", 4, 0, 0),
+		L("shop", "闲鱼", "https://www.goofish.com", "二手", 5, 0, 0),
+		L("shop", "唯品会", "https://www.vip.com", "品牌特卖", 6, 0, 0),
+
+		L("job", "BOSS直聘", "https://www.zhipin.com", "招聘", 1, 0, 0),
+		L("job", "智联招聘", "https://www.zhaopin.com", "招聘", 2, 0, 0),
+		L("job", "前程无忧", "https://www.51job.com", "招聘", 3, 0, 0),
+		L("job", "拉勾", "https://www.lagou.com", "互联网招聘", 4, 0, 0),
+		L("job", "猎聘", "https://www.liepin.com", "招聘", 5, 0, 0),
+
+		L("finance", "东方财富", "https://www.eastmoney.com", "股票行情", 1, 0, 0),
+		L("finance", "同花顺", "https://www.10jqka.com.cn", "股票行情", 2, 0, 0),
+		L("finance", "雪球", "https://xueqiu.com", "投资社区", 3, 0, 0),
+		L("finance", "新浪财经", "https://finance.sina.com.cn", "财经新闻", 4, 0, 0),
+		L("finance", "英为财情", "https://cn.investing.com", "全球行情", 5, 0, 0),
+
+		L("news", "澎湃新闻", "https://www.thepaper.cn", "新闻", 1, 0, 0),
+		L("news", "新华网", "https://www.news.cn", "新闻", 2, 0, 0),
+		L("news", "央视网", "https://www.cctv.com", "新闻和直播", 3, 0, 0),
+		L("news", "联合早报", "https://www.zaobao.com", "新闻", 4, 0, 0),
+		L("news", "BBC", "https://www.bbc.com", "新闻", 5, 0, 0),
+
+		L("community", "微博", "https://weibo.com", "社交媒体", 1, 0, 0),
+		L("community", "豆瓣", "https://www.douban.com", "书影音和小组", 2, 0, 0),
+		L("community", "百度贴吧", "https://tieba.baidu.com", "论坛", 3, 0, 0),
+		L("community", "小红书", "https://www.xiaohongshu.com", "笔记", 4, 0, 0),
+		L("community", "即刻", "https://okjk.co", "兴趣社区", 5, 0, 0),
+		L("community", "Reddit", "https://www.reddit.com", "论坛", 6, 0, 0),
+		L("community", "Discord", "https://discord.com", "群组", 7, 0, 0),
+		L("community", "X", "https://x.com", "社交媒体", 8, 0, 0),
+
+		L("mail", "QQ邮箱", "https://mail.qq.com", "邮箱", 1, 0, 0),
+		L("mail", "网易邮箱", "https://mail.163.com", "邮箱", 2, 0, 0),
+		L("mail", "Outlook", "https://outlook.live.com", "邮箱", 3, 0, 0),
+		L("mail", "Gmail", "https://mail.google.com", "邮箱", 4, 0, 0),
+	}
+}
+
+var moreIntros = map[string]string{
+	"吾爱破解": "吾爱破解是软件和安全讨论社区，版面里有原创发布、软件交流和求助。下载附件前先看发布日期和下面的回复，来源不明的压缩包不要直接运行。\n\n找一个具体软件时用站内搜索。首页推荐盖不全，规则也会改。",
+	"小云雀": "小云雀是抖音旗下的创作工具，用一段话生成短片和画面，网页在剪映这套域名下。登录一般走抖音或字节的账号。\n\n生成结果里的人脸和商标要自己看一遍。发布前确认这次还有没有可用次数。",
+	"异次元软件": "异次元软件介绍可以下载或在线用的软件，每篇通常写它解决什么问题、支持哪个系统。\n\n文章会过时。下载前对一下软件自己的官网和版本号，不要只凭旧文章里的链接。",
+	"ChatGPT": "ChatGPT 是 OpenAI 的对话产品，能写草稿、改写和解释代码。国内网络有时打不开，打不开就换国内的对话产品。\n\n它会把不确定的事说得很确定。引用事实时另找来源。",
+	"Claude":  "Claude 是 Anthropic 的对话产品，长文本的阅读和改写比较稳。国内网络有时打不开。\n\n输出要核对，不能直接当成已经查证的结论。",
+}
+
+var moreSiteTags = map[string]string{
+	"吾爱破解": "软件,社区", "异次元软件": "软件", "苹果": "软件,官网", "远景论坛": "论坛,电脑",
+	"Notion": "笔记,文档", "Figma": "设计", "Linear": "项目,工具",
+	"字由": "字体", "猫啃网": "字体", "第一PPT": "模板,PPT", "优品PPT": "模板,PPT",
+	"OfficePLUS": "模板", "Unsplash": "图片", "Pexels": "图片", "摄图网": "素材", "千库网": "素材",
+	"伪射手": "字幕", "字幕库": "字幕",
+	"WeGame": "游戏,平台", "Epic": "游戏,商店", "小黑盒": "游戏,社区", "游民星空": "游戏,资讯",
+	"3DM": "游戏,资讯", "机核": "游戏", "米哈游": "游戏", "网易游戏": "游戏", "GOG": "游戏,商店",
+	"itch.io": "独立游戏", "暴雪战网": "游戏", "NGA": "论坛,游戏", "库洛游戏": "游戏", "鹰角网络": "游戏",
+	"Photopea": "修图,工具", "TinyPNG": "图片,工具", "Squoosh": "图片,工具", "remove.bg": "图片,工具",
+	"草料二维码": "二维码", "draw.io": "流程图", "Excalidraw": "白板", "Cron表达式": "定时",
+	"Hoppscotch": "接口", "Carbon": "代码",
+	"IP查询": "IP,查询", "备案查询": "备案", "学信网": "学历", "国家企业信用": "企业",
+	"裁判文书网": "文书", "个人所得税": "税务", "菜鸟": "快递", "中国银行汇率": "汇率",
+	"邮编库": "邮编", "ICANN查询": "域名",
+	"ChatGPT": "对话,AI", "Claude": "对话,AI", "Gemini": "对话,AI", "讯飞星火": "对话,AI",
+	"阶跃": "对话,AI", "Perplexity": "搜索,AI", "Copilot": "对话,AI", "Poe": "对话,AI",
+	"小云雀": "视频,AI", "剪映": "视频", "海螺AI": "视频,AI", "Suno": "音乐,AI",
+	"Midjourney": "图像,AI", "Runway": "视频,AI", "Leonardo": "图像,AI", "通义万相": "图像,AI",
+	"淘宝": "购物", "天猫": "购物", "京东": "购物", "拼多多": "购物", "闲鱼": "二手", "唯品会": "购物",
+	"BOSS直聘": "招聘", "智联招聘": "招聘", "前程无忧": "招聘", "拉勾": "招聘", "猎聘": "招聘",
+	"东方财富": "股票", "同花顺": "股票", "雪球": "投资", "新浪财经": "财经", "英为财情": "行情",
+	"澎湃新闻": "新闻", "新华网": "新闻", "央视网": "新闻", "联合早报": "新闻", "BBC": "新闻",
+	"微博": "社区", "豆瓣": "社区", "百度贴吧": "论坛", "小红书": "社区", "即刻": "社区",
+	"Reddit": "论坛", "Discord": "群组", "X": "社区",
+	"QQ邮箱": "邮箱", "网易邮箱": "邮箱", "Outlook": "邮箱", "Gmail": "邮箱",
+}
+
+var moreProfiles = map[string]profile{
+	"吾爱破解": p("52pojie", "中文", "中国"), "异次元软件": p("", "中文", "中国"),
+	"苹果": p("Apple", "中文", "美国"), "远景论坛": p("PCBeta", "中文", "中国"),
+	"Notion": p("", "英文", "美国"), "Figma": p("", "英文", "美国"), "Linear": p("", "英文", "美国"),
+	"字由": p("", "中文", "中国"), "猫啃网": p("", "中文", "中国"),
+	"第一PPT": p("", "中文", "中国"), "优品PPT": p("", "中文", "中国"), "OfficePLUS": p("", "中文", "中国"),
+	"Unsplash": p("", "英文", "美国"), "Pexels": p("", "英文", "美国"),
+	"摄图网": p("", "中文", "中国"), "千库网": p("", "中文", "中国"),
+	"伪射手": p("", "中文", "中国"), "字幕库": p("", "中文", "中国"),
+	"WeGame": p("", "中文", "中国"), "Epic": p("", "英文", "美国"), "小黑盒": p("", "中文", "中国"),
+	"游民星空": p("", "中文", "中国"), "3DM": p("", "中文", "中国"), "机核": p("", "中文", "中国"),
+	"米哈游": p("", "中文", "中国"), "网易游戏": p("", "中文", "中国"), "GOG": p("", "英文", "波兰"),
+	"itch.io": p("", "英文", "美国"), "暴雪战网": p("战网", "中文", "美国"), "NGA": p("", "中文", "中国"),
+	"库洛游戏": p("", "中文", "中国"), "鹰角网络": p("鹰角", "中文", "中国"),
+	"Photopea": p("", "英文", ""), "TinyPNG": p("", "英文", ""), "Squoosh": p("", "英文", "美国"),
+	"remove.bg": p("", "英文", ""), "草料二维码": p("", "中文", "中国"),
+	"draw.io": p("", "英文", ""), "Excalidraw": p("", "英文", ""), "Cron表达式": p("crontab", "英文", ""),
+	"Hoppscotch": p("", "英文", ""), "Carbon": p("", "英文", ""),
+	"IP查询": p("ip138", "中文", "中国"), "备案查询": p("工信部", "中文", "中国"),
+	"学信网": p("", "中文", "中国"), "国家企业信用": p("", "中文", "中国"),
+	"裁判文书网": p("", "中文", "中国"), "个人所得税": p("", "中文", "中国"),
+	"菜鸟": p("", "中文", "中国"), "中国银行汇率": p("", "中文", "中国"),
+	"邮编库": p("", "中文", "中国"), "ICANN查询": p("WHOIS", "英文", "美国"),
+	"ChatGPT": p("", "英文", "美国"), "Claude": p("", "英文", "美国"), "Gemini": p("", "英文", "美国"),
+	"讯飞星火": p("星火", "中文", "中国"), "阶跃": p("阶跃星辰", "中文", "中国"),
+	"Perplexity": p("", "英文", "美国"), "Copilot": p("", "英文", "美国"), "Poe": p("", "英文", "美国"),
+	"小云雀": p("", "中文", "中国"), "剪映": p("CapCut", "中文", "中国"), "海螺AI": p("海螺", "中文", "中国"),
+	"Suno": p("", "英文", "美国"), "Midjourney": p("MJ", "英文", "美国"), "Runway": p("", "英文", "美国"),
+	"Leonardo": p("", "英文", ""), "通义万相": p("万相", "中文", "中国"),
+	"淘宝": p("", "中文", "中国"), "天猫": p("", "中文", "中国"), "京东": p("", "中文", "中国"),
+	"拼多多": p("", "中文", "中国"), "闲鱼": p("", "中文", "中国"), "唯品会": p("", "中文", "中国"),
+	"BOSS直聘": p("BOSS", "中文", "中国"), "智联招聘": p("智联", "中文", "中国"),
+	"前程无忧": p("51job", "中文", "中国"), "拉勾": p("", "中文", "中国"), "猎聘": p("", "中文", "中国"),
+	"东方财富": p("", "中文", "中国"), "同花顺": p("", "中文", "中国"), "雪球": p("", "中文", "中国"),
+	"新浪财经": p("", "中文", "中国"), "英为财情": p("Investing", "中文", ""),
+	"澎湃新闻": p("澎湃", "中文", "中国"), "新华网": p("", "中文", "中国"), "央视网": p("央视", "中文", "中国"),
+	"联合早报": p("", "中文", "新加坡"), "BBC": p("", "英文", "英国"),
+	"微博": p("", "中文", "中国"), "豆瓣": p("", "中文", "中国"), "百度贴吧": p("贴吧", "中文", "中国"),
+	"小红书": p("", "中文", "中国"), "即刻": p("", "中文", "中国"),
+	"Reddit": p("", "英文", "美国"), "Discord": p("", "英文", "美国"), "X": p("推特", "英文", "美国"),
+	"QQ邮箱": p("", "中文", "中国"), "网易邮箱": p("163邮箱", "中文", "中国"),
+	"Outlook": p("", "英文", "美国"), "Gmail": p("", "英文", "美国"),
+}
