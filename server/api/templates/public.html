@@ -1,0 +1,246 @@
+{{define "layout"}}<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <meta name="description" content="{{.Description}}">
+  {{if .Keywords}}<meta name="keywords" content="{{.Keywords}}">{{end}}
+  <link rel="canonical" href="{{.Canonical}}">
+  <meta property="og:type" content="{{.OGType}}">
+  <meta property="og:site_name" content="开物">
+  <meta property="og:title" content="{{.Title}}">
+  <meta property="og:description" content="{{.Description}}">
+  <meta property="og:url" content="{{.Canonical}}">
+  <meta name="robots" content="{{.Robots}}">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/site.css?v=9">
+  {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      {{if .Home}}<h1 class="logo"><a href="/">开物</a></h1>{{else}}<a class="logo" href="/">开物</a>{{end}}
+      <nav class="top-links">
+        <a href="/#sec-boards">今日热榜</a>
+        <a href="/c/ai">AI 工具</a>
+        <a href="/submit">提交网站</a>
+      </nav>
+      <div class="util">
+        <a href="https://mail.qq.com" rel="nofollow noopener" target="_blank">邮箱</a>
+        <a href="https://www.alipan.com" rel="nofollow noopener" target="_blank">网盘</a>
+        <a href="https://translate.google.com" rel="nofollow noopener" target="_blank">翻译</a>
+        <a href="https://map.baidu.com" rel="nofollow noopener" target="_blank">地图</a>
+      </div>
+    </div>
+    <form class="wrap search" action="/search" method="get">
+      <select aria-label="搜索引擎" name="engine">
+        <option value="site">站内</option>
+        <option value="baidu">百度</option>
+        <option value="so">360</option>
+        <option value="sogou">搜狗</option>
+        <option value="bing">必应</option>
+        <option value="google">Google</option>
+        <option value="bili">哔哩哔哩</option>
+        <option value="zhihu">知乎</option>
+      </select>
+      <input name="q" type="search" value="{{.Query}}" placeholder="搜本站网址，或换一个引擎">
+      <button type="submit">搜索</button>
+    </form>
+  </header>
+  <div class="wrap body">
+    <aside>
+      {{range .Sidebar}}
+      <div class="side-group">
+        <a href="{{.Href}}">{{.Name}}</a>
+        {{range .Children}}<a class="child" href="{{.Href}}">{{.Name}}</a>{{end}}
+      </div>
+      {{end}}
+    </aside>
+    <main>
+      {{.Content}}
+      <footer><a href="/admin">管理</a></footer>
+    </main>
+  </div>
+  <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
+  <script src="/static/site.js"></script>
+</body>
+</html>{{end}}
+
+{{define "link"}}<a class="link {{.Layout}}" href="{{.Href}}" title="{{.Desc}}" data-link="{{.JSON}}"><span class="mark">{{if .Host}}<img src="/ico?host={{.Host}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b></span><span class="meta"><span class="name">{{.Name}}</span>{{if eq .Layout "row"}}<span class="desc">{{.Desc}}</span>{{end}}</span><button class="star" type="button" data-star="{{.JSON}}" aria-label="收藏">★</button></a>{{end}}
+
+{{define "section"}}
+<section class="block" id="sec-{{.Slug}}" data-tabs>
+  <div class="sec-head">
+    {{if not .HideTitle}}<h2>{{.Name}}</h2>{{end}}
+    {{if gt (len .Tabs) 1}}
+    <div class="tabs">
+      {{range .Tabs}}<button type="button" id="tab-{{.Slug}}" data-tab="{{.Slug}}" data-scroll="sec-{{$.Slug}}" {{if .On}}class="on"{{end}}>{{.Name}}</button>{{end}}
+    </div>
+    {{end}}
+    {{if .More}}<a class="more" href="{{.More}}">更多</a>{{end}}
+  </div>
+  {{if .Groups}}
+  <div class="tag-board">
+    {{range .Groups}}
+    <div class="tag-group">
+      <h3>{{.Name}}</h3>
+      <div class="tags">{{range .Tags}}<a href="/search?q={{. | urlquery}}">{{.}}</a>{{end}}</div>
+    </div>
+    {{end}}
+    <a class="random" href="/random">随机网址</a>
+  </div>
+  {{else}}
+  {{range .Tabs}}
+  <div class="tab-panel" data-panel="{{.Slug}}" {{if not .On}}hidden{{end}}>
+    {{if eq .Kind "articles"}}
+    <div class="posts">
+      {{range .Posts}}<a class="post" href="/a/{{.ID}}"><time datetime="{{.ISO}}">{{.Date}}</time><strong>{{.Title}}</strong><p>{{.Summary}}</p><span>{{.Views}} 次阅读</span></a>{{end}}
+    </div>
+    {{else}}
+    <div class="link-grid {{$.Layout}}">{{range .Links}}{{template "link" .}}{{end}}</div>
+    {{end}}
+  </div>
+  {{end}}
+  {{end}}
+</section>
+{{end}}
+
+{{define "home"}}
+<p class="kicker about">开物是一个精选网址导航，收录常用网站、学习资料和工具。点进网站会先看到介绍，再决定是否打开。</p>
+<div class="hero">
+  <section class="panel" id="sec-today">
+    <h2>{{.TodayLabel}}</h2>
+    <p class="kicker">历史上的今天</p>
+    <ul class="today">{{range .Today}}<li>{{if .Year}}<b>{{.Year}}</b>{{end}}<span>{{.Text}}</span></li>{{end}}</ul>
+  </section>
+  <section class="panel" id="sec-shortcuts" data-tabs>
+    <div class="tabs">
+      <button type="button" data-tab="hot" class="on">热门推荐</button>
+      <button type="button" data-tab="recent">最近使用</button>
+      <button type="button" data-tab="edit">编辑</button>
+    </div>
+    <div class="tab-panel" data-panel="hot"><div class="link-grid tile">{{range .Pinned}}{{template "link" .}}{{end}}</div></div>
+    <div class="tab-panel" data-panel="recent" hidden><div class="link-grid tile" id="desk-recent">还没有打开过网站。</div></div>
+    <div class="tab-panel" data-panel="edit" hidden><div class="link-grid tile" id="desk-custom">点星星，把网站留在这里。</div></div>
+  </section>
+  <section class="panel" id="sec-boards" data-tabs>
+    <div class="tabs">{{range .Boards}}<button type="button" data-tab="{{.Key}}" {{if .On}}class="on"{{end}}>{{.Name}}</button>{{end}}</div>
+    {{range .Boards}}
+    <ol class="board tab-panel" data-panel="{{.Key}}" {{if not .On}}hidden{{end}}>
+      {{range $i, $item := .Items}}<li><em>{{inc $i}}</em><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span>{{$item.Heat}}</span></li>{{end}}
+    </ol>
+    {{end}}
+    {{if .LiveHot}}<p class="kicker">热搜来自微博和百度，大约每十分钟更新一次。</p>{{else}}<p class="kicker">实时热搜暂时取不到，这里是站内点击和刚收录的网站。</p>{{end}}
+  </section>
+</div>
+{{range .Sections}}{{template "section" .}}{{end}}
+<section class="block" id="sec-latest" data-tabs>
+  <div class="sec-head">
+    <h2>最新收录</h2>
+    <div class="tabs">
+      <button type="button" data-tab="latest" class="on">最新收录</button>
+      <button type="button" data-tab="popular">热门网址</button>
+    </div>
+  </div>
+  <div class="tab-panel" data-panel="latest"><div class="link-grid mini">{{range .Latest}}{{template "link" .}}{{end}}</div></div>
+  <div class="tab-panel" data-panel="popular" hidden><div class="link-grid mini">{{range .Popular}}{{template "link" .}}{{end}}</div></div>
+</section>
+{{end}}
+
+{{define "category"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a>{{if .ParentSlug}} / <a href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}} / <span>{{.Name}}</span></nav>
+  <h1>{{.Name}}</h1>
+  <p class="lead">{{.Intro}}</p>
+</article>
+{{template "section" .Section}}
+{{end}}
+
+{{define "article"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>{{.Title}}</span></nav>
+  <p class="kicker"><time datetime="{{.ISO}}">{{.Date}}</time> · {{.Views}} 次阅读</p>
+  <h1>{{.Title}}</h1>
+  <p class="lead">{{.Summary}}</p>
+  <div class="prose">{{.Body}}</div>
+</article>
+{{end}}
+
+{{define "site"}}
+<article class="article site-page">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a>{{if .ParentSlug}} / <a href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}}{{if .CatSlug}} / <a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}} / <span>{{.Name}}</span></nav>
+  <div class="site-head">
+    <div class="site-ico">
+      <span class="mark lg">{{if .IconHost}}<img src="/ico?host={{.IconHost}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b>{{if .Region}}<i class="region">{{.Region}}</i>{{end}}</span>
+      <div class="site-stats">
+        <span title="浏览"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="#1d4f91" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><b>{{.ViewsText}}</b><small>浏览</small></span>
+        <span title="打开"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="#1d4f91" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg><b>{{.ClicksText}}</b><small>打开</small></span>
+      </div>
+    </div>
+    <div class="site-main">
+      <h1>{{.Name}}</h1>
+      <p class="lead">{{.Desc}}</p>
+      <p class="tag-line">标签：{{range .Tags}}<a href="/search?q={{.}}">{{.}}</a>{{end}}{{if .CatName}}<a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}}</p>
+      <p class="site-actions">
+        {{if .External}}<a class="go" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">链接直达</a>{{else}}<a class="go" href="{{.URL}}">打开页面</a>{{end}}
+        <span class="host">{{.Host}}</span>
+      </p>
+    </div>
+  </div>
+  <h2>网站介绍</h2>
+  {{if .Body}}<div class="prose">{{.Body}}</div>{{else}}<p class="kicker">还没有写介绍。可以在后台「网址」里补。</p>{{end}}
+  <h2>网站数据</h2>
+  <dl class="facts">
+    <dt>名称</dt><dd>{{.Name}}{{if .Alias}}（{{.Alias}}）{{end}}</dd>
+    <dt>分类</dt><dd>{{if .ParentName}}{{.ParentName}} / {{end}}{{if .CatSlug}}<a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{else}}{{.CatName}}{{end}}</dd>
+    <dt>标签</dt><dd>{{if .TagText}}{{.TagText}}{{else}}未标{{end}}</dd>
+    <dt>语言</dt><dd>{{if .Lang}}{{.Lang}}{{else}}未标{{end}}</dd>
+    <dt>地区</dt><dd>{{if .Region}}{{.Region}}{{else}}未标{{end}}</dd>
+    <dt>网址</dt><dd class="url">{{.URL}}</dd>
+    <dt>域名</dt><dd>{{.Host}}</dd>
+    <dt>协议</dt><dd>{{.Scheme}}</dd>
+    {{if .Spare}}<dt>备用</dt><dd class="url">{{.Spare}}</dd>{{end}}
+    {{if .ICP}}<dt>备案</dt><dd>{{.ICP}}</dd>{{end}}
+    <dt>浏览</dt><dd>{{.ViewsText}}</dd>
+    <dt>打开</dt><dd>{{.ClicksText}}</dd>
+    <dt>收录</dt><dd><time datetime="{{.ISO}}">{{.Date}}</time></dd>
+  </dl>
+  <p>目前{{.Name}}的浏览人数已达到 {{.ViewsText}}，从本站打开过 {{.ClicksText}} 次。</p>
+  <p class="kicker">外部网站不受开物控制。地址失效或内容不合适时，可以到「提交网站」告诉我们。</p>
+  {{if .Related}}<h2>相关网站</h2><div class="link-grid row">{{range .Related}}{{template "link" .}}{{end}}</div>{{end}}
+</article>
+{{end}}
+
+{{define "search"}}
+<h1>{{if .Query}}搜索「{{.Query}}」{{else}}搜索{{end}}</h1>
+{{if .Links}}<div class="link-grid row">{{range .Links}}{{template "link" .}}{{end}}</div>{{else}}<p class="empty">没有匹配的网站。</p>{{end}}
+{{end}}
+
+{{define "submit"}}
+<form class="form" method="post" action="/submit">
+  <h1>提交网站</h1>
+  <p class="kicker">先收进待审，不会马上出现在首页。</p>
+  {{if .OK}}<p class="ok">已收下，审核后才会出现在首页。</p>{{end}}
+  {{if .Error}}<p class="banner">{{.Error}}</p>{{end}}
+  <label>名字<input name="name" required maxlength="40" value="{{.Name}}"></label>
+  <label>网址<input name="url" required placeholder="https://" value="{{.URL}}"></label>
+  <label>一句简介<textarea name="desc" rows="3" maxlength="120">{{.Desc}}</textarea></label>
+  <button type="submit">提交</button>
+</form>
+{{end}}
+
+{{define "tool"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>{{.Name}}</span></nav>
+  <h1>{{.Name}}</h1>
+  <p class="lead">{{.Desc}}</p>
+  <p>这个工具的旧页面收在仓库的 legacy 目录，这里先留一个说明。</p>
+</article>
+{{end}}
+
+{{define "missing"}}
+<h1>{{.Heading}}</h1>
+<p>{{.Text}}</p>
+<p><a href="/">回首页</a></p>
+{{end}}

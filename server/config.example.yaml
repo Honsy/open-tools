@@ -1,0 +1,12 @@
+# 跟 YouGo 同一台 MySQL。库名分开，不要写进 yougo 或 laoyouba。
+# 本机开发是 3306。上海机 MySQL 是 13366，库名 opentools。
+# 部署时也可以用 YOUGO_MYSQL_HOST / YOUGO_MYSQL_PORT / YOUGO_MYSQL_USER / YOUGO_MYSQL_PASSWORD，
+# 库名用 MYSQL_DB=opentools。
+mysqlHost: 127.0.0.1
+mysqlPort: "3306"
+mysqlUser: root
+mysqlPassword: ""
+mysqlDB: opentools
+adminUser: admin
+adminPassword: change-me
+adminSecret: change-me-too
