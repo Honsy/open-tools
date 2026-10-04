@@ -211,7 +211,7 @@ func search(db *gorm.DB) gin.HandlerFunc {
 		}
 		like := "%" + q + "%"
 		var links []models.Link
-		db.Where("status = ? AND (name LIKE ? OR desc LIKE ?)", "online", like, like).
+		db.Where("status = ? AND (name LIKE ? OR `desc` LIKE ? OR tags LIKE ? OR alias LIKE ?)", "online", like, like, like, like).
 			Order("clicks desc").Limit(50).Find(&links)
 		c.JSON(http.StatusOK, gin.H{"q": q, "links": toLinks(links)})
 	}

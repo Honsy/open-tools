@@ -393,7 +393,7 @@ func searchPage(db *gorm.DB) gin.HandlerFunc {
 		if q != "" && utf8Count(q) <= 40 {
 			safe := strings.NewReplacer("%", "", "_", "").Replace(q)
 			like := "%" + safe + "%"
-			db.Where("status = ? AND (name LIKE ? OR desc LIKE ?)", "online", like, like).
+			db.Where("status = ? AND (name LIKE ? OR `desc` LIKE ? OR tags LIKE ? OR alias LIKE ?)", "online", like, like, like, like).
 				Order("clicks desc").Limit(50).Find(&links)
 			title = q + " - 搜索 - 开物录"
 			desc = "开物录导航里和「" + q + "」有关的网站。"
