@@ -105,21 +105,21 @@ type board struct {
 }
 
 func sidebar(db *gorm.DB) []sideItem {
-	items := []sideItem{{Name: "自定义", Href: "/#sec-shortcuts"}}
+	items := []sideItem{{Name: "自定义", Href: "/"}}
 	var sections []models.Category
 	db.Where("kind = ? AND show_on_home = ?", "section", true).Order("sort").Find(&sections)
 	for _, s := range sections {
-		item := sideItem{Name: s.Name, Href: "/#sec-" + s.Slug}
+		item := sideItem{Name: s.Name, Href: "/c/" + s.Slug}
 		if s.ContentKind != "tags" {
 			var tabs []models.Category
 			db.Where("parent_slug = ?", s.Slug).Order("sort").Find(&tabs)
 			for _, t := range tabs {
-				item.Children = append(item.Children, sideItem{Name: t.Name, Href: "/#tab-" + t.Slug})
+				item.Children = append(item.Children, sideItem{Name: t.Name, Href: "/c/" + t.Slug})
 			}
 		}
 		items = append(items, item)
 	}
-	items = append(items, sideItem{Name: "最新收录", Href: "/#sec-latest"})
+	items = append(items, sideItem{Name: "最新收录", Href: "/latest"})
 	return items
 }
 

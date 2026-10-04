@@ -37,11 +37,6 @@ onMounted(async () => {
   }
 });
 
-function hashOf(href: string) {
-  const index = href.indexOf("#");
-  return index >= 0 ? href.slice(index) : "";
-}
-
 function search() {
   const text = q.value.trim();
   if (!text) return;
@@ -61,7 +56,7 @@ function search() {
       <div class="wrap top-row">
         <RouterLink class="logo" to="/">{{ name }}</RouterLink>
         <nav class="top-links">
-          <a href="/#sec-boards">今日热榜</a>
+          <RouterLink to="/hot">今日热榜</RouterLink>
           <RouterLink to="/c/ai">AI 工具</RouterLink>
           <RouterLink to="/submit">提交网站</RouterLink>
         </nav>
@@ -80,17 +75,16 @@ function search() {
     <div class="wrap body">
       <aside>
         <div v-for="item in sidebar" :key="item.name" class="side-group">
-          <a v-if="item.href.includes('#')" :class="{ on: route.hash === hashOf(item.href) }" :href="item.href">{{ item.name }}</a>
-          <RouterLink v-else :class="{ on: route.path === item.href }" :to="item.href">{{ item.name }}</RouterLink>
-          <a
+          <RouterLink :class="{ on: route.path === item.href }" :to="item.href">{{ item.name }}</RouterLink>
+          <RouterLink
             v-for="child in item.children"
             :key="child.href"
             class="child"
-            :class="{ on: route.hash === hashOf(child.href) }"
-            :href="child.href"
+            :class="{ on: route.path === child.href }"
+            :to="child.href"
           >
             {{ child.name }}
-          </a>
+          </RouterLink>
         </div>
       </aside>
       <main>

@@ -86,6 +86,8 @@ func sitemap(db *gorm.DB) gin.HandlerFunc {
 		b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
 		b.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
 		writeURL(&b, origin+"/")
+		writeURL(&b, origin+"/hot")
+		writeURL(&b, origin+"/latest")
 		var cats []models.Category
 		db.Order("sort asc, id asc").Find(&cats)
 		for _, cat := range cats {

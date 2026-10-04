@@ -14,7 +14,7 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=11">
+  <link rel="stylesheet" href="/static/site.css?v=12">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body>
@@ -22,7 +22,7 @@
     <div class="wrap top-row">
       {{if .Home}}<h1 class="logo"><a href="/">开物录</a></h1>{{else}}<a class="logo" href="/">开物录</a>{{end}}
       <nav class="top-links">
-        <a href="/#sec-boards">今日热榜</a>
+        <a href="/hot">今日热榜</a>
         <a href="/c/ai">AI 工具</a>
         <a href="/submit">提交网站</a>
       </nav>
@@ -52,8 +52,8 @@
     <aside>
       {{range .Sidebar}}
       <div class="side-group">
-        <a href="{{.Href}}">{{.Name}}</a>
-        {{range .Children}}<a class="child" href="{{.Href}}">{{.Name}}</a>{{end}}
+        <a href="{{.Href}}"{{if eq .Href $.Path}} class="on"{{end}}>{{.Name}}</a>
+        {{range .Children}}<a class="child{{if eq .Href $.Path}} on{{end}}" href="{{.Href}}">{{.Name}}</a>{{end}}
       </div>
       {{end}}
     </aside>
@@ -63,7 +63,7 @@
     </main>
   </div>
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js"></script>
+  <script src="/static/site.js?v=2"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {
@@ -148,7 +148,7 @@
 {{range .Sections}}{{template "section" .}}{{end}}
 <section class="block" id="sec-latest" data-tabs>
   <div class="sec-head">
-    <h2>最新收录</h2>
+    <h2><a href="/latest">最新收录</a></h2>
     <div class="tabs">
       <button type="button" data-tab="latest" class="on">最新收录</button>
       <button type="button" data-tab="popular">热门网址</button>
@@ -157,6 +157,38 @@
   <div class="tab-panel" data-panel="latest"><div class="link-grid mini">{{range .Latest}}{{template "link" .}}{{end}}</div></div>
   <div class="tab-panel" data-panel="popular" hidden><div class="link-grid mini">{{range .Popular}}{{template "link" .}}{{end}}</div></div>
 </section>
+{{end}}
+
+{{define "latest"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>最新收录</span></nav>
+  <h1>最新收录</h1>
+  <p class="lead">{{.Intro}}</p>
+</article>
+<section class="block">
+  <div class="sec-head"><h2>刚收进来的</h2></div>
+  <div class="link-grid mini">{{range .Latest}}{{template "link" .}}{{end}}</div>
+</section>
+<section class="block">
+  <div class="sec-head"><h2>热门网址</h2></div>
+  <div class="link-grid mini">{{range .Popular}}{{template "link" .}}{{end}}</div>
+</section>
+{{end}}
+
+{{define "hot"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>今日热榜</span></nav>
+  <h1>今日热榜</h1>
+  <p class="lead">{{.Intro}}</p>
+</article>
+{{range .Boards}}
+<section class="block">
+  <div class="sec-head"><h2>{{.Name}}</h2></div>
+  <ol class="board">
+    {{range $i, $item := .Items}}<li><em>{{inc $i}}</em><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span>{{$item.Heat}}</span></li>{{end}}
+  </ol>
+</section>
+{{end}}
 {{end}}
 
 {{define "category"}}

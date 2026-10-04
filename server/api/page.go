@@ -37,6 +37,7 @@ type shell struct {
 	Query       string
 	JSONLD      template.JS
 	Home        bool
+	Path        string
 	Sidebar     []sideItem
 	Content     template.HTML
 }
@@ -89,6 +90,8 @@ type boardView struct {
 func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/", homePage(db))
 	r.GET("/c/:slug", categoryPage(db))
+	r.GET("/latest", latestPage(db))
+	r.GET("/hot", hotPage(db))
 	r.GET("/a/:id", articlePage(db))
 	r.GET("/site/:slug", sitePage(db))
 	r.GET("/search", searchPage(db))
@@ -126,6 +129,7 @@ func render(c *gin.Context, db *gorm.DB, status int, s shell, name string, data 
 	if s.Canonical == "" || s.Canonical[0] == '/' {
 		s.Canonical = publicOrigin(c) + s.Canonical
 	}
+	s.Path = c.Request.URL.Path
 	s.Sidebar = sidebar(db)
 	var buf bytes.Buffer
 	if err := publicPages.ExecuteTemplate(&buf, name, data); err != nil {
@@ -197,6 +201,43 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			"Boards":     boards,
 			"LiveHot":    liveHot,
 			"Sections":   views,
+		})
+	}
+}
+
+func latestPage(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		intro := "最新收录按入库时间排列，热门网址按站内打开次数排列。点名字先看介绍，再打开原站。"
+		render(c, db, http.StatusOK, shell{
+			Title:       "最新收录 - 开物录",
+			Description: intro,
+			Keywords:    "最新收录,热门网址,开物录",
+			Canonical:   "/latest",
+		}, "latest", map[string]any{
+			"Intro":   intro,
+			"Latest":  toViews(recentLinks(db, 48), "mini"),
+			"Popular": toViews(popularLinks(db, 48), "mini"),
+		})
+	}
+}
+
+func hotPage(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		boards, live := homeBoards(func() ([]boardItem, []boardItem) {
+			return boardFrom(popularLinks(db, 12)), boardFrom(recentLinks(db, 12))
+		})
+		intro := "今日热榜列出微博、百度和站内正在被打开的名字。"
+		if !live {
+			intro = "实时热搜暂时取不到。这里是站内点击和刚收录的网站。"
+		}
+		render(c, db, http.StatusOK, shell{
+			Title:       "今日热榜 - 开物录",
+			Description: intro,
+			Keywords:    "今日热榜,微博热搜,百度热搜,开物录",
+			Canonical:   "/hot",
+		}, "hot", map[string]any{
+			"Intro":  intro,
+			"Boards": boards,
 		})
 	}
 }

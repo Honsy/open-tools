@@ -79,6 +79,9 @@
     var node = document.getElementById(hash);
     if (node) node.scrollIntoView();
   }
+  if (hash && history.replaceState) {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
 
   var boards = document.querySelectorAll("#sec-boards [data-tab]");
   if (boards.length > 1) {

@@ -103,6 +103,7 @@ footer { margin-top: 28px; color: #7b8794; font-size: 13px; }
 .panel { scroll-margin-top: 128px; }
 .kicker { color: #7b8794; font-size: 12px; margin-top: 4px; }
 .panel h2, .sec-head h2, .article h1, .form h1 { font-size: 18px; }
+.sec-head h2 a { text-decoration: none; }
 .today { list-style: none; padding: 8px 0 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .today li { display: flex; gap: 8px; font-size: 14px; }
 .today b { color: #1d4f91; min-width: 42px; }
