@@ -23,7 +23,8 @@ import (
 var publicFiles embed.FS
 
 var publicPages = template.Must(template.New("public").Funcs(template.FuncMap{
-	"inc": func(i int) int { return i + 1 },
+	"inc":     func(i int) int { return i + 1 },
+	"iconURL": iconURL,
 }).ParseFS(publicFiles, "templates/public.html"))
 
 type shell struct {

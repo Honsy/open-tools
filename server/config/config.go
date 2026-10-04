@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -19,6 +20,13 @@ type Config struct {
 	AdminUser     string `yaml:"adminUser"`
 	AdminPassword string `yaml:"adminPassword"`
 	AdminSecret   string `yaml:"adminSecret"`
+
+	R2AccountID       string `yaml:"r2AccountId"`
+	R2AccessKeyID     string `yaml:"r2AccessKeyId"`
+	R2SecretAccessKey string `yaml:"r2SecretAccessKey"`
+	R2Bucket          string `yaml:"r2Bucket"`
+	R2Endpoint        string `yaml:"r2Endpoint"`
+	R2PublicBase      string `yaml:"r2PublicBase"`
 }
 
 func Load() (Config, error) {
@@ -53,6 +61,15 @@ func Load() (Config, error) {
 	cfg.AdminUser = first(os.Getenv("ADMIN_USER"), cfg.AdminUser)
 	cfg.AdminPassword = first(os.Getenv("ADMIN_PASSWORD"), cfg.AdminPassword)
 	cfg.AdminSecret = first(os.Getenv("ADMIN_SECRET"), cfg.AdminSecret)
+	cfg.R2AccountID = first(os.Getenv("R2_ACCOUNT_ID"), cfg.R2AccountID)
+	cfg.R2AccessKeyID = first(os.Getenv("R2_ACCESS_KEY_ID"), cfg.R2AccessKeyID)
+	cfg.R2SecretAccessKey = first(os.Getenv("R2_SECRET_ACCESS_KEY"), cfg.R2SecretAccessKey)
+	cfg.R2Bucket = first(os.Getenv("R2_BUCKET"), cfg.R2Bucket)
+	cfg.R2Endpoint = first(os.Getenv("R2_ENDPOINT"), cfg.R2Endpoint)
+	cfg.R2PublicBase = strings.TrimRight(first(os.Getenv("R2_PUBLIC_BASE"), cfg.R2PublicBase), "/")
+	if cfg.R2Endpoint == "" && cfg.R2AccountID != "" {
+		cfg.R2Endpoint = "https://" + cfg.R2AccountID + ".r2.cloudflarestorage.com"
+	}
 	if cfg.AdminPassword == "" || cfg.AdminSecret == "" {
 		return cfg, fmt.Errorf("config.yaml 里要有 adminPassword 和 adminSecret")
 	}

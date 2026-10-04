@@ -2,6 +2,7 @@ package api
 
 import (
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -34,6 +35,10 @@ func mountIcon(r *gin.Engine, db *gorm.DB) {
 			return
 		}
 		body, kind, ok := cachedIcon(host)
+		if ok && len(body) > 0 && iconUploaded(host) && r2Public != "" {
+			c.Redirect(http.StatusFound, iconURL(host))
+			return
+		}
 		if !ok {
 			if !publicHost(host) || !hostInCatalog(db, host) {
 				c.Status(http.StatusNotFound)
@@ -49,6 +54,11 @@ func mountIcon(r *gin.Engine, db *gorm.DB) {
 		if !ok || len(body) == 0 {
 			c.Header("Cache-Control", "public, max-age=3600")
 			c.Status(http.StatusNoContent)
+			return
+		}
+		if err := putIcon(host, body, kind); err == nil && r2Public != "" {
+			markIconUploaded(host)
+			c.Redirect(http.StatusFound, iconURL(host))
 			return
 		}
 		c.Header("Cache-Control", "public, max-age=604800")
@@ -138,6 +148,78 @@ func writeIconCache(host string, body []byte, kind string) {
 	dir := iconDir()
 	_ = os.WriteFile(filepath.Join(dir, host+".bin"), body, 0o644)
 	_ = os.WriteFile(filepath.Join(dir, host+".type"), []byte(kind), 0o644)
+}
+
+func iconUploaded(host string) bool {
+	_, err := os.Stat(filepath.Join(iconDir(), host+".r2"))
+	return err == nil
+}
+
+func markIconUploaded(host string) {
+	_ = os.WriteFile(filepath.Join(iconDir(), host+".r2"), []byte("1"), 0o644)
+}
+
+func WarmIcons(db *gorm.DB) {
+	if r2Client == nil {
+		return
+	}
+	go warmIcons(db)
+}
+
+func warmIcons(db *gorm.DB) {
+	var links []models.Link
+	db.Select("url").Where("status = ?", "online").Find(&links)
+	seen := map[string]struct{}{}
+	var hosts []string
+	for _, link := range links {
+		parsed, err := url.Parse(link.URL)
+		if err != nil {
+			continue
+		}
+		host := strings.ToLower(parsed.Hostname())
+		if !hostName.MatchString(host) {
+			continue
+		}
+		if _, ok := seen[host]; ok {
+			continue
+		}
+		seen[host] = struct{}{}
+		hosts = append(hosts, host)
+	}
+	log.Printf("r2 icons %d", len(hosts))
+	sem := make(chan struct{}, 6)
+	var wg sync.WaitGroup
+	for _, host := range hosts {
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(h string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			ensureIcon(h)
+		}(host)
+	}
+	wg.Wait()
+	log.Printf("r2 icons done")
+}
+
+func ensureIcon(host string) {
+	if iconUploaded(host) {
+		return
+	}
+	body, kind, ok := cachedIcon(host)
+	if !ok || len(body) == 0 {
+		if !publicHost(host) {
+			return
+		}
+		body, kind, ok = fetchIcon(host)
+	}
+	if !ok || len(body) == 0 || r2Client == nil {
+		return
+	}
+	if err := putIcon(host, body, kind); err != nil {
+		return
+	}
+	markIconUploaded(host)
 }
 
 func fetchIcon(host string) ([]byte, string, bool) {

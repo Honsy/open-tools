@@ -64,10 +64,19 @@
   </div>
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
   <script src="/static/site.js"></script>
+  <script>
+  var _hmt = _hmt || [];
+  (function() {
+    var hm = document.createElement("script");
+    hm.src = "https://hm.baidu.com/hm.js?40e7c19196427b84a06b1fa7163d9aaa";
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(hm, s);
+  })();
+  </script>
 </body>
 </html>{{end}}
 
-{{define "link"}}<a class="link {{.Layout}}" href="{{.Href}}" title="{{.Desc}}" data-link="{{.JSON}}"><span class="mark">{{if .Host}}<img src="/ico?host={{.Host}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b></span><span class="meta"><span class="name">{{.Name}}</span>{{if .Desc}}<span class="desc">{{.Desc}}</span>{{end}}</span><button class="star" type="button" data-star="{{.JSON}}" aria-label="收藏">★</button></a>{{end}}
+{{define "link"}}<a class="link {{.Layout}}" href="{{.Href}}" title="{{.Desc}}" data-link="{{.JSON}}"><span class="mark">{{if .Host}}<img src="{{iconURL .Host}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b></span><span class="meta"><span class="name">{{.Name}}</span>{{if .Desc}}<span class="desc">{{.Desc}}</span>{{end}}</span><button class="star" type="button" data-star="{{.JSON}}" aria-label="收藏">★</button></a>{{end}}
 
 {{define "section"}}
 <section class="block" id="sec-{{.Slug}}" data-tabs>
@@ -172,7 +181,7 @@
   <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a>{{if .ParentSlug}} / <a href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}}{{if .CatSlug}} / <a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}} / <span>{{.Name}}</span></nav>
   <div class="site-head">
     <div class="site-ico">
-      <span class="mark lg">{{if .IconHost}}<img src="/ico?host={{.IconHost}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b>{{if .Region}}<i class="region">{{.Region}}</i>{{end}}</span>
+      <span class="mark lg">{{if .IconHost}}<img src="{{iconURL .IconHost}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b>{{if .Region}}<i class="region">{{.Region}}</i>{{end}}</span>
       <div class="site-stats">
         <span title="浏览"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="#1d4f91" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><b>{{.ViewsText}}</b><small>浏览</small></span>
         <span title="打开"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="#1d4f91" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg><b>{{.ClicksText}}</b><small>打开</small></span>

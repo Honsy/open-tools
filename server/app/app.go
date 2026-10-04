@@ -52,7 +52,9 @@ func Run() error {
 		addr = ":" + p
 	}
 	log.Printf("open-tools api %s mysql %s/%s", addr, cfg.MySQLHost+":"+cfg.MySQLPort, cfg.MySQLDB)
+	api.Configure(cfg)
 	r := api.Router(db)
+	api.WarmIcons(db)
 	api.MountAdmin(r, db, cfg)
 	return r.Run(addr)
 }
