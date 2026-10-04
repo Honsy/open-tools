@@ -79,7 +79,7 @@ h1, h2, h3, p { margin: 0; }
   border-top-color: currentColor;
   transform: translateY(2px);
 }
-.drop:hover > button, .drop:focus-within > button { background: rgba(26, 36, 32, 0.06); }
+.drop:hover > button { background: rgba(26, 36, 32, 0.06); }
 .drop-pop {
   position: absolute;
   right: 0;
@@ -106,13 +106,21 @@ h1, h2, h3, p { margin: 0; }
   top: -12px;
   height: 12px;
 }
-.drop:hover .drop-pop,
-.drop:focus-within .drop-pop,
-.drop.open .drop-pop {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: none;
+@media (hover: hover) and (pointer: fine) {
+  .drop:hover .drop-pop {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .drop.open .drop-pop {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
 }
 .drop-pop a {
   display: block;
