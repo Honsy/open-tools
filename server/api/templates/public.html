@@ -14,23 +14,40 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=12">
+  <link rel="stylesheet" href="/static/site.css?v=13">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body>
   <header class="top">
     <div class="wrap top-row">
+      <button class="icon-btn" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
       {{if .Home}}<h1 class="logo"><a href="/">开物录</a></h1>{{else}}<a class="logo" href="/">开物录</a>{{end}}
       <nav class="top-links">
         <a href="/hot">今日热榜</a>
         <a href="/c/ai">AI 工具</a>
-        <a href="/submit">提交网站</a>
+        <a class="pill" href="/submit">提交网站</a>
       </nav>
       <div class="util">
-        <a href="https://mail.qq.com" rel="nofollow noopener" target="_blank">邮箱</a>
-        <a href="https://www.alipan.com" rel="nofollow noopener" target="_blank">网盘</a>
-        <a href="https://fanyi.baidu.com" rel="nofollow noopener" target="_blank">翻译</a>
-        <a href="https://www.amap.com" rel="nofollow noopener" target="_blank">地图</a>
+        {{range .Utils}}
+        <div class="drop">
+          <button type="button" aria-expanded="false">{{.Name}}</button>
+          <div class="drop-pop">
+            {{range .Links}}<a href="{{.Href}}" rel="nofollow noopener" target="_blank">{{.Name}}</a>{{end}}
+            <a class="all" href="/c/{{.Slug}}">全部{{.Name}}</a>
+          </div>
+        </div>
+        {{end}}
+      </div>
+    </div>
+    <div class="cat-pop" id="cat-pop" hidden>
+      <div class="wrap cat-grid">
+        {{range .Launcher}}
+        {{if eq .Href "#simple"}}
+        <button type="button" data-simple><i class="swatch {{.Icon}}"></i>{{.Name}}</button>
+        {{else}}
+        <a href="{{.Href}}"><i class="swatch {{.Icon}}"></i>{{.Name}}</a>
+        {{end}}
+        {{end}}
       </div>
     </div>
     <form class="wrap search" action="/search" method="get">
@@ -51,7 +68,7 @@
   <div class="wrap body">
     <aside>
       {{range .Sidebar}}
-      <div class="side-group">
+      <div class="side-group{{if .Tool}} tool {{.Icon}}{{end}}">
         <a href="{{.Href}}"{{if eq .Href $.Path}} class="on"{{end}}>{{.Name}}</a>
         {{range .Children}}<a class="child{{if eq .Href $.Path}} on{{end}}" href="{{.Href}}">{{.Name}}</a>{{end}}
       </div>
@@ -63,7 +80,7 @@
     </main>
   </div>
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js?v=2"></script>
+  <script src="/static/site.js?v=3"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {
@@ -136,13 +153,17 @@
   </section>
   </div>
   <section class="panel" id="sec-boards" data-tabs>
+    <div class="sec-head">
+      <h2><a href="/hot">今日热榜</a></h2>
+      <a class="more" href="/hot">更多</a>
+    </div>
     <div class="tabs">{{range .Boards}}<button type="button" data-tab="{{.Key}}" {{if .On}}class="on"{{end}}>{{.Name}}</button>{{end}}</div>
     {{range .Boards}}
     <ol class="board tab-panel" data-panel="{{.Key}}" {{if not .On}}hidden{{end}}>
       {{range $i, $item := .Items}}<li><em>{{inc $i}}</em><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span>{{$item.Heat}}</span></li>{{end}}
     </ol>
     {{end}}
-    {{if .LiveHot}}<p class="kicker">热搜来自微博和百度，大约每十分钟更新一次。</p>{{else}}<p class="kicker">实时热搜暂时取不到，这里是站内点击和刚收录的网站。</p>{{end}}
+    {{if .LiveHot}}<p class="kicker">热搜来自百度、微博、知乎、哔哩哔哩和抖音，大约每十分钟更新一次。</p>{{else}}<p class="kicker">实时热搜暂时取不到，这里是站内点击和刚收录的网站。</p>{{end}}
   </section>
 </div>
 {{range .Sections}}{{template "section" .}}{{end}}
@@ -258,6 +279,44 @@
 {{define "search"}}
 <h1>{{if .Query}}搜索「{{.Query}}」{{else}}搜索{{end}}</h1>
 {{if .Links}}<div class="link-grid row">{{range .Links}}{{template "link" .}}{{end}}</div>{{else}}<p class="empty">没有匹配的网站。</p>{{end}}
+{{end}}
+
+{{define "notice"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>公告</span></nav>
+  <h1>公告</h1>
+  <p class="lead">{{.Intro}}</p>
+  <ol class="notes">
+    <li><strong>怎么收录</strong><p>点名字先看介绍，确认后再打开原站。打不开、改了地址或内容和简介不符的，会从首页撤下。</p></li>
+    <li><strong>提交后不会马上出现</strong><p>从「提交网站」送来的地址先停在待审。核对能打开、不是下载站，才会出现在分类里。</p></li>
+    <li><strong>这是个人站点</strong><p>开物录用来整理常用网站，免费浏览，不提供下载，也不做交易。</p></li>
+  </ol>
+</article>
+{{end}}
+
+{{define "rank"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>站点排行</span></nav>
+  <h1>站点排行</h1>
+  <p class="lead">{{.Intro}}</p>
+  <ol class="board rank">
+    {{range $i, $item := .Links}}<li><em>{{inc $i}}</em><a href="{{$item.Href}}">{{$item.Name}}</a><span>{{$item.Clicks}} 次打开</span></li>{{end}}
+  </ol>
+</article>
+{{end}}
+
+{{define "cooperate"}}
+<article class="article">
+  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>广告合作</span></nav>
+  <h1>广告合作</h1>
+  <p class="lead">{{.Intro}}</p>
+  <div class="prose">开物录不出售首页位置，也不接受付费置顶。
+
+想让一个网站出现在分类里，走「提交网站」。写上名字、地址和它实际做什么。审核通过后，和其他站点一样按分类排列。
+
+地址失效、介绍写错，也从「提交网站」说明，备注里写上原来的名字。</div>
+  <p><a class="go" href="/submit">去提交网站</a></p>
+</article>
 {{end}}
 
 {{define "submit"}}

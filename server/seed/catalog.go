@@ -151,5 +151,12 @@ func EnsureCatalog(db *gorm.DB) error {
 			return err
 		}
 	}
+	// 这两条原先收在实用查询。分类还停在那里时，归到翻译和地图，方便顶栏下拉。
+	moves := map[string]string{"百度翻译": "translate", "高德地图": "map"}
+	for name, slug := range moves {
+		if err := db.Model(&models.Link{}).Where("name = ? AND category_slug = ?", name, "query").Update("category_slug", slug).Error; err != nil {
+			return err
+		}
+	}
 	return nil
 }

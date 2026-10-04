@@ -76,6 +76,8 @@ func categories() []models.Category {
 		cat("news", "资讯", "life", "tab", "links", 4, false),
 		cat("community", "社区", "life", "tab", "links", 5, false),
 		cat("mail", "邮箱", "life", "tab", "links", 6, false),
+		cat("translate", "翻译", "life", "tab", "links", 7, false),
+		cat("map", "地图", "life", "tab", "links", 8, false),
 	}
 }
 

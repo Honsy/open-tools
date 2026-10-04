@@ -83,14 +83,66 @@
     history.replaceState(null, "", location.pathname + location.search);
   }
 
-  var boards = document.querySelectorAll("#sec-boards [data-tab]");
-  if (boards.length > 1) {
-    var index = 0;
-    setInterval(function () {
-      index = (index + 1) % boards.length;
-      boards[index].click();
-    }, 5000);
+  var catOpen = document.getElementById("cat-open");
+  var catPop = document.getElementById("cat-pop");
+  function setCat(open) {
+    if (!catPop || !catOpen) return;
+    catPop.hidden = !open;
+    catOpen.setAttribute("aria-expanded", open ? "true" : "false");
   }
+  if (catOpen) {
+    catOpen.addEventListener("click", function (event) {
+      event.stopPropagation();
+      setCat(catPop.hidden);
+    });
+  }
+  document.querySelectorAll(".drop > button").forEach(function (btn) {
+    btn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      var drop = btn.parentElement;
+      var open = drop.classList.contains("open");
+      document.querySelectorAll(".drop.open").forEach(function (node) {
+        node.classList.remove("open");
+        var toggle = node.querySelector("button");
+        if (toggle) toggle.setAttribute("aria-expanded", "false");
+      });
+      if (!open) {
+        drop.classList.add("open");
+        btn.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+  document.addEventListener("click", function (event) {
+    if (catPop && !catPop.hidden && !catPop.contains(event.target) && event.target !== catOpen) setCat(false);
+    if (!event.target.closest(".drop")) {
+      document.querySelectorAll(".drop.open").forEach(function (node) {
+        node.classList.remove("open");
+        var toggle = node.querySelector("button");
+        if (toggle) toggle.setAttribute("aria-expanded", "false");
+      });
+    }
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    setCat(false);
+    document.querySelectorAll(".drop.open").forEach(function (node) { node.classList.remove("open"); });
+  });
+
+  var simpleKey = "ot-simple";
+  function applySimple(on) {
+    document.documentElement.classList.toggle("simple", on);
+    document.querySelectorAll("[data-simple]").forEach(function (btn) {
+      btn.classList.toggle("on", on);
+    });
+  }
+  applySimple(localStorage.getItem(simpleKey) === "1");
+  document.querySelectorAll("[data-simple]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var on = !document.documentElement.classList.contains("simple");
+      localStorage.setItem(simpleKey, on ? "1" : "0");
+      applySimple(on);
+    });
+  });
 
   document.addEventListener("click", function (event) {
     var star = event.target.closest("[data-star]");

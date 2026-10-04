@@ -12,17 +12,24 @@ import (
 )
 
 const (
-	weiboHotURL = "https://weibo.com/ajax/side/hotSearch"
-	baiduHotURL = "https://top.baidu.com/api/board?platform=wise&tab=realtime"
-	hotLimit    = 10
+	weiboHotURL  = "https://weibo.com/ajax/side/hotSearch"
+	baiduHotURL  = "https://top.baidu.com/api/board?platform=wise&tab=realtime"
+	zhihuHotURL  = "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true"
+	biliHotURL   = "https://api.bilibili.com/x/web-interface/popular?ps=30&pn=1"
+	douyinHotURL = "https://www.douyin.com/aweme/v1/web/hot/search/list/"
+	hotLimit     = 30
 )
 
 var hotHTTP = &http.Client{Timeout: 6 * time.Second}
 
+type hotPack struct {
+	key, name string
+	items     []boardItem
+}
+
 type hotSnap struct {
 	at    time.Time
-	weibo []boardItem
-	baidu []boardItem
+	packs []hotPack
 }
 
 var (
@@ -32,15 +39,15 @@ var (
 )
 
 func homeBoards(dbLinks func() (popular, latest []boardItem)) ([]boardView, bool) {
-	weibo, baidu := cachedHot()
-	boards := make([]boardView, 0, 4)
-	if len(weibo) > 0 {
-		boards = append(boards, boardView{Key: "weibo", Name: "微博", On: true, Items: weibo})
+	sources := cachedHot()
+	boards := make([]boardView, 0, len(sources)+2)
+	for _, src := range sources {
+		if len(src.items) == 0 {
+			continue
+		}
+		boards = append(boards, boardView{Key: src.key, Name: src.name, On: len(boards) == 0, Items: src.items})
 	}
-	if len(baidu) > 0 {
-		boards = append(boards, boardView{Key: "baidu", Name: "百度", On: len(boards) == 0, Items: baidu})
-	}
-	live := len(weibo) > 0 || len(baidu) > 0
+	live := len(boards) > 0
 	popular, latest := dbLinks()
 	boards = append(boards,
 		boardView{Key: "hot", Name: "站内热门", On: !live, Items: popular},
@@ -49,33 +56,42 @@ func homeBoards(dbLinks func() (popular, latest []boardItem)) ([]boardView, bool
 	return boards, live
 }
 
-func cachedHot() ([]boardItem, []boardItem) {
+func cachedHot() []hotPack {
 	hotMu.Lock()
 	if freshHot() {
-		weibo, baidu := hotState.weibo, hotState.baidu
+		packs := hotState.packs
 		hotMu.Unlock()
-		return weibo, baidu
+		return packs
 	}
 	if hotFetching {
-		weibo, baidu := hotState.weibo, hotState.baidu
+		packs := hotState.packs
 		hotMu.Unlock()
-		return weibo, baidu
+		return packs
 	}
 	hotFetching = true
 	hotMu.Unlock()
 
-	weibo, baidu := fetchHot()
+	packs := fetchHot()
 
 	hotMu.Lock()
 	hotFetching = false
-	if len(weibo) > 0 || len(baidu) > 0 || hotState.at.IsZero() {
-		hotState = hotSnap{at: time.Now(), weibo: weibo, baidu: baidu}
+	if hotHasItems(packs) || hotState.at.IsZero() {
+		hotState = hotSnap{at: time.Now(), packs: packs}
 	} else {
 		hotState.at = time.Now()
 	}
-	weibo, baidu = hotState.weibo, hotState.baidu
+	packs = hotState.packs
 	hotMu.Unlock()
-	return weibo, baidu
+	return packs
+}
+
+func hotHasItems(packs []hotPack) bool {
+	for _, pack := range packs {
+		if len(pack.items) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func freshHot() bool {
@@ -83,34 +99,42 @@ func freshHot() bool {
 		return false
 	}
 	ttl := 10 * time.Minute
-	if len(hotState.weibo) == 0 && len(hotState.baidu) == 0 {
+	if !hotHasItems(hotState.packs) {
 		ttl = 2 * time.Minute
 	}
 	return time.Since(hotState.at) < ttl
 }
 
-func fetchHot() ([]boardItem, []boardItem) {
-	var weibo, baidu []boardItem
+func fetchHot() []hotPack {
+	specs := []struct {
+		key, name, raw, referer string
+		parse                   func([]byte) []boardItem
+	}{
+		{"baidu", "百度", baiduHotURL, "https://top.baidu.com/board?tab=realtime", parseBaidu},
+		{"weibo", "微博", weiboHotURL, "https://weibo.com/", parseWeibo},
+		{"zhihu", "知乎", zhihuHotURL, "https://www.zhihu.com/hot", parseZhihu},
+		{"bili", "哔哩哔哩", biliHotURL, "https://www.bilibili.com/", parseBili},
+		{"douyin", "抖音", douyinHotURL, "https://www.douyin.com/", parseDouyin},
+	}
+	packs := make([]hotPack, len(specs))
 	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		body, err := getHot(weiboHotURL, "https://weibo.com/")
-		if err != nil {
-			return
-		}
-		weibo = parseWeibo(body)
-	}()
-	go func() {
-		defer wg.Done()
-		body, err := getHot(baiduHotURL, "https://top.baidu.com/board?tab=realtime")
-		if err != nil {
-			return
-		}
-		baidu = parseBaidu(body)
-	}()
+	for i, spec := range specs {
+		packs[i] = hotPack{key: spec.key, name: spec.name}
+		wg.Add(1)
+		go func(i int, spec struct {
+			key, name, raw, referer string
+			parse                   func([]byte) []boardItem
+		}) {
+			defer wg.Done()
+			body, err := getHot(spec.raw, spec.referer)
+			if err != nil {
+				return
+			}
+			packs[i].items = spec.parse(body)
+		}(i, spec)
+	}
 	wg.Wait()
-	return weibo, baidu
+	return packs
 }
 
 func getHot(raw, referer string) ([]byte, error) {
@@ -212,6 +236,110 @@ func parseBaidu(body []byte) []boardItem {
 			for _, row := range block.Content {
 				add(row.Word, row.HotName)
 			}
+		}
+	}
+	return items
+}
+
+func parseZhihu(body []byte) []boardItem {
+	var payload struct {
+		Data []struct {
+			DetailText string `json:"detail_text"`
+			Target     struct {
+				Title     string `json:"title"`
+				URL       string `json:"url"`
+				TitleArea struct {
+					Text string `json:"text"`
+				} `json:"title_area"`
+			} `json:"target"`
+		} `json:"data"`
+	}
+	if json.Unmarshal(body, &payload) != nil {
+		return nil
+	}
+	items := make([]boardItem, 0, hotLimit)
+	seen := map[string]bool{}
+	for _, row := range payload.Data {
+		title := strings.TrimSpace(row.Target.Title)
+		if title == "" {
+			title = strings.TrimSpace(row.Target.TitleArea.Text)
+		}
+		if title == "" || seen[title] {
+			continue
+		}
+		seen[title] = true
+		href := strings.TrimSpace(row.Target.URL)
+		if !strings.HasPrefix(href, "http") {
+			href = "https://www.zhihu.com/search?type=content&q=" + url.QueryEscape(title)
+		}
+		items = append(items, boardItem{Title: title, Heat: strings.TrimSpace(row.DetailText), Href: href, External: true})
+		if len(items) == hotLimit {
+			break
+		}
+	}
+	return items
+}
+
+func parseBili(body []byte) []boardItem {
+	var payload struct {
+		Data struct {
+			List []struct {
+				Title string `json:"title"`
+				Bvid  string `json:"bvid"`
+				Stat  struct {
+					View int `json:"view"`
+				} `json:"stat"`
+			} `json:"list"`
+		} `json:"data"`
+	}
+	if json.Unmarshal(body, &payload) != nil {
+		return nil
+	}
+	items := make([]boardItem, 0, hotLimit)
+	for _, row := range payload.Data.List {
+		title := strings.TrimSpace(row.Title)
+		if title == "" || row.Bvid == "" {
+			continue
+		}
+		items = append(items, boardItem{
+			Title:    title,
+			Heat:     heatWan(row.Stat.View),
+			Href:     "https://www.bilibili.com/video/" + row.Bvid,
+			External: true,
+		})
+		if len(items) == hotLimit {
+			break
+		}
+	}
+	return items
+}
+
+func parseDouyin(body []byte) []boardItem {
+	var payload struct {
+		Data struct {
+			WordList []struct {
+				Word     string `json:"word"`
+				HotValue int    `json:"hot_value"`
+			} `json:"word_list"`
+		} `json:"data"`
+	}
+	if json.Unmarshal(body, &payload) != nil {
+		return nil
+	}
+	items := make([]boardItem, 0, hotLimit)
+	for _, row := range payload.Data.WordList {
+		title := strings.TrimSpace(row.Word)
+		if title == "" {
+			continue
+		}
+		items = append(items, boardItem{
+			Title:    title,
+			Heat:     heatWan(row.HotValue),
+			Href:     "https://www.douyin.com/search/" + url.PathEscape(title),
+			External: true,
+		})
+		if len(items) == hotLimit {
+			break
 		}
 	}
 	return items

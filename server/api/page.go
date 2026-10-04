@@ -39,7 +39,20 @@ type shell struct {
 	Home        bool
 	Path        string
 	Sidebar     []sideItem
+	Utils       []utilMenu
+	Launcher    []sideItem
 	Content     template.HTML
+}
+
+type utilLink struct {
+	Name string
+	Href string
+}
+
+type utilMenu struct {
+	Name  string
+	Slug  string
+	Links []utilLink
 }
 
 type linkView struct {
@@ -50,6 +63,7 @@ type linkView struct {
 	Host   string
 	JSON   string
 	Layout string
+	Clicks int
 }
 
 type postView struct {
@@ -95,6 +109,9 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/c/:slug", categoryPage(db))
 	r.GET("/latest", latestPage(db))
 	r.GET("/hot", hotPage(db))
+	r.GET("/notice", noticePage(db))
+	r.GET("/rank", rankPage(db))
+	r.GET("/cooperate", cooperatePage(db))
 	r.GET("/a/:id", articlePage(db))
 	r.GET("/site/:slug", sitePage(db))
 	r.GET("/search", searchPage(db))
@@ -134,6 +151,8 @@ func render(c *gin.Context, db *gorm.DB, status int, s shell, name string, data 
 	}
 	s.Path = c.Request.URL.Path
 	s.Sidebar = sidebar(db)
+	s.Utils = utilMenus(db)
+	s.Launcher = launcherItems()
 	var buf bytes.Buffer
 	if err := publicPages.ExecuteTemplate(&buf, name, data); err != nil {
 		log.Printf("render %s: %v", name, err)
@@ -229,19 +248,94 @@ func hotPage(db *gorm.DB) gin.HandlerFunc {
 		boards, live := homeBoards(func() ([]boardItem, []boardItem) {
 			return boardFrom(popularLinks(db, 12)), boardFrom(recentLinks(db, 12))
 		})
-		intro := "今日热榜列出微博、百度和站内正在被打开的名字。"
+		intro := "今日热榜列出百度、微博、知乎、哔哩哔哩、抖音和站内正在被打开的名字，每条榜单最多 30 条。"
 		if !live {
 			intro = "实时热搜暂时取不到。这里是站内点击和刚收录的网站。"
 		}
 		render(c, db, http.StatusOK, shell{
 			Title:       "今日热榜 - 开物录",
 			Description: intro,
-			Keywords:    "今日热榜,微博热搜,百度热搜,开物录",
+			Keywords:    "今日热榜,微博热搜,百度热搜,知乎热榜,开物录",
 			Canonical:   "/hot",
 		}, "hot", map[string]any{
 			"Intro":  intro,
 			"Boards": boards,
 		})
+	}
+}
+
+func noticePage(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		intro := "开物录的站点说明。收录、审核和页面调整记在这里。"
+		render(c, db, http.StatusOK, shell{
+			Title: "公告 - 开物录", Description: intro, Keywords: "公告,开物录", Canonical: "/notice",
+		}, "notice", map[string]string{"Intro": intro})
+	}
+}
+
+func rankPage(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		intro := "站点排行按从本站打开的次数排列。次数相同的，浏览多的靠前。点名字先看介绍，再打开原站。"
+		render(c, db, http.StatusOK, shell{
+			Title: "站点排行 - 开物录", Description: intro, Keywords: "站点排行,热门网站,开物录", Canonical: "/rank",
+		}, "rank", map[string]any{
+			"Intro": intro,
+			"Links": toViews(popularLinks(db, 60), "row"),
+		})
+	}
+}
+
+func cooperatePage(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		intro := "开物录是个人整理的网址录，不售广告位，也不做付费收录。"
+		render(c, db, http.StatusOK, shell{
+			Title: "广告合作 - 开物录", Description: intro, Keywords: "开物录", Canonical: "/cooperate",
+		}, "cooperate", map[string]string{"Intro": intro})
+	}
+}
+
+func utilMenus(db *gorm.DB) []utilMenu {
+	specs := []struct{ Name, Slug string }{
+		{"邮箱", "mail"},
+		{"网盘", "disk"},
+		{"翻译", "translate"},
+		{"地图", "map"},
+	}
+	out := make([]utilMenu, 0, len(specs))
+	for _, spec := range specs {
+		links := onlineLinks(db, spec.Slug)
+		items := make([]utilLink, 0, len(links))
+		for _, link := range links {
+			if !strings.HasPrefix(link.URL, "http") {
+				continue
+			}
+			items = append(items, utilLink{Name: link.Name, Href: link.URL})
+		}
+		out = append(out, utilMenu{Name: spec.Name, Slug: spec.Slug, Links: items})
+	}
+	return out
+}
+
+func launcherItems() []sideItem {
+	return []sideItem{
+		{Name: "首页", Href: "/", Icon: "home"},
+		{Name: "简约模式", Href: "#simple", Icon: "simple"},
+		{Name: "在线影视", Href: "/c/video", Icon: "video"},
+		{Name: "直播电视", Href: "/c/live", Icon: "live"},
+		{Name: "次元动漫", Href: "/c/anime", Icon: "anime"},
+		{Name: "在线游戏", Href: "/c/game", Icon: "game"},
+		{Name: "音乐网站", Href: "/c/music", Icon: "music"},
+		{Name: "免费漫画", Href: "/c/comic", Icon: "comic"},
+		{Name: "看小说", Href: "/c/novel", Icon: "novel"},
+		{Name: "图片壁纸", Href: "/c/wallpaper", Icon: "wall"},
+		{Name: "绿色软件", Href: "/c/software", Icon: "soft"},
+		{Name: "资源搜索", Href: "/c/res", Icon: "res"},
+		{Name: "网页工具", Href: "/c/webtool", Icon: "tool"},
+		{Name: "实用查询", Href: "/c/query", Icon: "query"},
+		{Name: "学习教程", Href: "/c/learn", Icon: "learn"},
+		{Name: "素材创意", Href: "/c/design", Icon: "design"},
+		{Name: "趣味酷站", Href: "/c/cool", Icon: "cool"},
+		{Name: "网址集", Href: "/c/collection", Icon: "links"},
 	}
 }
 
@@ -564,7 +658,7 @@ func toViews(links []models.Link, layout string) []linkView {
 			letter = string(rs[0])
 		}
 		out = append(out, linkView{
-			Href: href, Name: link.Name, Desc: link.Desc, Letter: letter, Host: host, JSON: string(raw), Layout: layout,
+			Href: href, Name: link.Name, Desc: link.Desc, Letter: letter, Host: host, JSON: string(raw), Layout: layout, Clicks: link.Clicks,
 		})
 	}
 	return out
