@@ -14,7 +14,7 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=13">
+  <link rel="stylesheet" href="/static/site.css?v=14">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body>
@@ -135,12 +135,12 @@
 {{define "home"}}
 <div class="hero">
   <p class="hero-note">点名字先看这个网站是做什么的，确认后再打开。影视、游戏、工具、查询、资源和 AI 按类分开。</p>
-  <div class="hero-main">
   <section class="panel today-bar" id="sec-today">
     <h2>{{.TodayLabel}}</h2>
     <p class="kicker">历史上的今天</p>
     <ul class="today">{{range .Today}}<li>{{if .Year}}<b>{{.Year}}</b>{{end}}<span>{{.Text}}</span></li>{{end}}</ul>
   </section>
+  <div class="hero-main">
   <section class="panel" id="sec-shortcuts" data-tabs>
     <div class="tabs">
       <button type="button" data-tab="hot" class="on">热门推荐</button>
@@ -152,6 +152,7 @@
     <div class="tab-panel" data-panel="edit" hidden><div class="link-grid tile" id="desk-custom">点星星，把网站留在这里。</div></div>
   </section>
   </div>
+  <div class="hero-side">
   <section class="panel" id="sec-boards" data-tabs>
     <div class="sec-head">
       <h2><a href="/hot">今日热榜</a></h2>
@@ -165,6 +166,7 @@
     {{end}}
     {{if .LiveHot}}<p class="kicker">热搜来自百度、微博、知乎、哔哩哔哩和抖音，大约每十分钟更新一次。</p>{{else}}<p class="kicker">实时热搜暂时取不到，这里是站内点击和刚收录的网站。</p>{{end}}
   </section>
+  </div>
 </div>
 {{range .Sections}}{{template "section" .}}{{end}}
 <section class="block" id="sec-latest" data-tabs>
