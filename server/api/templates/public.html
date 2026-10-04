@@ -14,29 +14,31 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=15">
+  <link rel="stylesheet" href="/static/site.css?v=17">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body>
   <header class="top">
-    <div class="wrap top-row">
-      <button class="icon-btn" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
-      {{if .Home}}<h1 class="logo"><a href="/">开物录</a></h1>{{else}}<a class="logo" href="/">开物录</a>{{end}}
-      <nav class="top-links">
-        <a href="/hot">今日热榜</a>
-        <a href="/c/ai">AI 工具</a>
-        <a class="pill" href="/submit">提交网站</a>
-      </nav>
-      <div class="util">
-        {{range .Utils}}
-        <div class="drop">
-          <button type="button" aria-expanded="false">{{.Name}}</button>
-          <div class="drop-pop">
-            {{range .Links}}<a href="{{.Href}}" rel="nofollow noopener" target="_blank">{{.Name}}</a>{{end}}
-            <a class="all" href="/c/{{.Slug}}">全部{{.Name}}</a>
+    <div class="top-bar">
+      <div class="wrap top-row">
+        <button class="icon-btn" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
+        {{if not .Home}}<a class="word" href="/">开物录</a>{{end}}
+        <nav class="top-links">
+          <a href="/hot">今日热榜</a>
+          <a href="/c/ai">AI 工具</a>
+          <a class="pill" href="/submit">提交网站</a>
+        </nav>
+        <div class="util">
+          {{range .Utils}}
+          <div class="drop">
+            <button type="button" aria-expanded="false">{{.Name}}</button>
+            <div class="drop-pop">
+              {{range .Links}}<a href="{{.Href}}" rel="nofollow noopener" target="_blank">{{.Name}}</a>{{end}}
+              <a class="all" href="/c/{{.Slug}}">全部{{.Name}}</a>
+            </div>
           </div>
+          {{end}}
         </div>
-        {{end}}
       </div>
     </div>
     <div class="cat-pop" id="cat-pop" hidden>
@@ -50,20 +52,23 @@
         {{end}}
       </div>
     </div>
-    <form class="wrap search" action="/search" method="get">
-      <select aria-label="搜索引擎" name="engine">
-        <option value="site">站内</option>
-        <option value="baidu">百度</option>
-        <option value="so">360</option>
-        <option value="sogou">搜狗</option>
-        <option value="bing">必应</option>
-        <option value="google">Google</option>
-        <option value="bili">哔哩哔哩</option>
-        <option value="zhihu">知乎</option>
-      </select>
-      <input name="q" type="search" value="{{.Query}}" placeholder="搜本站网址，或换一个引擎">
-      <button type="submit">搜索</button>
-    </form>
+    <div class="wrap mast">
+      {{if .Home}}<h1 class="logo"><a href="/">开物录</a></h1><p class="mast-line">点名字先看介绍，确认后再打开。</p>{{end}}
+      <form class="search" action="/search" method="get">
+        <select aria-label="搜索引擎" name="engine">
+          <option value="site">站内</option>
+          <option value="baidu">百度</option>
+          <option value="so">360</option>
+          <option value="sogou">搜狗</option>
+          <option value="bing">必应</option>
+          <option value="google">Google</option>
+          <option value="bili">哔哩哔哩</option>
+          <option value="zhihu">知乎</option>
+        </select>
+        <input name="q" type="search" value="{{.Query}}" placeholder="搜一个网站，或换一个引擎">
+        <button type="submit">搜索</button>
+      </form>
+    </div>
   </header>
   <div class="wrap body">
     <aside>
@@ -134,7 +139,6 @@
 
 {{define "home"}}
 <div class="hero">
-  <p class="hero-note">点名字先看这个网站是做什么的，确认后再打开。影视、游戏、工具、查询、资源和 AI 按类分开。</p>
   <section class="panel today-bar" id="sec-today">
     <h2>{{.TodayLabel}}</h2>
     <p class="kicker">历史上的今天</p>
