@@ -96,8 +96,11 @@
       setCat(catPop.hidden);
     });
   }
+  var hoverMenu = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   document.querySelectorAll(".drop > button").forEach(function (btn) {
     btn.addEventListener("click", function (event) {
+      if (hoverMenu) return;
+      event.preventDefault();
       event.stopPropagation();
       var drop = btn.parentElement;
       var open = drop.classList.contains("open");
@@ -114,7 +117,7 @@
   });
   document.addEventListener("click", function (event) {
     if (catPop && !catPop.hidden && !catPop.contains(event.target) && event.target !== catOpen) setCat(false);
-    if (!event.target.closest(".drop")) {
+    if (!hoverMenu && !event.target.closest(".drop")) {
       document.querySelectorAll(".drop.open").forEach(function (node) {
         node.classList.remove("open");
         var toggle = node.querySelector("button");
