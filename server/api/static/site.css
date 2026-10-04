@@ -36,22 +36,37 @@ h1, h2, h3, p { margin: 0; }
   text-decoration: none;
   color: var(--ink);
 }
-.mast { padding: 28px 0 8px; }
+.mast { padding: 16px 0 0; }
 .logo, h1.logo, h1.logo a {
   font-family: "Songti SC", "STSong", "SimSun", serif;
   font-weight: 600;
   font-size: 52px;
-  line-height: 1.15;
+  line-height: 1.05;
   text-decoration: none;
   color: var(--ink);
   letter-spacing: 0;
 }
 .mast-line {
-  margin: 8px 0 16px;
-  max-width: 36em;
+  margin: 10px 0 0;
+  max-width: 28em;
   color: #3e4944;
   font-size: 16px;
 }
+.home .mast {
+  background: #16343c;
+  padding: 46px 0 32px;
+}
+.plate-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 26px;
+}
+.home .logo, .home h1.logo, .home h1.logo a { color: #f4efe4; font-size: 84px; }
+.home .mast-line { color: #d9cbb3; }
+.plate-mark { width: 220px; height: auto; display: block; }
+.home .search { margin: 0; border-color: #f4efe4; }
 .top-links, .util { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 .top-links { flex: 1; }
 .top-links a, .util button, .icon-btn {
@@ -469,6 +484,10 @@ footer a { color: #1d4f91; }
   #sec-boards .board { max-height: 420px; }
   .body { padding: 12px 0 28px; gap: 12px; }
   .top-row { min-height: 44px; flex-wrap: wrap; }
+  .plate-head { grid-template-columns: minmax(0, 1fr) 108px; gap: 12px; margin-bottom: 16px; }
+  .plate-mark { width: 108px; }
+  .home .logo, .home h1.logo, .home h1.logo a { font-size: 46px; }
+  .home .mast { padding: 28px 0 20px; }
   .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .search { padding-bottom: 8px; gap: 8px; }
   .search select { max-width: 76px; padding: 0 6px; }
