@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
 import { setAdminToken } from "../../api";
+import { adminPath } from "../../adminPath";
 
 const route = useRoute();
 const router = useRouter();
 const items = [
-  { to: "/admin", name: "待审" },
-  { to: "/admin/links", name: "网址" },
-  { to: "/admin/categories", name: "分类" },
-  { to: "/admin/articles", name: "文章" },
-  { to: "/admin/tags", name: "标签" },
+  { to: adminPath(), name: "待审" },
+  { to: adminPath("links"), name: "网址" },
+  { to: adminPath("categories"), name: "分类" },
+  { to: adminPath("articles"), name: "文章" },
+  { to: adminPath("tags"), name: "标签" },
 ];
 
 function logout() {
   setAdminToken("");
-  router.push("/admin/login");
+  router.push(adminPath("login"));
 }
 </script>
 

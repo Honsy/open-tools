@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getJSON, setAdminToken } from "../../api";
+import { adminPath } from "../../adminPath";
 
 const route = useRoute();
 const router = useRouter();
@@ -18,7 +19,7 @@ async function send() {
       body: JSON.stringify({ username: username.value, password: password.value }),
     });
     setAdminToken(data.token);
-    const next = typeof route.query.next === "string" ? route.query.next : "/admin";
+    const next = typeof route.query.next === "string" ? route.query.next : adminPath();
     router.push(next);
   } catch (err) {
     error.value = err instanceof Error ? err.message : "登录失败";

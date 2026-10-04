@@ -11,24 +11,34 @@ import AdminLinks from "./pages/admin/Links.vue";
 import AdminCategories from "./pages/admin/Categories.vue";
 import AdminArticles from "./pages/admin/Articles.vue";
 import AdminTags from "./pages/admin/Tags.vue";
+import { adminApp } from "./adminPath";
 
-export const routes = [
-  { path: "/", component: Home },
-  { path: "/c/:slug", component: Category },
-  { path: "/search", component: Search },
-  { path: "/a/:id", component: Article },
-  { path: "/submit", component: Submit },
-  { path: "/tools/:slug", component: Tool },
-  { path: "/admin/login", component: AdminLogin },
-  {
-    path: "/admin",
-    component: AdminLayout,
-    children: [
-      { path: "", component: AdminReview },
-      { path: "links", component: AdminLinks },
-      { path: "categories", component: AdminCategories },
-      { path: "articles", component: AdminArticles },
-      { path: "tags", component: AdminTags },
-    ],
-  },
+const adminChildren = [
+  { path: "", component: AdminReview },
+  { path: "links", component: AdminLinks },
+  { path: "categories", component: AdminCategories },
+  { path: "articles", component: AdminArticles },
+  { path: "tags", component: AdminTags },
 ];
+
+const adminRoutes = adminApp
+  ? [
+      { path: "/login", component: AdminLogin },
+      { path: "/", component: AdminLayout, children: adminChildren },
+    ]
+  : [
+      { path: "/admin/login", component: AdminLogin },
+      { path: "/admin", component: AdminLayout, children: adminChildren },
+    ];
+
+export const routes = adminApp
+  ? adminRoutes
+  : [
+      { path: "/", component: Home },
+      { path: "/c/:slug", component: Category },
+      { path: "/search", component: Search },
+      { path: "/a/:id", component: Article },
+      { path: "/submit", component: Submit },
+      { path: "/tools/:slug", component: Tool },
+      ...adminRoutes,
+    ];

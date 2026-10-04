@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import App from "./App.vue";
 import { routes } from "./router";
 import { getJSON } from "./api";
+import { adminApp, adminPath } from "./adminPath";
 import "./styles.css";
 
 const router = createRouter({
@@ -16,11 +17,13 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
-  if (!to.path.startsWith("/admin")) return true;
-  if (to.path === "/admin/login") {
+  const inAdmin = adminApp || to.path === "/admin" || to.path.startsWith("/admin/");
+  if (!inAdmin) return true;
+  const loginPath = adminPath("login");
+  if (to.path === loginPath) {
     try {
       await getJSON("/api/admin/me");
-      return "/admin";
+      return adminPath();
     } catch {
       return true;
     }
@@ -29,7 +32,7 @@ router.beforeEach(async (to) => {
     await getJSON("/api/admin/me");
     return true;
   } catch {
-    return { path: "/admin/login", query: { next: to.fullPath } };
+    return { path: loginPath, query: { next: to.fullPath } };
   }
 });
 

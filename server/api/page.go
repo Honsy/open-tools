@@ -89,6 +89,9 @@ type boardView struct {
 
 func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/", homePage(db))
+	r.GET("/admin", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/admin/")
+	})
 	r.GET("/c/:slug", categoryPage(db))
 	r.GET("/latest", latestPage(db))
 	r.GET("/hot", hotPage(db))

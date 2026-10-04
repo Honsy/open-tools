@@ -89,7 +89,7 @@ function search() {
       </aside>
       <main>
         <slot />
-        <footer><RouterLink to="/admin">管理</RouterLink></footer>
+        <footer><RouterLink to="/admin/">管理</RouterLink></footer>
       </main>
     </div>
   </div>
