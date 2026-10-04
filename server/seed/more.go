@@ -14,6 +14,11 @@ func init() {
 	}
 }
 
+func named(link models.Link, slug string) models.Link {
+	link.Slug = slug
+	return link
+}
+
 func moreLinks() []models.Link {
 	return []models.Link{
 		L("software", "吾爱破解", "https://www.52pojie.cn", "软件与安全社区", 9, 0, 0),
@@ -96,7 +101,7 @@ func moreLinks() []models.Link {
 		L("draw", "通义万相", "https://tongyi.aliyun.com/wanxiang", "图像和视频", 11, 0, 0),
 		L("draw", "彩云小梦", "https://www.xiaomengai.com", "AI小说", 12, 0, 0),
 		L("draw", "魔音工坊", "https://www.moyin.com", "AI配音", 13, 0, 0),
-		L("draw", "朱雀", "https://matrix.tencent.com/ai-detect/", "AIGC检测", 14, 0, 0),
+		named(L("draw", "朱雀", "https://matrix.tencent.com/ai-detect/", "AIGC检测", 14, 0, 0), "zhuque"),
 		L("draw", "吐司", "https://tusi.cn", "AI绘画", 15, 0, 0),
 
 		L("shop", "淘宝", "https://www.taobao.com", "购物", 1, 0, 0),
