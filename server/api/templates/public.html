@@ -14,7 +14,7 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=10">
+  <link rel="stylesheet" href="/static/site.css?v=11">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body>
@@ -116,9 +116,10 @@
 {{end}}
 
 {{define "home"}}
-<p class="kicker about">点名字先看这个网站是做什么的，确认后再打开。影视、游戏、工具、查询、资源和 AI 按类分开。</p>
 <div class="hero">
-  <section class="panel" id="sec-today">
+  <p class="hero-note">点名字先看这个网站是做什么的，确认后再打开。影视、游戏、工具、查询、资源和 AI 按类分开。</p>
+  <div class="hero-main">
+  <section class="panel today-bar" id="sec-today">
     <h2>{{.TodayLabel}}</h2>
     <p class="kicker">历史上的今天</p>
     <ul class="today">{{range .Today}}<li>{{if .Year}}<b>{{.Year}}</b>{{end}}<span>{{.Text}}</span></li>{{end}}</ul>
@@ -133,6 +134,7 @@
     <div class="tab-panel" data-panel="recent" hidden><div class="link-grid tile" id="desk-recent">还没有打开过网站。</div></div>
     <div class="tab-panel" data-panel="edit" hidden><div class="link-grid tile" id="desk-custom">点星星，把网站留在这里。</div></div>
   </section>
+  </div>
   <section class="panel" id="sec-boards" data-tabs>
     <div class="tabs">{{range .Boards}}<button type="button" data-tab="{{.Key}}" {{if .On}}class="on"{{end}}>{{.Name}}</button>{{end}}</div>
     {{range .Boards}}
