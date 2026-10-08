@@ -1,0 +1,13 @@
+---
+description: 开物录公开页和后台的视觉以 DESIGN.md 为准
+alwaysApply: true
+---
+
+# 视觉以 DESIGN.md 为准
+
+改开物录公开页时，用 Tailwind CSS 和 daisyUI。主题在 `ui/public.css`，先读 `DESIGN.md`。组件用 `btn`、`card`、`menu`、`navbar`、`tabs`、`badge`，不要再手写一套按钮和卡片。改完在 `ui/` 里 `npm run build`。
+
+- 主色 `#0f62fe`，页面底 `#fbf9f8`，字体 IBM Plex Sans。
+- 层次用浅色表面和细边框，不要重阴影。
+- 网址和文案用库里的现有内容。设计稿 HTML 里的假站、广告、备案号不要搬进来。
+- 邮箱、网盘、翻译、地图在桌面只靠悬停展开。

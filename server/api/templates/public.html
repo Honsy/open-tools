@@ -1,5 +1,5 @@
 {{define "layout"}}<!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="kaiwu">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,95 +14,133 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=19">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/site.css?v=26">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
-<body{{if .Home}} class="home"{{end}}>
-  <header class="top">
-    <div class="top-bar">
-      <div class="wrap top-row">
-        <button class="icon-btn" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
-        {{if not .Home}}<a class="word" href="/">开物录</a>{{end}}
-        <nav class="top-links">
-          <a href="/hot">今日热榜</a>
-          <a href="/c/ai">AI 工具</a>
-          <a class="pill" href="/submit">提交网站</a>
-        </nav>
-        <div class="util">
-          {{range .Utils}}
-          <div class="drop">
-            <button type="button" aria-expanded="false">{{.Name}}</button>
-            <div class="drop-pop">
-              {{range .Links}}<a href="{{.Href}}" rel="nofollow noopener" target="_blank">{{.Name}}</a>{{end}}
-              <a class="all" href="/c/{{.Slug}}">全部{{.Name}}</a>
-            </div>
-          </div>
-          {{end}}
-        </div>
-      </div>
+<body class="font-sans bg-canvas text-base-content text-sm"{{if .UserName}} data-user="{{.UserName}}"{{end}}>
+  <header class="navbar sticky top-0 z-40 min-h-16 bg-base-100/90 backdrop-blur border-b border-base-300 px-3 gap-2 flex-wrap">
+    <div class="navbar-start w-auto gap-3">
+      <a class="flex items-baseline gap-2 no-underline text-base-content" href="/"><b class="text-xl font-semibold tracking-tight">开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
+      <ul class="menu menu-horizontal bg-base-200 rounded-box p-1 max-lg:hidden">
+        <li><a class="rounded-lg{{if .Home}} menu-active{{end}}" href="/">首页</a></li>
+        <li><a class="rounded-lg{{if eq .Path "/hot"}} menu-active{{end}}" href="/hot">今日热榜</a></li>
+        <li><a class="rounded-lg{{if eq .Path "/c/ai"}} menu-active{{end}}" href="/c/ai">AI 工具</a></li>
+        <li><a class="rounded-lg{{if eq .Path "/submit"}} menu-active{{end}}" href="/submit">提交收录</a></li>
+      </ul>
     </div>
-    <div class="cat-pop" id="cat-pop" hidden>
-      <div class="wrap cat-grid">
-        {{range .Launcher}}
-        {{if eq .Href "#simple"}}
-        <button type="button" data-simple><i class="swatch {{.Icon}}"></i>{{.Name}}</button>
-        {{else}}
-        <a href="{{.Href}}"><i class="swatch {{.Icon}}"></i>{{.Name}}</a>
-        {{end}}
-        {{end}}
-      </div>
-    </div>
-    <div class="mast">
-      <div class="wrap">
-      {{if .Home}}
-      <div class="plate-head">
-        <div>
-          <h1 class="logo"><a href="/">开物录</a></h1>
-          <p class="mast-line">点名字先看介绍，确认后再打开。</p>
-        </div>
-        <svg class="plate-mark" viewBox="0 0 240 200" aria-hidden="true">
-          <circle cx="120" cy="100" r="86" fill="none" stroke="#e6d3b0" stroke-width="1.2"/>
-          <circle cx="120" cy="100" r="64" fill="none" stroke="#e6d3b0" stroke-width="1"/>
-          <circle cx="120" cy="100" r="28" fill="none" stroke="#e6d3b0" stroke-width="1"/>
-          <path d="M120 10v180M30 100h180" fill="none" stroke="#e6d3b0" stroke-width="1"/>
-          <path d="M120 22v10M120 168v10M42 100h10M188 100h10M62 42l7 7M171 151l7 7M178 42l-7 7M69 151l-7 7" fill="none" stroke="#e6d3b0" stroke-width="1.3"/>
-          <path d="M120 36l7 64-7-8-7 8z" fill="#c4513a"/>
-        </svg>
+    <form class="search join bg-base-200 rounded-full flex-1 min-w-48" action="/search" method="get">
+      <select class="select select-ghost select-sm w-24" aria-label="搜索引擎" name="engine">
+        <option value="site">站内</option>
+        <option value="baidu">百度</option>
+        <option value="so">360</option>
+        <option value="sogou">搜狗</option>
+        <option value="bing">必应</option>
+        <option value="google">Google</option>
+        <option value="bili">哔哩哔哩</option>
+        <option value="zhihu">知乎</option>
+      </select>
+      <input class="input input-ghost input-sm flex-1 min-w-0" name="q" type="search" value="{{.Query}}" placeholder="搜一个网站，或换一个引擎">
+      <button class="btn btn-ghost btn-sm text-primary" type="submit">搜索</button>
+    </form>
+    <div class="navbar-end w-auto gap-1">
+      {{range .Utils}}
+      <div class="dropdown dropdown-end dropdown-hover">
+        <button class="btn btn-ghost btn-sm" type="button" aria-label="{{.Name}}">{{.Name}}</button>
+        <ul class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm border border-base-300">
+          {{range .Links}}<li><a href="{{.Href}}" rel="nofollow noopener" target="_blank">{{.Name}}</a></li>{{end}}
+          <li><a class="font-semibold text-primary" href="/c/{{.Slug}}">全部{{.Name}}</a></li>
+        </ul>
       </div>
       {{end}}
-      <form class="search" action="/search" method="get">
-        <select aria-label="搜索引擎" name="engine">
-          <option value="site">站内</option>
-          <option value="baidu">百度</option>
-          <option value="so">360</option>
-          <option value="sogou">搜狗</option>
-          <option value="bing">必应</option>
-          <option value="google">Google</option>
-          <option value="bili">哔哩哔哩</option>
-          <option value="zhihu">知乎</option>
-        </select>
-        <input name="q" type="search" value="{{.Query}}" placeholder="搜一个网站，或换一个引擎">
-        <button type="submit">搜索</button>
-      </form>
+      <button class="btn btn-ghost btn-sm" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
+      {{if .UserName}}
+      <a class="btn btn-ghost btn-sm" href="/mine">{{.UserName}}</a>
+      <form method="post" action="/logout"><button class="btn btn-ghost btn-sm" type="submit">退出</button></form>
+      {{else}}
+      <a class="btn btn-ghost btn-sm" href="/login" data-auth-open="login">登录</a>
+      <a class="btn btn-primary btn-sm" href="/register" data-auth-open="register">注册</a>
+      {{end}}
+    </div>
+    <div class="cat-pop basis-full" id="cat-pop" hidden>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 py-3">
+        {{range .Launcher}}
+        {{if eq .Href "#simple"}}
+        <button class="btn btn-ghost btn-sm justify-start" type="button" data-simple><i class="swatch {{.Icon}}"></i>{{.Name}}</button>
+        {{else}}
+        <a class="btn btn-ghost btn-sm justify-start" href="{{.Href}}"><i class="swatch {{.Icon}}"></i>{{.Name}}</a>
+        {{end}}
+        {{end}}
       </div>
     </div>
   </header>
-  <div class="wrap body">
-    <aside>
-      {{range .Sidebar}}
-      <div class="side-group{{if .Tool}} tool {{.Icon}}{{end}}">
-        <a href="{{.Href}}"{{if eq .Href $.Path}} class="on"{{end}}>{{.Name}}</a>
-        {{range .Children}}<a class="child{{if eq .Href $.Path}} on{{end}}" href="{{.Href}}">{{.Name}}</a>{{end}}
-      </div>
-      {{end}}
+  <div class="{{if .Account}}max-w-5xl mx-auto w-full{{else}}lg:grid lg:grid-cols-[220px_minmax(0,1fr)]{{end}} min-h-[calc(100vh-4rem)]">
+    {{if not .Account}}
+    <aside class="bg-base-100 border-base-300 max-lg:border-b max-lg:overflow-x-auto lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-auto lg:border-r">
+      <ul class="menu menu-horizontal lg:menu-vertical w-max lg:w-full px-2 py-2">
+        <li class="menu-title max-lg:hidden">常驻索引</li>
+        {{range .Sidebar}}
+        <li>
+          <a class="{{if .Tool}}{{.Icon}}{{end}}{{if eq .Href $.Path}} menu-active{{end}}" href="{{.Href}}">{{.Name}}</a>
+          {{if .Children}}
+          <ul>
+            {{range .Children}}<li><a class="child{{if eq .Href $.Path}} menu-active{{end}}" href="{{.Href}}">{{.Name}}</a></li>{{end}}
+          </ul>
+          {{end}}
+        </li>
+        {{end}}
+      </ul>
     </aside>
-    <main>
+    {{end}}
+    <main class="min-w-0 p-4">
       {{.Content}}
-        <footer><a href="/admin/">管理</a></footer>
+      <footer class="footer sm:footer-horizontal bg-base-100 text-base-content border-t border-base-300 rounded-box mt-8 p-6">
+        <aside><b class="text-base">开物录</b><p class="max-w-xs opacity-70">点名字先看介绍，确认后再打开。</p></aside>
+        <nav><h6 class="footer-title">快捷入口</h6><a class="link link-hover" href="/hot">今日热榜</a><a class="link link-hover" href="/latest">最新收录</a><a class="link link-hover" href="/submit">提交网站</a><a class="link link-hover" href="/notice">公告</a></nav>
+        <nav><h6 class="footer-title">本站</h6><a class="link link-hover" href="/rank">站点排行</a><a class="link link-hover" href="/cooperate">广告合作</a><a class="link link-hover" href="/admin/">管理</a></nav>
+      </footer>
     </main>
   </div>
+  {{if not .UserName}}
+  <dialog class="modal" id="login-dialog">
+    <div class="modal-box">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <h2 class="text-2xl font-semibold">登录</h2>
+        <form method="dialog"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
+      </div>
+      <p class="text-sm opacity-70 mb-3">登录后，收藏和最近使用记在这个账号上。</p>
+      <p class="alert alert-error mb-3" data-auth-error hidden></p>
+      <form class="flex flex-col gap-3" method="post" action="/login">
+        <input type="hidden" name="next" value="{{.Path}}">
+        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered" name="username" required maxlength="20" autocomplete="username"></label>
+        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered" name="password" type="password" required minlength="8" autocomplete="current-password"></label>
+        <button class="btn btn-primary w-fit" type="submit">登录</button>
+        <p class="text-sm"><a class="link link-hover" href="/register" data-auth-open="register">没有账号？去注册</a></p>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
+  </dialog>
+  <dialog class="modal" id="register-dialog">
+    <div class="modal-box">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <h2 class="text-2xl font-semibold">注册</h2>
+        <form method="dialog"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
+      </div>
+      <p class="text-sm opacity-70 mb-3">注册后，收藏和最近使用记在这个账号上。</p>
+      <p class="alert alert-error mb-3" data-auth-error hidden></p>
+      <form class="flex flex-col gap-3" method="post" action="/register">
+        <input type="hidden" name="next" value="{{.Path}}">
+        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered" name="username" required maxlength="20" autocomplete="username"></label>
+        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered" name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+        <button class="btn btn-primary w-fit" type="submit">注册</button>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
+  </dialog>
+  {{end}}
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js?v=5"></script>
+  <script src="/static/site.js?v=11"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {
@@ -115,257 +153,359 @@
 </body>
 </html>{{end}}
 
-{{define "link"}}<a class="link {{.Layout}}" href="{{.Href}}" title="{{.Desc}}" data-link="{{.JSON}}"><span class="mark">{{if .Host}}<img src="{{iconURL .Host}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b></span><span class="meta"><span class="name">{{.Name}}</span>{{if .Desc}}<span class="desc">{{.Desc}}</span>{{end}}</span><button class="star" type="button" data-star="{{.JSON}}" aria-label="收藏">★</button></a>{{end}}
+{{define "link"}}<a class="site-link card card-compact {{.Layout}} bg-base-200 hover:bg-base-300 shadow-none" href="{{.Href}}" title="{{.Desc}}" data-link="{{.JSON}}"><span class="mark">{{if .Host}}<img src="{{iconURL .Host}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b></span><span class="meta"><span class="name">{{.Name}}</span>{{if .Desc}}<span class="desc">{{.Desc}}</span>{{end}}</span><button class="star{{.Star}}" type="button" data-star="{{.JSON}}" aria-label="{{if .Star}}取消收藏{{else}}收藏{{end}}">★</button></a>{{end}}
+
+{{define "taggroups"}}
+<div class="flex flex-col gap-2">
+  {{range .Groups}}
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="text-xs font-medium opacity-60 w-14 shrink-0">{{.Name}}</span>
+    {{range .Tags}}<a class="badge badge-ghost" href="/search?q={{. | urlquery}}">{{.}}</a>{{end}}
+  </div>
+  {{end}}
+  <a class="btn btn-primary btn-sm w-fit mt-1" href="/random">随机网址</a>
+</div>
+{{end}}
 
 {{define "section"}}
-<section class="block" id="sec-{{.Slug}}" data-tabs>
-  <div class="sec-head">
-    {{if not .HideTitle}}<h2>{{.Name}}</h2>{{end}}
+<section class="mt-6" id="sec-{{.Slug}}" data-tabs>
+  {{if and .Groups .Fold}}
+  <div class="collapse collapse-arrow bg-base-200 rounded-box">
+    <input type="checkbox" aria-label="展开{{.Name}}" />
+    <div class="collapse-title font-semibold min-h-12 py-3">{{.Name}}</div>
+    <div class="collapse-content">{{template "taggroups" .}}</div>
+  </div>
+  {{else}}
+  <div class="flex flex-wrap items-center gap-2 mb-3">
+    {{if not .HideTitle}}<h2 class="text-base font-semibold px-1">{{.Name}}</h2>{{end}}
     {{if gt (len .Tabs) 1}}
-    <div class="tabs">
-      {{range .Tabs}}<button type="button" id="tab-{{.Slug}}" data-tab="{{.Slug}}" data-scroll="sec-{{$.Slug}}" {{if .On}}class="on"{{end}}>{{.Name}}</button>{{end}}
+    <div role="tablist" class="tabs tabs-box">
+      {{range .Tabs}}<button class="tab{{if .On}} tab-active{{end}}" type="button" id="tab-{{.Slug}}" data-tab="{{.Slug}}" data-scroll="sec-{{$.Slug}}">{{.Name}}</button>{{end}}
     </div>
     {{end}}
-    {{if .More}}<a class="more" href="{{.More}}">更多</a>{{end}}
+    {{if .More}}<a class="btn btn-ghost btn-sm ml-auto" href="{{.More}}">更多</a>{{end}}
   </div>
   {{if .Groups}}
-  <div class="tag-board">
-    {{range .Groups}}
-    <div class="tag-group">
-      <h3>{{.Name}}</h3>
-      <div class="tags">{{range .Tags}}<a href="/search?q={{. | urlquery}}">{{.}}</a>{{end}}</div>
-    </div>
-    {{end}}
-    <a class="random" href="/random">随机网址</a>
-  </div>
+  {{template "taggroups" .}}
   {{else}}
   {{range .Tabs}}
   <div class="tab-panel" data-panel="{{.Slug}}" {{if not .On}}hidden{{end}}>
     {{if eq .Kind "articles"}}
-    <div class="posts">
-      {{range .Posts}}<a class="post" href="/a/{{.ID}}"><time datetime="{{.ISO}}">{{.Date}}</time><strong>{{.Title}}</strong><p>{{.Summary}}</p><span>{{.Views}} 次阅读</span></a>{{end}}
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {{range .Posts}}<a class="card bg-base-100 border border-base-300 no-underline text-base-content" href="/a/{{.ID}}"><div class="card-body"><time class="text-xs opacity-60" datetime="{{.ISO}}">{{.Date}}</time><strong>{{.Title}}</strong><p class="text-sm opacity-70">{{.Summary}}</p><span class="text-xs opacity-60">{{.Views}} 次阅读</span></div></a>{{end}}
     </div>
     {{else}}
-    <div class="link-grid {{$.Layout}}">{{range .Links}}{{template "link" .}}{{end}}</div>
+    <div class="link-grid {{$.Layout}} grid gap-2 {{if eq $.Layout "tile"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else if eq $.Layout "mini"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else}}sm:grid-cols-2 xl:grid-cols-3{{end}}">{{range .Links}}{{template "link" .}}{{end}}</div>
     {{end}}
   </div>
+  {{end}}
   {{end}}
   {{end}}
 </section>
 {{end}}
 
 {{define "home"}}
-<div class="hero">
-  <section class="panel today-bar" id="sec-today">
-    <h2>{{.TodayLabel}}</h2>
-    <p class="kicker">历史上的今天</p>
-    <ul class="today">{{range .Today}}<li>{{if .Year}}<b>{{.Year}}</b>{{end}}<span>{{.Text}}</span></li>{{end}}</ul>
+<div class="hero-grid">
+  <section class="today-bar card card-compact bg-base-200 shadow-none" id="sec-today">
+    <div class="card-body flex-row flex-wrap items-baseline gap-x-4 gap-y-1 py-3">
+      <h2 class="text-base font-semibold">{{.TodayLabel}}</h2>
+      <p class="kicker text-xs opacity-60">历史上的今天</p>
+      <ul class="today flex flex-wrap gap-x-4 gap-y-1 text-sm">{{range .Today}}<li>{{if .Year}}<b class="text-primary">{{.Year}}</b> {{end}}{{.Text}}</li>{{end}}</ul>
+    </div>
   </section>
   <div class="hero-main">
-  <section class="panel" id="sec-shortcuts" data-tabs>
-    <div class="tabs">
-      <button type="button" data-tab="hot" class="on">热门推荐</button>
-      <button type="button" data-tab="recent">最近使用</button>
-      <button type="button" data-tab="edit">编辑</button>
+  <section id="sec-shortcuts" data-tabs>
+    <div role="tablist" class="tabs tabs-box mb-2">
+      <button class="tab tab-active" type="button" data-tab="hot">热门推荐</button>
+      <button class="tab" type="button" data-tab="recent">最近使用</button>
+      <button class="tab" type="button" data-tab="edit">编辑</button>
     </div>
-    <div class="tab-panel" data-panel="hot"><div class="link-grid tile">{{range .Pinned}}{{template "link" .}}{{end}}</div></div>
-    <div class="tab-panel" data-panel="recent" hidden><div class="link-grid tile" id="desk-recent">还没有打开过网站。</div></div>
-    <div class="tab-panel" data-panel="edit" hidden><div class="link-grid tile" id="desk-custom">点星星，把网站留在这里。</div></div>
+    <div class="tab-panel" data-panel="hot"><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Pinned}}{{template "link" .}}{{end}}</div></div>
+    <div class="tab-panel" data-panel="recent" hidden><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-recent">还没有打开过网站。</div></div>
+    <div class="tab-panel" data-panel="edit" hidden><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-custom">点星星，把网站留在这里。</div></div>
   </section>
   </div>
   <div class="hero-side">
-  <section class="panel" id="sec-boards" data-tabs>
-    <div class="sec-head">
-      <h2><a href="/hot">今日热榜</a></h2>
-      <a class="more" href="/hot">更多</a>
+  <section class="card bg-base-200 shadow-none" id="sec-boards" data-tabs>
+    <div class="card-body py-3 gap-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold"><a class="no-underline" href="/hot">今日热榜</a></h2>
+        <a class="btn btn-ghost btn-xs" href="/hot">更多</a>
+      </div>
+      <div role="tablist" class="tabs tabs-box tabs-xs">{{range .Boards}}<button class="tab{{if .On}} tab-active{{end}}" type="button" data-tab="{{.Key}}">{{.Name}}</button>{{end}}</div>
+      {{range .Boards}}
+      <ol class="board tab-panel" data-panel="{{.Key}}" {{if not .On}}hidden{{end}}>
+        {{range $i, $item := .Items}}<li><span class="badge badge-xs font-bold {{if eq $i 0}}badge-error{{else if eq $i 1}}badge-neutral{{else if eq $i 2}}badge-primary{{else}}badge-ghost{{end}}">{{inc $i}}</span><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span class="text-xs opacity-60">{{$item.Heat}}</span></li>{{end}}
+      </ol>
+      {{end}}
+      {{if .LiveHot}}<p class="kicker text-xs opacity-60">热搜来自百度、微博、知乎、哔哩哔哩和抖音，大约每十分钟更新一次。</p>{{else}}<p class="kicker text-xs opacity-60">实时热搜暂时取不到，这里是站内点击和刚收录的网站。</p>{{end}}
     </div>
-    <div class="tabs">{{range .Boards}}<button type="button" data-tab="{{.Key}}" {{if .On}}class="on"{{end}}>{{.Name}}</button>{{end}}</div>
-    {{range .Boards}}
-    <ol class="board tab-panel" data-panel="{{.Key}}" {{if not .On}}hidden{{end}}>
-      {{range $i, $item := .Items}}<li><em>{{inc $i}}</em><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span>{{$item.Heat}}</span></li>{{end}}
-    </ol>
-    {{end}}
-    {{if .LiveHot}}<p class="kicker">热搜来自百度、微博、知乎、哔哩哔哩和抖音，大约每十分钟更新一次。</p>{{else}}<p class="kicker">实时热搜暂时取不到，这里是站内点击和刚收录的网站。</p>{{end}}
   </section>
   </div>
 </div>
 {{range .Sections}}{{template "section" .}}{{end}}
-<section class="block" id="sec-latest" data-tabs>
-  <div class="sec-head">
-    <h2><a href="/latest">最新收录</a></h2>
-    <div class="tabs">
-      <button type="button" data-tab="latest" class="on">最新收录</button>
-      <button type="button" data-tab="popular">热门网址</button>
+<section class="mt-6" id="sec-latest" data-tabs>
+  <div class="flex flex-wrap items-center gap-2 mb-3">
+    <h2 class="text-base font-semibold"><a class="no-underline" href="/latest">最新收录</a></h2>
+    <div role="tablist" class="tabs tabs-box">
+      <button class="tab tab-active" type="button" data-tab="latest">最新收录</button>
+      <button class="tab" type="button" data-tab="popular">热门网址</button>
     </div>
   </div>
-  <div class="tab-panel" data-panel="latest"><div class="link-grid mini">{{range .Latest}}{{template "link" .}}{{end}}</div></div>
-  <div class="tab-panel" data-panel="popular" hidden><div class="link-grid mini">{{range .Popular}}{{template "link" .}}{{end}}</div></div>
+  <div class="tab-panel" data-panel="latest"><div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Latest}}{{template "link" .}}{{end}}</div></div>
+  <div class="tab-panel" data-panel="popular" hidden><div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Popular}}{{template "link" .}}{{end}}</div></div>
 </section>
 {{end}}
 
 {{define "latest"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>最新收录</span></nav>
-  <h1>最新收录</h1>
-  <p class="lead">{{.Intro}}</p>
+<article class="card bg-base-100 border border-base-300 shadow-none mb-4">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>最新收录</span></nav>
+    <h1 class="text-2xl font-semibold">最新收录</h1>
+    <p class="opacity-70">{{.Intro}}</p>
+  </div>
 </article>
-<section class="block">
-  <div class="sec-head"><h2>刚收进来的</h2></div>
-  <div class="link-grid mini">{{range .Latest}}{{template "link" .}}{{end}}</div>
+<section class="mt-4">
+  <h2 class="text-base font-semibold mb-3">刚收进来的</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Latest}}{{template "link" .}}{{end}}</div>
 </section>
-<section class="block">
-  <div class="sec-head"><h2>热门网址</h2></div>
-  <div class="link-grid mini">{{range .Popular}}{{template "link" .}}{{end}}</div>
+<section class="mt-6">
+  <h2 class="text-base font-semibold mb-3">热门网址</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Popular}}{{template "link" .}}{{end}}</div>
 </section>
 {{end}}
 
 {{define "hot"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>今日热榜</span></nav>
-  <h1>今日热榜</h1>
-  <p class="lead">{{.Intro}}</p>
+<article class="card bg-base-100 border border-base-300 shadow-none mb-4">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>今日热榜</span></nav>
+    <h1 class="text-2xl font-semibold">今日热榜</h1>
+    <p class="opacity-70">{{.Intro}}</p>
+  </div>
 </article>
 {{range .Boards}}
-<section class="block">
-  <div class="sec-head"><h2>{{.Name}}</h2></div>
-  <ol class="board">
-    {{range $i, $item := .Items}}<li><em>{{inc $i}}</em><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span>{{$item.Heat}}</span></li>{{end}}
-  </ol>
+<section class="card bg-base-100 border border-base-300 shadow-none mt-4">
+  <div class="card-body">
+    <h2 class="text-base font-semibold">{{.Name}}</h2>
+    <ol class="board">
+      {{range $i, $item := .Items}}<li><span class="badge badge-xs font-bold {{if eq $i 0}}badge-error{{else if eq $i 1}}badge-neutral{{else if eq $i 2}}badge-primary{{else}}badge-ghost{{end}}">{{inc $i}}</span><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span class="text-xs opacity-60">{{$item.Heat}}</span></li>{{end}}
+    </ol>
+  </div>
 </section>
 {{end}}
 {{end}}
 
 {{define "category"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a>{{if .ParentSlug}} / <a href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}} / <span>{{.Name}}</span></nav>
-  <h1>{{.Name}}</h1>
-  <p class="lead">{{.Intro}}</p>
+<article class="card bg-base-100 border border-base-300 shadow-none mb-2">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a>{{if .ParentSlug}} / <a class="link link-hover" href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}} / <span>{{.Name}}</span></nav>
+    <h1 class="text-2xl font-semibold">{{.Name}}</h1>
+    <p class="opacity-70">{{.Intro}}</p>
+  </div>
 </article>
 {{template "section" .Section}}
 {{end}}
 
 {{define "article"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>{{.Title}}</span></nav>
-  <p class="kicker"><time datetime="{{.ISO}}">{{.Date}}</time> · {{.Views}} 次阅读</p>
-  <h1>{{.Title}}</h1>
-  <p class="lead">{{.Summary}}</p>
-  <div class="prose">{{.Body}}</div>
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>{{.Title}}</span></nav>
+    <p class="kicker text-xs opacity-60"><time datetime="{{.ISO}}">{{.Date}}</time> · {{.Views}} 次阅读</p>
+    <h1 class="text-2xl font-semibold">{{.Title}}</h1>
+    <p class="opacity-70">{{.Summary}}</p>
+    <div class="prose whitespace-pre-wrap">{{.Body}}</div>
+  </div>
 </article>
 {{end}}
 
 {{define "site"}}
-<article class="article site-page">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a>{{if .ParentSlug}} / <a href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}}{{if .CatSlug}} / <a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}} / <span>{{.Name}}</span></nav>
-  <div class="site-head">
-    <div class="site-ico">
-      <span class="mark lg">{{if .IconHost}}<img src="{{iconURL .IconHost}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b>{{if .Region}}<i class="region">{{.Region}}</i>{{end}}</span>
-      <div class="site-stats">
-        <span title="浏览"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="#1d4f91" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><b>{{.ViewsText}}</b><small>浏览</small></span>
-        <span title="打开"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="#1d4f91" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg><b>{{.ClicksText}}</b><small>打开</small></span>
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a>{{if .ParentSlug}} / <a class="link link-hover" href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}}{{if .CatSlug}} / <a class="link link-hover" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}} / <span>{{.Name}}</span></nav>
+    <div class="site-head grid grid-cols-[7rem_minmax(0,1fr)] gap-4 max-sm:grid-cols-[4.5rem_minmax(0,1fr)]">
+      <div>
+        <span class="mark lg">{{if .IconHost}}<img src="{{iconURL .IconHost}}" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b>{{if .Region}}<i class="region">{{.Region}}</i>{{end}}</span>
+        <div class="flex justify-center gap-4 mt-2 text-xs opacity-70">
+          <span class="flex flex-col items-center"><b class="text-base-content">{{.ViewsText}}</b>浏览</span>
+          <span class="flex flex-col items-center"><b class="text-base-content">{{.ClicksText}}</b>打开</span>
+        </div>
+      </div>
+      <div class="flex flex-col items-start gap-2">
+        <h1 class="text-2xl font-semibold">{{.Name}}</h1>
+        <p class="opacity-70">{{.Desc}}</p>
+        <p class="flex flex-wrap gap-2 text-sm">标签：{{range .Tags}}<a class="badge badge-ghost" href="/search?q={{.}}">{{.}}</a>{{end}}{{if .CatName}}<a class="badge badge-outline" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}}</p>
+        <p class="flex items-center gap-3">
+          {{if .External}}<a class="btn btn-primary btn-sm" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">打开网站</a>{{else}}<a class="btn btn-primary btn-sm" href="{{.URL}}">打开页面</a>{{end}}
+          <span class="text-xs opacity-60">{{.Host}}</span>
+        </p>
       </div>
     </div>
-    <div class="site-main">
-      <h1>{{.Name}}</h1>
-      <p class="lead">{{.Desc}}</p>
-      <p class="tag-line">标签：{{range .Tags}}<a href="/search?q={{.}}">{{.}}</a>{{end}}{{if .CatName}}<a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}}</p>
-      <p class="site-actions">
-        {{if .External}}<a class="go" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">打开网站</a>{{else}}<a class="go" href="{{.URL}}">打开页面</a>{{end}}
-        <span class="host">{{.Host}}</span>
-      </p>
-    </div>
+    <h2 class="text-base font-semibold mt-4">网站介绍</h2>
+    {{if .Body}}<div class="whitespace-pre-wrap">{{.Body}}</div>{{else}}<p class="kicker text-xs opacity-60">还没有写介绍。可以在后台「网址」里补。</p>{{end}}
+    <h2 class="text-base font-semibold mt-4">网站数据</h2>
+    <dl class="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+      <dt class="opacity-60">名称</dt><dd>{{.Name}}{{if .Alias}}（{{.Alias}}）{{end}}</dd>
+      <dt class="opacity-60">分类</dt><dd>{{if .ParentName}}{{.ParentName}} / {{end}}{{if .CatSlug}}<a class="link link-hover" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{else}}{{.CatName}}{{end}}</dd>
+      <dt class="opacity-60">标签</dt><dd>{{if .TagText}}{{.TagText}}{{else}}未标{{end}}</dd>
+      <dt class="opacity-60">语言</dt><dd>{{if .Lang}}{{.Lang}}{{else}}未标{{end}}</dd>
+      <dt class="opacity-60">地区</dt><dd>{{if .Region}}{{.Region}}{{else}}未标{{end}}</dd>
+      <dt class="opacity-60">网址</dt><dd class="break-all">{{.URL}}</dd>
+      <dt class="opacity-60">域名</dt><dd>{{.Host}}</dd>
+      <dt class="opacity-60">协议</dt><dd>{{.Scheme}}</dd>
+      {{if .Spare}}<dt class="opacity-60">备用</dt><dd class="break-all">{{.Spare}}</dd>{{end}}
+      {{if .ICP}}<dt class="opacity-60">备案</dt><dd>{{.ICP}}</dd>{{end}}
+      <dt class="opacity-60">浏览</dt><dd>{{.ViewsText}}</dd>
+      <dt class="opacity-60">打开</dt><dd>{{.ClicksText}}</dd>
+      <dt class="opacity-60">收录</dt><dd><time datetime="{{.ISO}}">{{.Date}}</time></dd>
+    </dl>
+    <p>目前{{.Name}}的浏览人数已达到 {{.ViewsText}}，从本站打开过 {{.ClicksText}} 次。</p>
+    <p class="kicker text-xs opacity-60">外部网站不受开物录控制。地址失效或内容不合适时，可以到「提交网站」告诉我们。</p>
+    {{if .Related}}<h2 class="text-base font-semibold">相关网站</h2><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">{{range .Related}}{{template "link" .}}{{end}}</div>{{end}}
   </div>
-  <h2>网站介绍</h2>
-  {{if .Body}}<div class="prose">{{.Body}}</div>{{else}}<p class="kicker">还没有写介绍。可以在后台「网址」里补。</p>{{end}}
-  <h2>网站数据</h2>
-  <dl class="facts">
-    <dt>名称</dt><dd>{{.Name}}{{if .Alias}}（{{.Alias}}）{{end}}</dd>
-    <dt>分类</dt><dd>{{if .ParentName}}{{.ParentName}} / {{end}}{{if .CatSlug}}<a href="/c/{{.CatSlug}}">{{.CatName}}</a>{{else}}{{.CatName}}{{end}}</dd>
-    <dt>标签</dt><dd>{{if .TagText}}{{.TagText}}{{else}}未标{{end}}</dd>
-    <dt>语言</dt><dd>{{if .Lang}}{{.Lang}}{{else}}未标{{end}}</dd>
-    <dt>地区</dt><dd>{{if .Region}}{{.Region}}{{else}}未标{{end}}</dd>
-    <dt>网址</dt><dd class="url">{{.URL}}</dd>
-    <dt>域名</dt><dd>{{.Host}}</dd>
-    <dt>协议</dt><dd>{{.Scheme}}</dd>
-    {{if .Spare}}<dt>备用</dt><dd class="url">{{.Spare}}</dd>{{end}}
-    {{if .ICP}}<dt>备案</dt><dd>{{.ICP}}</dd>{{end}}
-    <dt>浏览</dt><dd>{{.ViewsText}}</dd>
-    <dt>打开</dt><dd>{{.ClicksText}}</dd>
-    <dt>收录</dt><dd><time datetime="{{.ISO}}">{{.Date}}</time></dd>
-  </dl>
-  <p>目前{{.Name}}的浏览人数已达到 {{.ViewsText}}，从本站打开过 {{.ClicksText}} 次。</p>
-  <p class="kicker">外部网站不受开物录控制。地址失效或内容不合适时，可以到「提交网站」告诉我们。</p>
-  {{if .Related}}<h2>相关网站</h2><div class="link-grid row">{{range .Related}}{{template "link" .}}{{end}}</div>{{end}}
 </article>
 {{end}}
 
 {{define "search"}}
-<h1>{{if .Query}}搜索「{{.Query}}」{{else}}搜索{{end}}</h1>
-{{if .Links}}<div class="link-grid row">{{range .Links}}{{template "link" .}}{{end}}</div>{{else}}<p class="empty">没有匹配的网站。</p>{{end}}
+<h1 class="text-2xl font-semibold mb-4">{{if .Query}}搜索「{{.Query}}」{{else}}搜索{{end}}</h1>
+{{if .Links}}<div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">{{range .Links}}{{template "link" .}}{{end}}</div>{{else}}<p class="opacity-70">没有匹配的网站。</p>{{end}}
 {{end}}
 
 {{define "notice"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>公告</span></nav>
-  <h1>公告</h1>
-  <p class="lead">{{.Intro}}</p>
-  <ol class="notes">
-    <li><strong>怎么收录</strong><p>点名字先看介绍，确认后再打开原站。打不开、改了地址或内容和简介不符的，会从首页撤下。</p></li>
-    <li><strong>提交后不会马上出现</strong><p>从「提交网站」送来的地址先停在待审。核对能打开、不是下载站，才会出现在分类里。</p></li>
-    <li><strong>这是个人站点</strong><p>开物录用来整理常用网站，免费浏览，不提供下载，也不做交易。</p></li>
-  </ol>
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>公告</span></nav>
+    <h1 class="text-2xl font-semibold">公告</h1>
+    <p class="opacity-70">{{.Intro}}</p>
+    <ol class="flex flex-col gap-3">
+      <li class="bg-base-200 rounded-box p-3"><strong>怎么收录</strong><p class="opacity-70 mt-1">点名字先看介绍，确认后再打开原站。打不开、改了地址或内容和简介不符的，会从首页撤下。</p></li>
+      <li class="bg-base-200 rounded-box p-3"><strong>提交后不会马上出现</strong><p class="opacity-70 mt-1">提交网站要先登录。送来的地址先停在待审。核对能打开、不是下载站，才会出现在分类里。</p></li>
+      <li class="bg-base-200 rounded-box p-3"><strong>这是个人站点</strong><p class="opacity-70 mt-1">开物录用来整理常用网站，免费浏览，不提供下载，也不做交易。</p></li>
+    </ol>
+  </div>
 </article>
 {{end}}
 
 {{define "rank"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>站点排行</span></nav>
-  <h1>站点排行</h1>
-  <p class="lead">{{.Intro}}</p>
-  <ol class="board rank">
-    {{range $i, $item := .Links}}<li><em>{{inc $i}}</em><a href="{{$item.Href}}">{{$item.Name}}</a><span>{{$item.Clicks}} 次打开</span></li>{{end}}
-  </ol>
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>站点排行</span></nav>
+    <h1 class="text-2xl font-semibold">站点排行</h1>
+    <p class="opacity-70">{{.Intro}}</p>
+    <ol class="board">
+      {{range $i, $item := .Links}}<li><span class="badge badge-xs font-bold {{if eq $i 0}}badge-error{{else if eq $i 1}}badge-neutral{{else if eq $i 2}}badge-primary{{else}}badge-ghost{{end}}">{{inc $i}}</span><a href="{{$item.Href}}">{{$item.Name}}</a><span class="text-xs opacity-60">{{$item.Clicks}} 次打开</span></li>{{end}}
+    </ol>
+  </div>
 </article>
 {{end}}
 
 {{define "cooperate"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>广告合作</span></nav>
-  <h1>广告合作</h1>
-  <p class="lead">{{.Intro}}</p>
-  <div class="prose">开物录不出售首页位置，也不接受付费置顶。
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>广告合作</span></nav>
+    <h1 class="text-2xl font-semibold">广告合作</h1>
+    <p class="opacity-70">{{.Intro}}</p>
+    <div class="whitespace-pre-wrap">开物录不出售首页位置，也不接受付费置顶。
 
 想让一个网站出现在分类里，走「提交网站」。写上名字、地址和它实际做什么。审核通过后，和其他站点一样按分类排列。
 
 地址失效、介绍写错，也从「提交网站」说明，备注里写上原来的名字。</div>
-  <p><a class="go" href="/submit">去提交网站</a></p>
+    <p><a class="btn btn-primary btn-sm w-fit" href="/submit">去提交网站</a></p>
+  </div>
 </article>
 {{end}}
 
+{{define "authpage"}}<!doctype html>
+<html lang="zh-CN" data-theme="kaiwu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} - 开物录</title>
+  <meta name="robots" content="noindex,follow">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/site.css?v=26">
+</head>
+<body class="min-h-screen bg-canvas font-sans text-base-content text-sm">
+  <div class="min-h-screen lg:grid lg:grid-cols-2">
+    <section class="bg-primary text-primary-content px-6 py-8 lg:px-14 lg:py-12 lg:flex lg:flex-col lg:justify-between">
+      <a class="text-3xl font-semibold tracking-tight text-primary-content no-underline" href="/">开物录</a>
+      <p class="mt-6 max-w-sm text-2xl font-semibold leading-snug lg:mt-0 lg:text-4xl">收藏和最近使用跟着这个账号。提交过的网站，也能回来看审核。</p>
+      <p class="mt-6 text-sm opacity-80 lg:mt-0">个人网址导航，不出售首页位置。</p>
+    </section>
+    <section class="px-6 py-10 lg:px-14 lg:flex lg:items-center">
+      <form class="w-full max-w-sm flex flex-col gap-4" method="post" action="{{.Action}}">
+        <h1 class="text-2xl font-semibold">{{.Title}}</h1>
+        <input type="hidden" name="next" value="{{.Next}}">
+        {{if .Error}}<p class="alert alert-error">{{.Error}}</p>{{end}}
+        <label class="flex flex-col gap-1">用户名<input class="input input-bordered" name="username" required maxlength="20" value="{{.User}}" autocomplete="username"></label>
+        <label class="flex flex-col gap-1">密码<input class="input input-bordered" name="password" type="password" required minlength="8" autocomplete="{{if eq .Title "注册"}}new-password{{else}}current-password{{end}}"></label>
+        <button class="btn btn-primary w-fit" type="submit">{{.Title}}</button>
+        {{if eq .Title "登录"}}<p class="text-sm"><a class="link link-hover" href="{{.SwitchTo}}">没有账号？去注册</a></p>{{end}}
+      </form>
+    </section>
+  </div>
+</body>
+</html>{{end}}
+
+{{define "mine"}}
+<header class="border-b border-base-300 pb-6">
+  <h1 class="text-4xl font-semibold tracking-tight">{{.User}}</h1>
+  <p class="mt-2 text-sm opacity-60">{{.Date}} 注册</p>
+</header>
+<section class="mt-8">
+  <h2 class="text-base font-semibold mb-3">收藏</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-custom">{{if .Stars}}{{range .Stars}}{{template "link" .}}{{end}}{{else}}点星星，把网站留在这里。{{end}}</div>
+</section>
+<div class="mt-10 grid gap-8 lg:grid-cols-2">
+  <section>
+    <h2 class="text-base font-semibold mb-3">最近使用</h2>
+    <div class="grid grid-cols-2 gap-2" id="desk-recent">{{if .Recent}}{{range .Recent}}{{template "link" .}}{{end}}{{else}}还没有打开过网站。{{end}}</div>
+  </section>
+  <section>
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h2 class="text-base font-semibold">我的提交</h2>
+      <a class="btn btn-primary btn-sm" href="/submit">提交网站</a>
+    </div>
+    {{if .Items}}
+    <ul class="flex flex-col gap-2">
+      {{range .Items}}<li class="flex flex-wrap items-center gap-2 bg-base-200 rounded-box px-3 py-2"><span class="badge badge-ghost">{{.Status}}</span><span class="font-medium">{{.Name}}</span><span class="text-xs opacity-60 break-all">{{.URL}}</span><span class="text-xs opacity-60 ml-auto">{{.Date}}</span></li>{{end}}
+    </ul>
+    {{else}}
+    <p class="text-sm opacity-60">还没有提交过网站。审核通过后才会出现在分类里。</p>
+    {{end}}
+  </section>
+</div>
+{{end}}
+
 {{define "submit"}}
-<form class="form" method="post" action="/submit">
-  <h1>提交网站</h1>
-  <p class="kicker">先收进待审，不会马上出现在首页。</p>
-  {{if .OK}}<p class="ok">已收下，审核后才会出现在首页。</p>{{end}}
-  {{if .Error}}<p class="banner">{{.Error}}</p>{{end}}
-  <label>名字<input name="name" required maxlength="40" value="{{.Name}}"></label>
-  <label>网址<input name="url" required placeholder="https://" value="{{.URL}}"></label>
-  <label>一句简介<textarea name="desc" rows="3" maxlength="120">{{.Desc}}</textarea></label>
-  <button type="submit">提交</button>
+<form class="card bg-base-100 border border-base-300 shadow-none max-w-xl" method="post" action="/submit">
+  <div class="card-body">
+    <h1 class="text-2xl font-semibold">提交网站</h1>
+    <p class="kicker text-xs opacity-60">以 {{.User}} 的账号提交。先收进待审，不会马上出现在首页。</p>
+    {{if .OK}}<p class="alert alert-success">已收下，审核后才会出现在首页。</p>{{end}}
+    {{if .Error}}<p class="alert alert-error">{{.Error}}</p>{{end}}
+    <label class="flex flex-col gap-1 text-sm">名字<input class="input input-bordered" name="name" required maxlength="40" value="{{.Name}}"></label>
+    <label class="flex flex-col gap-1 text-sm">网址<input class="input input-bordered" name="url" required placeholder="https://" value="{{.URL}}"></label>
+    <label class="flex flex-col gap-1 text-sm">一句简介<textarea class="textarea textarea-bordered" name="desc" rows="3" maxlength="120">{{.Desc}}</textarea></label>
+    <button class="btn btn-primary w-fit" type="submit">提交</button>
+  </div>
 </form>
 {{end}}
 
 {{define "tool"}}
-<article class="article">
-  <nav class="crumbs" aria-label="面包屑"><a href="/">首页</a> / <span>{{.Name}}</span></nav>
-  <h1>{{.Name}}</h1>
-  <p class="lead">{{.Desc}}</p>
-  <p>这个工具的旧页面收在仓库的 legacy 目录，这里先留一个说明。</p>
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>{{.Name}}</span></nav>
+    <h1 class="text-2xl font-semibold">{{.Name}}</h1>
+    <p class="opacity-70">{{.Desc}}</p>
+    <p>这个工具的旧页面收在仓库的 legacy 目录，这里先留一个说明。</p>
+  </div>
 </article>
 {{end}}
 
 {{define "missing"}}
-<h1>{{.Heading}}</h1>
-<p>{{.Text}}</p>
-<p><a href="/">回首页</a></p>
+<h1 class="text-2xl font-semibold">{{.Heading}}</h1>
+<p class="mt-2">{{.Text}}</p>
+<p class="mt-3"><a class="btn btn-primary btn-sm" href="/">回首页</a></p>
 {{end}}

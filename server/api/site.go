@@ -121,7 +121,7 @@ func writeURL(b *strings.Builder, loc string) {
 
 func robots() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		body := "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /go/\nDisallow: /search\nDisallow: /submit\nDisallow: /random\nDisallow: /tools/\nSitemap: " + publicOrigin(c) + "/sitemap.xml\n"
+		body := "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /go/\nDisallow: /search\nDisallow: /submit\nDisallow: /login\nDisallow: /register\nDisallow: /mine\nDisallow: /random\nDisallow: /tools/\nSitemap: " + publicOrigin(c) + "/sitemap.xml\n"
 		c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(body))
 	}
 }

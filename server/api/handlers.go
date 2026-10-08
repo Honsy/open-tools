@@ -29,6 +29,9 @@ func Router(db *gorm.DB) *gin.Engine {
 	r.GET("/api/articles/:id", article(db))
 	r.GET("/api/random", randomLink(db))
 	r.POST("/api/submit", submit(db))
+	r.GET("/api/me/desk", desk(db))
+	r.POST("/api/me/star", toggleStar(db))
+	r.POST("/api/me/recent", touchRecent(db))
 	r.GET("/go/:id", goOut(db))
 	mountPages(r, db)
 	mountSEO(r, db)
@@ -273,9 +276,18 @@ func submit(db *gorm.DB) gin.HandlerFunc {
 		req.Name = strings.TrimSpace(req.Name)
 		req.URL = strings.TrimSpace(req.URL)
 		req.Desc = strings.TrimSpace(req.Desc)
+		user, ok := currentReader(c, db)
+		if !ok {
+			if form {
+				c.Redirect(http.StatusSeeOther, "/login?next=/submit")
+				return
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
 		fail := func(status int, msg string) {
 			if form {
-				showSubmit(c, db, status, submitView{Name: req.Name, URL: req.URL, Desc: req.Desc, Error: msg})
+				showSubmit(c, db, status, submitView{Name: req.Name, URL: req.URL, Desc: req.Desc, Error: msg, User: user.Username})
 				return
 			}
 			c.JSON(status, gin.H{"error": msg})
@@ -295,7 +307,7 @@ func submit(db *gorm.DB) gin.HandlerFunc {
 		}
 		row := models.Link{
 			Name: req.Name, URL: req.URL, Desc: req.Desc,
-			Status: "pending", CategorySlug: "inbox", CreatedAt: time.Now(),
+			Status: "pending", CategorySlug: "inbox", UserID: user.ID, CreatedAt: time.Now(),
 		}
 		seed.FillSlug(db, &row)
 		if err := db.Create(&row).Error; err != nil {

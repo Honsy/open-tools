@@ -81,5 +81,5 @@ func openDB(cfg config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	sqlDB.SetMaxOpenConns(10)
-	return db, db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.Tag{}, &models.Admin{})
+	return db, db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.Tag{}, &models.Admin{}, &models.User{}, &models.UserLink{})
 }

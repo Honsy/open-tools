@@ -42,6 +42,8 @@ type shell struct {
 	Utils       []utilMenu
 	Launcher    []sideItem
 	Content     template.HTML
+	UserName    string
+	Account     bool
 }
 
 type utilLink struct {
@@ -64,6 +66,7 @@ type linkView struct {
 	JSON   string
 	Layout string
 	Clicks int
+	Star   string
 }
 
 type postView struct {
@@ -90,6 +93,7 @@ type sectionView struct {
 	Layout    string
 	More      string
 	HideTitle bool
+	Fold      bool
 	Tabs      []tabView
 	Groups    []tagGroup
 }
@@ -115,6 +119,12 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/a/:id", articlePage(db))
 	r.GET("/site/:slug", sitePage(db))
 	r.GET("/search", searchPage(db))
+	r.GET("/login", loginPage(db))
+	r.POST("/login", loginPost(db))
+	r.GET("/register", registerPage(db))
+	r.POST("/register", registerPost(db))
+	r.POST("/logout", logout)
+	r.GET("/mine", minePage(db))
 	r.GET("/submit", submitPage(db))
 	r.POST("/submit", submit(db))
 	r.GET("/tools/:slug", toolPage(db))
@@ -150,6 +160,9 @@ func render(c *gin.Context, db *gorm.DB, status int, s shell, name string, data 
 		s.Canonical = publicOrigin(c) + s.Canonical
 	}
 	s.Path = c.Request.URL.Path
+	if user, ok := currentReader(c, db); ok {
+		s.UserName = user.Username
+	}
 	s.Sidebar = sidebar(db)
 	s.Utils = utilMenus(db)
 	s.Launcher = launcherItems()
@@ -182,7 +195,9 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			if section.ContentKind != "tags" {
 				more = "/c/" + section.Slug
 			}
-			views = append(views, makeSection(db, section, layout, more, false))
+			view := makeSection(db, section, layout, more, false)
+			view.Fold = section.ContentKind == "tags"
+			views = append(views, view)
 		}
 		pinned := pinnedLinks(db)
 		latest := recentLinks(db, 12)
@@ -544,7 +559,12 @@ func searchPage(db *gorm.DB) gin.HandlerFunc {
 
 func submitPage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		showSubmit(c, db, http.StatusOK, submitView{OK: c.Query("ok") == "1"})
+		user, ok := currentReader(c, db)
+		if !ok {
+			c.Redirect(http.StatusFound, "/login?next=/submit")
+			return
+		}
+		showSubmit(c, db, http.StatusOK, submitView{OK: c.Query("ok") == "1", User: user.Username})
 	}
 }
 
@@ -554,6 +574,7 @@ type submitView struct {
 	Desc  string
 	Error string
 	OK    bool
+	User  string
 }
 
 func showSubmit(c *gin.Context, db *gorm.DB, status int, view submitView) {

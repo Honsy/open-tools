@@ -18,8 +18,10 @@ import (
 var r2Client *s3.Client
 var r2Bucket string
 var r2Public string
+var readerKey string
 
 func Configure(cfg config.Config) {
+	readerKey = cfg.AdminSecret
 	r2Bucket = cfg.R2Bucket
 	r2Public = strings.TrimRight(cfg.R2PublicBase, "/")
 	if cfg.R2AccessKeyID == "" || cfg.R2SecretAccessKey == "" || cfg.R2Bucket == "" || cfg.R2Endpoint == "" || r2Public == "" {
