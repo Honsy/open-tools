@@ -58,6 +58,52 @@
     });
   }
 
+  var iconBusy = 0;
+  var iconWait = [];
+  var iconCap = 6;
+  var iconSeen = typeof IntersectionObserver === "function" ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      iconSeen.unobserve(entry.target);
+      queueIcon(entry.target);
+    });
+  }, { rootMargin: "160px 0px" }) : null;
+
+  function iconDone() {
+    iconBusy--;
+    pumpIcons();
+  }
+
+  function pumpIcons() {
+    while (iconBusy < iconCap && iconWait.length) {
+      var img = iconWait.shift();
+      if (!img.isConnected || img.getAttribute("src") || !img.getAttribute("data-src")) continue;
+      if (img.closest("[hidden]")) {
+        img.removeAttribute("data-queued");
+        continue;
+      }
+      iconBusy++;
+      img.addEventListener("load", iconDone, { once: true });
+      img.addEventListener("error", iconDone, { once: true });
+      img.src = img.getAttribute("data-src");
+    }
+  }
+
+  function queueIcon(img) {
+    if (img.getAttribute("src") || img.getAttribute("data-queued")) return;
+    img.setAttribute("data-queued", "1");
+    iconWait.push(img);
+    pumpIcons();
+  }
+
+  function watchIcons(root) {
+    (root || document).querySelectorAll("img[data-src]").forEach(function (img) {
+      if (img.closest("[hidden]")) return;
+      if (iconSeen) iconSeen.observe(img);
+      else queueIcon(img);
+    });
+  }
+
   function show(box, id) {
     box.querySelectorAll("[data-tab]").forEach(function (btn) {
       btn.classList.toggle("tab-active", btn.getAttribute("data-tab") === id);
@@ -65,6 +111,7 @@
     box.querySelectorAll("[data-panel]").forEach(function (panel) {
       panel.hidden = panel.getAttribute("data-panel") !== id;
     });
+    watchIcons(box);
   }
 
   document.querySelectorAll("[data-tabs]").forEach(function (box) {
@@ -94,6 +141,7 @@
   if (hash && history.replaceState) {
     history.replaceState(null, "", location.pathname + location.search);
   }
+  watchIcons(document);
 
   var catOpen = document.getElementById("cat-open");
   var catPop = document.getElementById("cat-pop");
