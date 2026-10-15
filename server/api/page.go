@@ -19,7 +19,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:embed templates/public.html static/site.css static/site.js
+//go:embed templates/public.html static/site.css static/site.js static/baidu_verify_codeva-LbSF6vH8BX.html
 var publicFiles embed.FS
 
 var publicPages = template.Must(template.New("public").Funcs(template.FuncMap{
@@ -107,6 +107,14 @@ type boardView struct {
 
 func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/", homePage(db))
+	r.GET("/baidu_verify_codeva-LbSF6vH8BX.html", func(c *gin.Context) {
+		body, err := publicFiles.ReadFile("static/baidu_verify_codeva-LbSF6vH8BX.html")
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", body)
+	})
 	r.GET("/admin", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/admin/")
 	})
