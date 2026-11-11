@@ -104,19 +104,116 @@
     });
   }
 
+  function iconSrc(host) {
+    var base = document.body.getAttribute("data-icon") || "/ico?host=";
+    return base + encodeURIComponent(host);
+  }
+
+  function card(link, layout) {
+    var a = document.createElement("a");
+    a.className = "site-link card card-compact " + (layout || "row") + " bg-base-200 hover:bg-base-300 shadow-none";
+    a.href = link.slug ? "/site/" + link.slug : (link.url || "#");
+    if (link.desc) a.title = link.desc;
+    var raw = JSON.stringify({
+      id: link.id, name: link.name, url: link.url, desc: link.desc,
+      slug: link.slug, categorySlug: link.categorySlug, clicks: link.clicks
+    });
+    a.setAttribute("data-link", raw);
+    var mark = document.createElement("span");
+    mark.className = "mark";
+    var host = "";
+    try {
+      host = new URL(link.url).hostname;
+    } catch (err) {
+      host = "";
+    }
+    if (host) {
+      var img = document.createElement("img");
+      img.alt = "";
+      img.decoding = "async";
+      img.setAttribute("data-src", iconSrc(host));
+      img.addEventListener("load", function () {
+        if (img.nextElementSibling) img.nextElementSibling.remove();
+      });
+      img.addEventListener("error", function () {
+        img.remove();
+      });
+      mark.appendChild(img);
+    }
+    var letter = document.createElement("b");
+    letter.textContent = (link.name || "站").slice(0, 1);
+    mark.appendChild(letter);
+    var meta = document.createElement("span");
+    meta.className = "meta";
+    var name = document.createElement("span");
+    name.className = "name";
+    name.textContent = link.name || "";
+    meta.appendChild(name);
+    if (link.desc) {
+      var desc = document.createElement("span");
+      desc.className = "desc";
+      desc.textContent = link.desc;
+      meta.appendChild(desc);
+    }
+    var star = document.createElement("button");
+    star.type = "button";
+    star.className = "star";
+    star.textContent = "★";
+    star.setAttribute("aria-label", "收藏");
+    star.setAttribute("data-star", raw);
+    a.appendChild(mark);
+    a.appendChild(meta);
+    a.appendChild(star);
+    return a;
+  }
+
+  function loadLazy(panel) {
+    var slug = panel.getAttribute("data-lazy");
+    if (!slug || panel.getAttribute("data-loaded")) return;
+    panel.setAttribute("data-loaded", "1");
+    var grid = panel.querySelector(".link-grid");
+    var layout = panel.getAttribute("data-layout") || "row";
+    fetch("/api/categories/" + encodeURIComponent(slug), { credentials: "same-origin" })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var links = (data.tabs && data.tabs[0] && data.tabs[0].links) || [];
+        if (!grid) return;
+        grid.textContent = "";
+        if (!links.length) {
+          grid.textContent = "这一栏还没有网站。";
+          return;
+        }
+        links.forEach(function (link) {
+          grid.appendChild(card(link, layout));
+        });
+        if (typeof paintStars === "function") paintStars(state.stars);
+        watchIcons(panel);
+      })
+      .catch(function () {
+        panel.removeAttribute("data-loaded");
+        if (grid) grid.textContent = "这一栏没有加载出来。";
+      });
+  }
+
   function show(box, id) {
     box.querySelectorAll("[data-tab]").forEach(function (btn) {
       btn.classList.toggle("tab-active", btn.getAttribute("data-tab") === id);
     });
     box.querySelectorAll("[data-panel]").forEach(function (panel) {
-      panel.hidden = panel.getAttribute("data-panel") !== id;
+      var on = panel.getAttribute("data-panel") === id;
+      panel.hidden = !on;
+      if (on) loadLazy(panel);
     });
     watchIcons(box);
   }
 
   document.querySelectorAll("[data-tabs]").forEach(function (box) {
     box.querySelectorAll("[data-tab]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", function (event) {
+        if (btn.tagName === "A") {
+          if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+        }
         show(box, btn.getAttribute("data-tab"));
       });
     });

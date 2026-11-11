@@ -10,6 +10,7 @@ import (
 
 	"opentools/api"
 	"opentools/config"
+	"opentools/linkcheck"
 	"opentools/models"
 	"opentools/seed"
 
@@ -56,6 +57,7 @@ func Run() error {
 	r := api.Router(db)
 	api.WarmIcons(db)
 	api.MountAdmin(r, db, cfg)
+	linkcheck.Start(db)
 	return r.Run(addr)
 }
 
@@ -81,5 +83,28 @@ func openDB(cfg config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	sqlDB.SetMaxOpenConns(10)
-	return db, db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.Tag{}, &models.Admin{}, &models.User{}, &models.UserLink{})
+	if err := db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.Tag{}, &models.Admin{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}); err != nil {
+		return nil, err
+	}
+	if err := ensureUserEmail(db); err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func ensureUserEmail(db *gorm.DB) error {
+	if err := db.Exec("ALTER TABLE users MODIFY COLUMN email VARCHAR(254) NULL").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("UPDATE users SET email = NULL WHERE email = ''").Error; err != nil {
+		return err
+	}
+	var n int64
+	if err := db.Raw("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'users' AND index_name = 'ux_users_email'").Scan(&n).Error; err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	return db.Exec("CREATE UNIQUE INDEX ux_users_email ON users (email)").Error
 }

@@ -23,6 +23,7 @@ type Row = {
   pinned: boolean;
   clicks: number;
   views: number;
+  checkFails?: number;
 };
 
 const cats = ref<Cat[]>([]);
@@ -172,7 +173,12 @@ onMounted(load);
       <tr v-for="row in rows" :key="row.id">
         <td>{{ row.name }}<br />{{ row.url }}</td>
         <td>{{ catName(row.categorySlug) }}</td>
-        <td>{{ row.status === "online" ? "上架" : row.status === "pending" ? "待审" : "下架" }}</td>
+        <td>
+          {{ row.status === "online" ? "上架" : row.status === "pending" ? "待审" : "下架" }}
+          <template v-if="row.checkFails">
+            <br />连续失效 {{ row.checkFails }} 次
+          </template>
+        </td>
         <td>{{ row.clicks }} / {{ row.views }}</td>
         <td>
           <button class="btn" type="button" @click="edit(row)">编辑</button>

@@ -55,8 +55,8 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   grid-template-areas:
-    "today today"
-    "main side";
+    "main side"
+    "today today";
   gap: 0.75rem;
   align-items: stretch;
 }

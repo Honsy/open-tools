@@ -96,7 +96,7 @@ func sitemap(db *gorm.DB) gin.HandlerFunc {
 			if cat.Slug == "" {
 				continue
 			}
-			writeURL(&b, origin+"/c/"+template.HTMLEscapeString(cat.Slug))
+			writeURL(&b, origin+"/c/"+cat.Slug)
 		}
 		var articles []models.Article
 		db.Order("id asc").Find(&articles)
@@ -106,7 +106,7 @@ func sitemap(db *gorm.DB) gin.HandlerFunc {
 		var links []models.Link
 		db.Where("status = ? AND slug <> ?", "online", "").Order("id asc").Find(&links)
 		for _, link := range links {
-			writeURL(&b, origin+"/site/"+template.HTMLEscapeString(link.Slug))
+			writeURL(&b, origin+"/site/"+link.Slug)
 		}
 		b.WriteString(`</urlset>`)
 		c.Data(http.StatusOK, "application/xml; charset=utf-8", []byte(b.String()))
@@ -115,13 +115,13 @@ func sitemap(db *gorm.DB) gin.HandlerFunc {
 
 func writeURL(b *strings.Builder, loc string) {
 	b.WriteString("<url><loc>")
-	b.WriteString(loc)
+	template.HTMLEscape(b, []byte(loc))
 	b.WriteString("</loc></url>")
 }
 
 func robots() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		body := "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /go/\nDisallow: /search\nDisallow: /submit\nDisallow: /login\nDisallow: /register\nDisallow: /mine\nDisallow: /random\nDisallow: /tools/\nSitemap: " + publicOrigin(c) + "/sitemap.xml\n"
+		body := "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /go/\nDisallow: /login\nDisallow: /register\nDisallow: /forgot\nDisallow: /reset\nDisallow: /mine\nDisallow: /random\nSitemap: " + publicOrigin(c) + "/sitemap.xml\n"
 		c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(body))
 	}
 }

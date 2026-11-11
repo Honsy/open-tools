@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"log"
 	"net/http"
 	"net/url"
@@ -76,12 +77,15 @@ func validUsername(name string) bool {
 }
 
 type authView struct {
+	Kind     string
 	Title    string
 	Action   string
-	Switch   string
 	SwitchTo string
 	User     string
+	Email    string
+	Token    string
 	Error    string
+	Notice   string
 	Next     string
 }
 
@@ -93,7 +97,7 @@ func loginPage(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		showAuth(c, db, http.StatusOK, authView{
-			Title: "登录", Action: "/login", Switch: "没有账号？去注册", SwitchTo: "/register", Next: next,
+			Kind: "login", Title: "登录", Action: "/login", SwitchTo: "/register", Next: next,
 		})
 	}
 }
@@ -106,7 +110,7 @@ func registerPage(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		showAuth(c, db, http.StatusOK, authView{
-			Title: "注册", Action: "/register", Switch: "已有账号？去登录", SwitchTo: "/login", Next: next,
+			Kind: "register", Title: "注册", Action: "/register", Next: next,
 		})
 	}
 }
@@ -123,11 +127,13 @@ func showAuth(c *gin.Context, db *gorm.DB, status int, view authView) {
 	if view.Next != "" && view.Next != "/" {
 		view.SwitchTo += "?next=" + url.QueryEscape(view.Next)
 	}
-	c.Status(status)
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := publicPages.ExecuteTemplate(c.Writer, "authpage", view); err != nil {
+	var page bytes.Buffer
+	if err := publicPages.ExecuteTemplate(&page, "authpage", view); err != nil {
 		log.Printf("auth: %v", err)
+		c.Status(http.StatusInternalServerError)
+		return
 	}
+	writeBody(c, status, "text/html; charset=utf-8", page.Bytes())
 }
 
 func loginPost(db *gorm.DB) gin.HandlerFunc {
@@ -137,7 +143,7 @@ func loginPost(db *gorm.DB) gin.HandlerFunc {
 		password := c.PostForm("password")
 		fail := func(msg string) {
 			showAuth(c, db, http.StatusUnauthorized, authView{
-				Title: "登录", Action: "/login", Switch: "没有账号？去注册", SwitchTo: "/register",
+				Kind: "login", Title: "登录", Action: "/login", SwitchTo: "/register",
 				User: name, Error: msg, Next: next,
 			})
 		}
@@ -160,15 +166,20 @@ func registerPost(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		next := safeNext(c.PostForm("next"))
 		name := strings.TrimSpace(c.PostForm("username"))
+		email := normalizeEmail(c.PostForm("email"))
 		password := c.PostForm("password")
 		fail := func(status int, msg string) {
 			showAuth(c, db, status, authView{
-				Title: "注册", Action: "/register", Switch: "已有账号？去登录", SwitchTo: "/login",
-				User: name, Error: msg, Next: next,
+				Kind: "register", Title: "注册", Action: "/register",
+				User: name, Email: email, Error: msg, Next: next,
 			})
 		}
 		if !validUsername(name) {
 			fail(http.StatusBadRequest, "用户名用 2 到 20 个字，不要空格")
+			return
+		}
+		if !validEmail(email) {
+			fail(http.StatusBadRequest, "邮箱格式不对")
 			return
 		}
 		if len(password) < 8 || len(password) > 72 {
@@ -181,12 +192,16 @@ func registerPost(db *gorm.DB) gin.HandlerFunc {
 			fail(http.StatusConflict, "这个用户名已经有人用了")
 			return
 		}
+		if emailTaken(db, email, 0) {
+			fail(http.StatusConflict, "这个邮箱已经注册过")
+			return
+		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			fail(http.StatusInternalServerError, "没有注册上")
 			return
 		}
-		user := models.User{Username: name, PasswordHash: string(hash)}
+		user := models.User{Username: name, Email: email, PasswordHash: string(hash)}
 		if err := db.Create(&user).Error; err != nil {
 			fail(http.StatusInternalServerError, "没有注册上")
 			return
@@ -359,30 +374,43 @@ func minePage(db *gorm.DB) gin.HandlerFunc {
 			c.Redirect(http.StatusFound, "/login?next=/mine")
 			return
 		}
-		var rows []models.Link
-		db.Where("user_id = ?", user.ID).Order("id desc").Limit(50).Find(&rows)
-		items := make([]mineItem, 0, len(rows))
-		for _, row := range rows {
-			label := "未通过"
-			if row.Status == "pending" {
-				label = "待审"
-			} else if row.Status == "online" {
-				label = "已收录"
-			}
-			items = append(items, mineItem{
-				Name: row.Name, URL: row.URL, Status: label, Date: row.CreatedAt.Format("2006-01-02"),
-			})
+		notice := ""
+		if c.Query("mail") == "1" {
+			notice = "邮箱已保存。忘记密码时用它收重置邮件。"
 		}
-		stars := toViews(markedLinks(db, user.ID, "star", 16), "tile")
-		for i := range stars {
-			stars[i].Star = " on"
+		renderMine(c, db, user, notice, "", user.Email)
+	}
+}
+
+func renderMine(c *gin.Context, db *gorm.DB, user models.User, notice, mailError, email string) {
+	var rows []models.Link
+	db.Where("user_id = ?", user.ID).Order("id desc").Limit(50).Find(&rows)
+	items := make([]mineItem, 0, len(rows))
+	for _, row := range rows {
+		label := "未通过"
+		if row.Status == "pending" {
+			label = "待审"
+		} else if row.Status == "online" {
+			label = "已收录"
 		}
-		render(c, db, http.StatusOK, shell{
-			Title: user.Username + " - 开物录", Description: "这个账号在开物录的收藏、最近使用和提交。",
-			Canonical: "/mine", Robots: "noindex,follow", Account: true,
-		}, "mine", map[string]any{
-			"User": user.Username, "Date": user.CreatedAt.Format("2006-01-02"),
-			"Stars": stars, "Recent": toViews(markedLinks(db, user.ID, "recent", 12), "tile"), "Items": items,
+		items = append(items, mineItem{
+			Name: row.Name, URL: row.URL, Status: label, Date: row.CreatedAt.Format("2006-01-02"),
 		})
 	}
+	stars := toViews(markedLinks(db, user.ID, "star", 16), "tile")
+	for i := range stars {
+		stars[i].Star = " on"
+	}
+	status := http.StatusOK
+	if mailError != "" {
+		status = http.StatusBadRequest
+	}
+	render(c, db, status, shell{
+		Title: user.Username + " - 开物录", Description: "这个账号在开物录的收藏、最近使用和提交。",
+		Canonical: "/mine", Robots: "noindex,follow", Account: true,
+	}, "mine", map[string]any{
+		"User": user.Username, "Date": user.CreatedAt.Format("2006-01-02"),
+		"Email": email, "MailNotice": notice, "MailError": mailError,
+		"Stars": stars, "Recent": toViews(markedLinks(db, user.ID, "recent", 12), "tile"), "Items": items,
+	})
 }

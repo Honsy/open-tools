@@ -27,6 +27,12 @@ type Config struct {
 	R2Bucket          string `yaml:"r2Bucket"`
 	R2Endpoint        string `yaml:"r2Endpoint"`
 	R2PublicBase      string `yaml:"r2PublicBase"`
+
+	SMTPHost     string `yaml:"smtpHost"`
+	SMTPPort     string `yaml:"smtpPort"`
+	SMTPUser     string `yaml:"smtpUser"`
+	SMTPPassword string `yaml:"smtpPassword"`
+	SMTPFrom     string `yaml:"smtpFrom"`
 }
 
 func Load() (Config, error) {
@@ -67,6 +73,11 @@ func Load() (Config, error) {
 	cfg.R2Bucket = first(os.Getenv("R2_BUCKET"), cfg.R2Bucket)
 	cfg.R2Endpoint = first(os.Getenv("R2_ENDPOINT"), cfg.R2Endpoint)
 	cfg.R2PublicBase = strings.TrimRight(first(os.Getenv("R2_PUBLIC_BASE"), cfg.R2PublicBase), "/")
+	cfg.SMTPHost = first(os.Getenv("SMTP_HOST"), cfg.SMTPHost)
+	cfg.SMTPPort = first(os.Getenv("SMTP_PORT"), cfg.SMTPPort, "465")
+	cfg.SMTPUser = first(os.Getenv("SMTP_USER"), cfg.SMTPUser)
+	cfg.SMTPPassword = first(os.Getenv("SMTP_PASSWORD"), cfg.SMTPPassword)
+	cfg.SMTPFrom = first(os.Getenv("SMTP_FROM"), cfg.SMTPFrom)
 	if cfg.R2Endpoint == "" && cfg.R2AccountID != "" {
 		cfg.R2Endpoint = "https://" + cfg.R2AccountID + ".r2.cloudflarestorage.com"
 	}

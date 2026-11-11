@@ -15,12 +15,10 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="/static/site.css?v=26">
+  <link rel="stylesheet" href="/static/site.css?v=27">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
-<body class="font-sans bg-canvas text-base-content text-sm"{{if .UserName}} data-user="{{.UserName}}"{{end}}>
+<body class="font-sans bg-canvas text-base-content text-sm" data-icon="{{iconBase}}"{{if .UserName}} data-user="{{.UserName}}"{{end}}>
   <header class="navbar sticky top-0 z-40 min-h-16 bg-base-100/90 backdrop-blur border-b border-base-300 px-3 gap-2 flex-wrap">
     <div class="navbar-start w-auto gap-3">
       <a class="flex items-baseline gap-2 no-underline text-base-content" href="/"><b class="text-xl font-semibold tracking-tight">开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
@@ -105,43 +103,43 @@
   </div>
   {{if not .UserName}}
   <dialog class="modal" id="login-dialog">
-    <div class="modal-box">
-      <div class="flex items-center justify-between gap-3 mb-4">
-        <h2 class="text-2xl font-semibold">登录</h2>
-        <form method="dialog"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
-      </div>
-      <p class="text-sm opacity-70 mb-3">登录后，收藏和最近使用记在这个账号上。</p>
-      <p class="alert alert-error mb-3" data-auth-error hidden></p>
-      <form class="flex flex-col gap-3" method="post" action="/login">
+    <div class="modal-box bg-base-100 border border-base-300 shadow-none max-w-sm p-6">
+      <form method="dialog" class="flex justify-end -mt-2 -mr-2"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
+      <p class="text-xs font-medium text-primary">开物录</p>
+      <h2 class="text-2xl font-semibold mt-1">登录</h2>
+      <p class="text-sm opacity-70 mt-2">收藏和最近使用记在这个账号上。</p>
+      <p class="alert alert-error mt-4" data-auth-error hidden></p>
+      <form class="mt-4 flex flex-col gap-3" method="post" action="/login">
         <input type="hidden" name="next" value="{{.Path}}">
-        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered" name="username" required maxlength="20" autocomplete="username"></label>
-        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered" name="password" type="password" required minlength="8" autocomplete="current-password"></label>
-        <button class="btn btn-primary w-fit" type="submit">登录</button>
-        <p class="text-sm"><a class="link link-hover" href="/register" data-auth-open="register">没有账号？去注册</a></p>
+        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" autocomplete="username"></label>
+        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="current-password"><span class="text-xs opacity-60">至少 8 位</span></label>
+        <button class="btn btn-primary w-full" type="submit">登录</button>
+        <p class="text-sm text-center"><a class="link link-hover" href="/forgot">忘记密码</a></p>
+        <p class="text-sm text-center">没有账号？<a class="link link-hover text-primary" href="/register" data-auth-open="register">去注册</a></p>
       </form>
     </div>
     <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
   </dialog>
   <dialog class="modal" id="register-dialog">
-    <div class="modal-box">
-      <div class="flex items-center justify-between gap-3 mb-4">
-        <h2 class="text-2xl font-semibold">注册</h2>
-        <form method="dialog"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
-      </div>
-      <p class="text-sm opacity-70 mb-3">注册后，收藏和最近使用记在这个账号上。</p>
-      <p class="alert alert-error mb-3" data-auth-error hidden></p>
-      <form class="flex flex-col gap-3" method="post" action="/register">
+    <div class="modal-box bg-base-100 border border-base-300 shadow-none max-w-sm p-6">
+      <form method="dialog" class="flex justify-end -mt-2 -mr-2"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
+      <p class="text-xs font-medium text-primary">开物录</p>
+      <h2 class="text-2xl font-semibold mt-1">注册</h2>
+      <p class="text-sm opacity-70 mt-2">注册后，收藏和最近使用记在这个账号上。</p>
+      <p class="alert alert-error mt-4" data-auth-error hidden></p>
+      <form class="mt-4 flex flex-col gap-3" method="post" action="/register">
         <input type="hidden" name="next" value="{{.Path}}">
-        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered" name="username" required maxlength="20" autocomplete="username"></label>
-        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered" name="password" type="password" required minlength="8" autocomplete="new-password"></label>
-        <button class="btn btn-primary w-fit" type="submit">注册</button>
+        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" autocomplete="username"><span class="text-xs opacity-60">20 字以内</span></label>
+        <label class="flex flex-col gap-1 text-sm">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" autocomplete="email"><span class="text-xs opacity-60">用来重置密码</span></label>
+        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="new-password"><span class="text-xs opacity-60">至少 8 位</span></label>
+        <button class="btn btn-primary w-full" type="submit">注册</button>
       </form>
     </div>
     <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
   </dialog>
   {{end}}
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js?v=12"></script>
+  <script src="/static/site.js?v=13"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {
@@ -181,7 +179,7 @@
     {{if not .HideTitle}}<h2 class="text-base font-semibold px-1">{{.Name}}</h2>{{end}}
     {{if gt (len .Tabs) 1}}
     <div role="tablist" class="tabs tabs-box">
-      {{range .Tabs}}<button class="tab{{if .On}} tab-active{{end}}" type="button" id="tab-{{.Slug}}" data-tab="{{.Slug}}" data-scroll="sec-{{$.Slug}}">{{.Name}}</button>{{end}}
+      {{range .Tabs}}<a class="tab{{if .On}} tab-active{{end}}" href="/c/{{.Slug}}" id="tab-{{.Slug}}" data-tab="{{.Slug}}" data-scroll="sec-{{$.Slug}}">{{.Name}}</a>{{end}}
     </div>
     {{end}}
     {{if .More}}<a class="btn btn-ghost btn-sm ml-auto" href="{{.More}}">更多</a>{{end}}
@@ -190,13 +188,15 @@
   {{template "taggroups" .}}
   {{else}}
   {{range .Tabs}}
-  <div class="tab-panel" data-panel="{{.Slug}}" {{if not .On}}hidden{{end}}>
+  <div class="tab-panel" data-panel="{{.Slug}}"{{if not .On}} hidden{{end}}{{if and (not .On) (ne .Kind "articles")}} data-lazy="{{.Slug}}" data-layout="{{if $.Layout}}{{$.Layout}}{{else}}row{{end}}"{{end}}>
     {{if eq .Kind "articles"}}
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {{range .Posts}}<a class="card bg-base-100 border border-base-300 no-underline text-base-content" href="/a/{{.ID}}"><div class="card-body"><time class="text-xs opacity-60" datetime="{{.ISO}}">{{.Date}}</time><strong>{{.Title}}</strong><p class="text-sm opacity-70">{{.Summary}}</p><span class="text-xs opacity-60">{{.Views}} 次阅读</span></div></a>{{end}}
     </div>
-    {{else}}
+    {{else if .On}}
     <div class="link-grid {{$.Layout}} grid gap-2 {{if eq $.Layout "tile"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else if eq $.Layout "mini"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else}}sm:grid-cols-2 xl:grid-cols-3{{end}}">{{range .Links}}{{template "link" .}}{{end}}</div>
+    {{else}}
+    <div class="link-grid {{$.Layout}} grid gap-2 {{if eq $.Layout "tile"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else if eq $.Layout "mini"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else}}sm:grid-cols-2 xl:grid-cols-3{{end}}"><p class="text-sm opacity-60 py-2"><a class="link link-hover" href="/c/{{.Slug}}">查看{{.Name}}</a></p></div>
     {{end}}
   </div>
   {{end}}
@@ -206,20 +206,24 @@
 {{end}}
 
 {{define "home"}}
+<section class="card bg-base-100 border border-base-300 shadow-none mb-4">
+  <div class="card-body gap-3">
+    <h1 class="text-2xl font-semibold">开物录 · 常用网站与在线工具导航</h1>
+    <p class="opacity-70">{{.Intro}}</p>
+    {{if .Tasks}}
+    <nav class="flex flex-wrap gap-2" aria-label="按用途找网站">
+      {{range .Tasks}}<a class="btn btn-outline btn-sm" href="{{.Href}}">{{.Name}}</a>{{end}}
+    </nav>
+    {{end}}
+  </div>
+</section>
 <div class="hero-grid">
-  <section class="today-bar card card-compact bg-base-200 shadow-none" id="sec-today">
-    <div class="card-body flex-row flex-wrap items-baseline gap-x-4 gap-y-1 py-3">
-      <h2 class="text-base font-semibold">{{.TodayLabel}}</h2>
-      <p class="kicker text-xs opacity-60">历史上的今天</p>
-      <ul class="today flex flex-wrap gap-x-4 gap-y-1 text-sm">{{range .Today}}<li>{{if .Year}}<b class="text-primary">{{.Year}}</b> {{end}}{{.Text}}</li>{{end}}</ul>
-    </div>
-  </section>
   <div class="hero-main">
   <section id="sec-shortcuts" data-tabs>
     <div role="tablist" class="tabs tabs-box mb-2">
       <button class="tab tab-active" type="button" data-tab="hot">热门推荐</button>
       <button class="tab" type="button" data-tab="recent">最近使用</button>
-      <button class="tab" type="button" data-tab="edit">编辑</button>
+      <button class="tab" type="button" data-tab="edit">我的收藏</button>
     </div>
     <div class="tab-panel" data-panel="hot"><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Pinned}}{{template "link" .}}{{end}}</div></div>
     <div class="tab-panel" data-panel="recent" hidden><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-recent">还没有打开过网站。</div></div>
@@ -243,6 +247,13 @@
     </div>
   </section>
   </div>
+  <section class="today-bar card card-compact bg-base-200 shadow-none" id="sec-today">
+    <div class="card-body flex-row flex-wrap items-baseline gap-x-4 gap-y-1 py-3">
+      <h2 class="text-base font-semibold">{{.TodayLabel}}</h2>
+      <p class="kicker text-xs opacity-60">历史上的今天</p>
+      <ul class="today flex flex-wrap gap-x-4 gap-y-1 text-sm">{{range .Today}}<li>{{if .Year}}<b class="text-primary">{{.Year}}</b> {{end}}{{.Text}}</li>{{end}}</ul>
+    </div>
+  </section>
 </div>
 {{range .Sections}}{{template "section" .}}{{end}}
 <section class="mt-6" id="sec-latest" data-tabs>
@@ -300,8 +311,8 @@
 <article class="card bg-base-100 border border-base-300 shadow-none mb-2">
   <div class="card-body">
     <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a>{{if .ParentSlug}} / <a class="link link-hover" href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}} / <span>{{.Name}}</span></nav>
-    <h1 class="text-2xl font-semibold">{{.Name}}</h1>
-    <p class="opacity-70">{{.Intro}}</p>
+    <h1 class="text-2xl font-semibold">{{.Heading}}</h1>
+    {{if .Intro}}<p class="opacity-70">{{.Intro}}</p>{{end}}
   </div>
 </article>
 {{template "section" .Section}}
@@ -334,33 +345,27 @@
       <div class="flex flex-col items-start gap-2">
         <h1 class="text-2xl font-semibold">{{.Name}}</h1>
         <p class="opacity-70">{{.Desc}}</p>
-        <p class="flex flex-wrap gap-2 text-sm">标签：{{range .Tags}}<a class="badge badge-ghost" href="/search?q={{.}}">{{.}}</a>{{end}}{{if .CatName}}<a class="badge badge-outline" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}}</p>
+        {{if or .Tags .CatName}}<p class="flex flex-wrap gap-2 text-sm">{{range .Tags}}<a class="badge badge-ghost" href="/search?q={{.}}">{{.}}</a>{{end}}{{if .CatName}}<a class="badge badge-outline" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}}</p>{{end}}
         <p class="flex items-center gap-3">
           {{if .External}}<a class="btn btn-primary btn-sm" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">打开网站</a>{{else}}<a class="btn btn-primary btn-sm" href="{{.URL}}">打开页面</a>{{end}}
           <span class="text-xs opacity-60">{{.Host}}</span>
         </p>
       </div>
     </div>
+    {{if .Body}}
     <h2 class="text-base font-semibold mt-4">网站介绍</h2>
-    {{if .Body}}<div class="whitespace-pre-wrap">{{.Body}}</div>{{else}}<p class="kicker text-xs opacity-60">还没有写介绍。可以在后台「网址」里补。</p>{{end}}
-    <h2 class="text-base font-semibold mt-4">网站数据</h2>
+    <div class="whitespace-pre-wrap">{{.Body}}</div>
+    {{end}}
+    <h2 class="text-base font-semibold mt-4">收录信息</h2>
     <dl class="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
-      <dt class="opacity-60">名称</dt><dd>{{.Name}}{{if .Alias}}（{{.Alias}}）{{end}}</dd>
-      <dt class="opacity-60">分类</dt><dd>{{if .ParentName}}{{.ParentName}} / {{end}}{{if .CatSlug}}<a class="link link-hover" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{else}}{{.CatName}}{{end}}</dd>
-      <dt class="opacity-60">标签</dt><dd>{{if .TagText}}{{.TagText}}{{else}}未标{{end}}</dd>
-      <dt class="opacity-60">语言</dt><dd>{{if .Lang}}{{.Lang}}{{else}}未标{{end}}</dd>
-      <dt class="opacity-60">地区</dt><dd>{{if .Region}}{{.Region}}{{else}}未标{{end}}</dd>
       <dt class="opacity-60">网址</dt><dd class="break-all">{{.URL}}</dd>
-      <dt class="opacity-60">域名</dt><dd>{{.Host}}</dd>
-      <dt class="opacity-60">协议</dt><dd>{{.Scheme}}</dd>
+      {{if .Alias}}<dt class="opacity-60">别名</dt><dd>{{.Alias}}</dd>{{end}}
+      {{if .Lang}}<dt class="opacity-60">语言</dt><dd>{{.Lang}}</dd>{{end}}
+      {{if .Region}}<dt class="opacity-60">地区</dt><dd>{{.Region}}</dd>{{end}}
       {{if .Spare}}<dt class="opacity-60">备用</dt><dd class="break-all">{{.Spare}}</dd>{{end}}
       {{if .ICP}}<dt class="opacity-60">备案</dt><dd>{{.ICP}}</dd>{{end}}
-      <dt class="opacity-60">浏览</dt><dd>{{.ViewsText}}</dd>
-      <dt class="opacity-60">打开</dt><dd>{{.ClicksText}}</dd>
       <dt class="opacity-60">收录</dt><dd><time datetime="{{.ISO}}">{{.Date}}</time></dd>
     </dl>
-    <p>目前{{.Name}}的浏览人数已达到 {{.ViewsText}}，从本站打开过 {{.ClicksText}} 次。</p>
-    <p class="kicker text-xs opacity-60">外部网站不受开物录控制。地址失效或内容不合适时，可以到「提交网站」告诉我们。</p>
     {{if .Related}}<h2 class="text-base font-semibold">相关网站</h2><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">{{range .Related}}{{template "link" .}}{{end}}</div>{{end}}
   </div>
 </article>
@@ -423,29 +428,30 @@
   <title>{{.Title}} - 开物录</title>
   <meta name="robots" content="noindex,follow">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="/static/site.css?v=26">
+  <link rel="stylesheet" href="/static/site.css?v=27">
 </head>
 <body class="min-h-screen bg-canvas font-sans text-base-content text-sm">
-  <div class="min-h-screen lg:grid lg:grid-cols-2">
-    <section class="bg-primary text-primary-content px-6 py-8 lg:px-14 lg:py-12 lg:flex lg:flex-col lg:justify-between">
-      <a class="text-3xl font-semibold tracking-tight text-primary-content no-underline" href="/">开物录</a>
-      <p class="mt-6 max-w-sm text-2xl font-semibold leading-snug lg:mt-0 lg:text-4xl">收藏和最近使用跟着这个账号。提交过的网站，也能回来看审核。</p>
-      <p class="mt-6 text-sm opacity-80 lg:mt-0">个人网址导航，不出售首页位置。</p>
-    </section>
-    <section class="px-6 py-10 lg:px-14 lg:flex lg:items-center">
-      <form class="w-full max-w-sm flex flex-col gap-4" method="post" action="{{.Action}}">
+  <main class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="w-full max-w-sm">
+      <a class="text-xl font-semibold tracking-tight text-base-content no-underline" href="/">开物录</a>
+      <p class="mt-1 text-sm opacity-60">个人网址导航，不出售首页位置。</p>
+      <form class="mt-8 bg-base-100 border border-base-300 rounded-box p-6 flex flex-col gap-4" method="post" action="{{.Action}}">
         <h1 class="text-2xl font-semibold">{{.Title}}</h1>
+        <p class="text-sm opacity-70">{{if eq .Kind "register"}}注册后，收藏和最近使用记在这个账号上。{{else if eq .Kind "forgot"}}填写注册时的邮箱。重置链接发到这个邮箱。{{else if eq .Kind "reset"}}给这个账号设置一个新密码。{{else}}登录后，收藏和最近使用记在这个账号上。{{end}}</p>
         <input type="hidden" name="next" value="{{.Next}}">
+        {{if .Token}}<input type="hidden" name="token" value="{{.Token}}">{{end}}
+        {{if .Notice}}<p class="alert alert-success">{{.Notice}}</p>{{end}}
         {{if .Error}}<p class="alert alert-error">{{.Error}}</p>{{end}}
-        <label class="flex flex-col gap-1">用户名<input class="input input-bordered" name="username" required maxlength="20" value="{{.User}}" autocomplete="username"></label>
-        <label class="flex flex-col gap-1">密码<input class="input input-bordered" name="password" type="password" required minlength="8" autocomplete="{{if eq .Title "注册"}}new-password{{else}}current-password{{end}}"></label>
-        <button class="btn btn-primary w-fit" type="submit">{{.Title}}</button>
-        {{if eq .Title "登录"}}<p class="text-sm"><a class="link link-hover" href="{{.SwitchTo}}">没有账号？去注册</a></p>{{end}}
+        {{if or (eq .Kind "login") (eq .Kind "register")}}<label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" value="{{.User}}" autocomplete="username">{{if eq .Kind "register"}}<span class="text-xs opacity-60">20 字以内</span>{{end}}</label>{{end}}
+        {{if or (eq .Kind "register") (eq .Kind "forgot")}}<label class="flex flex-col gap-1 text-sm">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" value="{{.Email}}" autocomplete="email">{{if eq .Kind "register"}}<span class="text-xs opacity-60">用来重置密码</span>{{end}}</label>{{end}}
+        {{if or (eq .Kind "login") (eq .Kind "register") (eq .Kind "reset")}}<label class="flex flex-col gap-1 text-sm">{{if eq .Kind "reset"}}新密码{{else}}密码{{end}}<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="{{if eq .Kind "login"}}current-password{{else}}new-password{{end}}"><span class="text-xs opacity-60">至少 8 位</span></label>{{end}}
+        {{if eq .Kind "reset"}}<label class="flex flex-col gap-1 text-sm">再输入一次<input class="input input-bordered w-full" name="password2" type="password" required minlength="8" autocomplete="new-password"></label>{{end}}
+        <button class="btn btn-primary w-full" type="submit">{{if eq .Kind "forgot"}}发送重置邮件{{else if eq .Kind "reset"}}保存新密码{{else}}{{.Title}}{{end}}</button>
+        {{if eq .Kind "login"}}<p class="text-sm text-center"><a class="link link-hover" href="/forgot">忘记密码</a></p><p class="text-sm text-center">没有账号？<a class="link link-hover text-primary" href="{{.SwitchTo}}">去注册</a></p>{{end}}
+        {{if eq .Kind "forgot"}}<p class="text-sm text-center"><a class="link link-hover" href="/login">返回登录</a></p>{{end}}
       </form>
-    </section>
-  </div>
+    </div>
+  </main>
 </body>
 </html>{{end}}
 
@@ -454,6 +460,17 @@
   <h1 class="text-4xl font-semibold tracking-tight">{{.User}}</h1>
   <p class="mt-2 text-sm opacity-60">{{.Date}} 注册</p>
 </header>
+<section class="mt-8 max-w-sm">
+  <h2 class="text-base font-semibold mb-3">邮箱</h2>
+  <p class="text-sm opacity-60 mb-3">忘记密码时，重置链接发到这个邮箱。</p>
+  {{if .MailNotice}}<p class="alert alert-success mb-3">{{.MailNotice}}</p>{{end}}
+  {{if .MailError}}<p class="alert alert-error mb-3">{{.MailError}}</p>{{end}}
+  <form class="flex flex-col gap-3" method="post" action="/mine/email">
+    <label class="flex flex-col gap-1 text-sm">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" value="{{.Email}}" autocomplete="email"></label>
+    <label class="flex flex-col gap-1 text-sm">当前密码<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="current-password"></label>
+    <button class="btn btn-primary w-fit" type="submit">保存邮箱</button>
+  </form>
+</section>
 <section class="mt-8">
   <h2 class="text-base font-semibold mb-3">收藏</h2>
   <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-custom">{{if .Stars}}{{range .Stars}}{{template "link" .}}{{end}}{{else}}点星星，把网站留在这里。{{end}}</div>

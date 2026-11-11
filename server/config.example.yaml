@@ -10,3 +10,11 @@ mysqlDB: opentools
 adminUser: admin
 adminPassword: change-me
 adminSecret: change-me-too
+
+# 重置密码要发信。不填的话，注册可以留下邮箱，但发不出重置邮件。
+# 465 走加密直连，587 走 STARTTLS。发件地址要和邮箱服务商允许的一致。
+smtpHost: ""
+smtpPort: "465"
+smtpUser: ""
+smtpPassword: ""
+smtpFrom: ""

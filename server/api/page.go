@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"compress/gzip"
 	"embed"
 	"encoding/json"
 	"html/template"
@@ -23,8 +24,9 @@ import (
 var publicFiles embed.FS
 
 var publicPages = template.Must(template.New("public").Funcs(template.FuncMap{
-	"inc":     func(i int) int { return i + 1 },
-	"iconURL": iconURL,
+	"inc":      func(i int) int { return i + 1 },
+	"iconURL":  iconURL,
+	"iconBase": iconBase,
 }).ParseFS(publicFiles, "templates/public.html"))
 
 type shell struct {
@@ -98,6 +100,38 @@ type sectionView struct {
 	Groups    []tagGroup
 }
 
+type categoryGuide struct {
+	Title string
+	Intro string
+}
+
+var categoryGuides = map[string]categoryGuide{
+	"chat": {
+		Title: "AI 对话助手",
+		Intro: "写提纲、读长文、查资料和解释代码，可以从 AI 对话助手开始。读文档前先确认能上传的格式和大小，查资料时优先选能列出来源的工具，并打开原文核对。",
+	},
+	"draw": {
+		Title: "AI 绘画与视频生成",
+		Intro: "做插画、商品图或短视频时，先按文生图、图生图或图生视频挑工具。需要交付成品时，生成前先看导出尺寸、水印和商用条款。",
+	},
+	"webtool": {
+		Title: "在线网页工具",
+		Intro: "临时压缩图片、格式化 JSON、换算时间戳或生成二维码，可以在浏览器里完成。处理客户文件、密钥和日志时，先确认工具是否会上传数据。",
+	},
+	"query": {
+		Title: "生活实用查询",
+		Intro: "按任务找查询入口，出行可查车次、航班和天气，寄件可查物流，核对企业信息可查公示平台。涉及办事或资质核验时，以对应官方入口为准。",
+	},
+	"design": {
+		Title: "设计素材与在线设计",
+		Intro: "找图标、配色、作品参考或在线协作工具，可以按项目需要挑选。下载素材前核对单个作品的授权和署名要求，交付前确认能否导出所需格式。",
+	},
+	"learn": {
+		Title: "学习网站与公开课",
+		Intro: "想系统学习可从大学公开课入手，查 Web API 可看开发文档，刚开始编程可跟着短示例练习。选课时先看先修要求、授课语言和课后练习。",
+	},
+}
+
 type boardView struct {
 	Key   string
 	Name  string
@@ -131,7 +165,12 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.POST("/login", loginPost(db))
 	r.GET("/register", registerPage(db))
 	r.POST("/register", registerPost(db))
+	r.GET("/forgot", forgotPage(db))
+	r.POST("/forgot", forgotPost(db))
+	r.GET("/reset", resetPage(db))
+	r.POST("/reset", resetPost(db))
 	r.POST("/logout", logout)
+	r.POST("/mine/email", saveEmail(db))
 	r.GET("/mine", minePage(db))
 	r.GET("/submit", submitPage(db))
 	r.POST("/submit", submit(db))
@@ -140,7 +179,7 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/static/site.css", func(c *gin.Context) {
 		body, _ := publicFiles.ReadFile("static/site.css")
 		c.Header("Cache-Control", "public, max-age=3600")
-		c.Data(http.StatusOK, "text/css; charset=utf-8", body)
+		writeBody(c, http.StatusOK, "text/css; charset=utf-8", body)
 	})
 	mountIcon(r, db)
 	r.GET("/favicon.svg", func(c *gin.Context) {
@@ -153,7 +192,7 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/static/site.js", func(c *gin.Context) {
 		body, _ := publicFiles.ReadFile("static/site.js")
 		c.Header("Cache-Control", "public, max-age=3600")
-		c.Data(http.StatusOK, "application/javascript; charset=utf-8", body)
+		writeBody(c, http.StatusOK, "application/javascript; charset=utf-8", body)
 	})
 }
 
@@ -181,11 +220,31 @@ func render(c *gin.Context, db *gorm.DB, status int, s shell, name string, data 
 		buf.WriteString("<p>页面没有生成。</p>")
 	}
 	s.Content = template.HTML(buf.String())
-	c.Status(status)
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := publicPages.ExecuteTemplate(c.Writer, "layout", s); err != nil {
+	var page bytes.Buffer
+	if err := publicPages.ExecuteTemplate(&page, "layout", s); err != nil {
 		log.Printf("layout: %v", err)
+		c.Status(http.StatusInternalServerError)
+		return
 	}
+	writeBody(c, status, "text/html; charset=utf-8", page.Bytes())
+}
+
+func writeBody(c *gin.Context, status int, contentType string, body []byte) {
+	if len(body) >= 1024 && strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
+		var buf bytes.Buffer
+		zw, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
+		if err == nil {
+			_, werr := zw.Write(body)
+			cerr := zw.Close()
+			if werr == nil && cerr == nil {
+				c.Header("Content-Encoding", "gzip")
+				c.Header("Vary", "Accept-Encoding")
+				c.Data(status, contentType, buf.Bytes())
+				return
+			}
+		}
+	}
+	c.Data(status, contentType, body)
 }
 
 func homePage(db *gorm.DB) gin.HandlerFunc {
@@ -214,7 +273,15 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			return boardFrom(popular), boardFrom(latest)
 		})
 		origin := publicOrigin(c)
-		desc := "开物录收录常用网站，覆盖影视、游戏、工具、查询、学习和 AI。点进名字可以先看介绍，再打开原站。"
+		desc := "查找 AI 助手、在线工具、设计素材、学习资源和生活查询入口。按用途浏览网站，先看介绍，再打开原站。"
+		var tasks []sideItem
+		for _, section := range views {
+			for _, tab := range section.Tabs {
+				if guide, ok := categoryGuides[tab.Slug]; ok {
+					tasks = append(tasks, sideItem{Name: guide.Title, Href: "/c/" + tab.Slug})
+				}
+			}
+		}
 		ld, _ := json.Marshal(map[string]any{
 			"@context":    "https://schema.org",
 			"@type":       "WebSite",
@@ -231,13 +298,15 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			},
 		})
 		render(c, db, http.StatusOK, shell{
-			Title:       "开物录 - 网址导航",
+			Title:       "开物录 - 常用网站与在线工具导航",
 			Description: desc,
 			Keywords:    "网址导航,网址大全,开物录,在线工具,小游戏,实用查询,AI工具",
 			Canonical:   "/",
 			JSONLD:      template.JS(ld),
 			Home:        true,
 		}, "home", map[string]any{
+			"Intro":      desc,
+			"Tasks":      tasks,
 			"TodayLabel": label,
 			"Today":      today,
 			"Pinned":     toViews(pinned, "tile"),
@@ -378,12 +447,17 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 		var view sectionView
 		if cat.Kind == "tab" {
 			view = makeSection(db, cat, layoutOf(parent.Slug), "", true)
-			view.Slug = cat.Slug
-			view.Tabs = []tabView{makeTab(db, cat, layoutOf(parent.Slug), true)}
 		} else {
 			view = makeSection(db, cat, layoutOf(cat.Slug), "", true)
 		}
-		intro := describeSection(cat.Name, view)
+		title, intro := cat.Name, ""
+		if guide, ok := categoryGuides[cat.Slug]; ok {
+			title, intro = guide.Title, guide.Intro
+		}
+		description := intro
+		if description == "" {
+			description = describeSection(cat.Name, view)
+		}
 		crumbs := []map[string]string{{"name": "首页", "url": publicOrigin(c) + "/"}}
 		if parent.Slug != "" {
 			crumbs = append(crumbs, map[string]string{"name": parent.Name, "url": publicOrigin(c) + "/c/" + parent.Slug})
@@ -395,13 +469,13 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 			"itemListElement": crumbLD(crumbs),
 		})
 		render(c, db, http.StatusOK, shell{
-			Title:       cat.Name + " - 开物录",
-			Description: intro,
+			Title:       title + " - 开物录",
+			Description: description,
 			Keywords:    joinWords(cat.Name, parent.Name, "网址导航"),
 			Canonical:   "/c/" + cat.Slug,
 			JSONLD:      template.JS(ld),
 		}, "category", map[string]any{
-			"Name": cat.Name, "Intro": intro, "Section": view,
+			"Name": cat.Name, "Heading": title, "Intro": intro, "Section": view,
 			"ParentName": parent.Name, "ParentSlug": parent.Slug,
 		})
 	}
@@ -517,12 +591,6 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 			},
 		})
 		external := strings.HasPrefix(link.URL, "http://") || strings.HasPrefix(link.URL, "https://")
-		scheme := "站内"
-		if strings.HasPrefix(link.URL, "https://") {
-			scheme = "HTTPS"
-		} else if strings.HasPrefix(link.URL, "http://") {
-			scheme = "HTTP"
-		}
 		render(c, db, http.StatusOK, shell{
 			Title:       title + " - 开物录",
 			Description: clip(summary, 140),
@@ -531,12 +599,12 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 			OGType:      "article",
 			JSONLD:      template.JS(ld),
 		}, "site", map[string]any{
-			"Name": link.Name, "Desc": desc, "Body": link.Body, "Views": link.Views, "Clicks": link.Clicks, "ID": link.ID,
+			"Name": link.Name, "Desc": desc, "Body": strings.TrimSpace(link.Body), "ID": link.ID,
 			"ViewsText": formatCount(link.Views), "ClicksText": formatCount(link.Clicks),
 			"External": external, "URL": link.URL, "Host": host, "IconHost": iconHost, "Letter": letter,
-			"Tags": tags, "TagText": strings.Join(tags, "、"),
+			"Tags":  tags,
 			"Alias": link.Alias, "Lang": link.Lang, "Region": link.Region,
-			"Spare": link.Spare, "ICP": link.ICP, "Scheme": scheme,
+			"Spare": link.Spare, "ICP": link.ICP,
 			"Date": link.CreatedAt.Format("2006-01-02"), "ISO": link.CreatedAt.Format(time.RFC3339),
 			"ParentName": parent.Name, "ParentSlug": parent.Slug,
 			"CatName": cat.Name, "CatSlug": cat.Slug,
@@ -658,6 +726,9 @@ func makeTab(db *gorm.DB, tab models.Category, layout string, on bool) tabView {
 				Date: row.CreatedAt.Format("2006-01-02"), ISO: row.CreatedAt.Format(time.RFC3339),
 			})
 		}
+		return view
+	}
+	if !on {
 		return view
 	}
 	view.Links = toViews(onlineLinks(db, tab.Slug), layout)

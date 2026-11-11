@@ -22,6 +22,7 @@ var readerKey string
 
 func Configure(cfg config.Config) {
 	readerKey = cfg.AdminSecret
+	configureMail(cfg)
 	r2Bucket = cfg.R2Bucket
 	r2Public = strings.TrimRight(cfg.R2PublicBase, "/")
 	if cfg.R2AccessKeyID == "" || cfg.R2SecretAccessKey == "" || cfg.R2Bucket == "" || cfg.R2Endpoint == "" || r2Public == "" {
@@ -33,6 +34,13 @@ func Configure(cfg config.Config) {
 		Credentials:  credentials.NewStaticCredentialsProvider(cfg.R2AccessKeyID, cfg.R2SecretAccessKey, ""),
 		UsePathStyle: true,
 	})
+}
+
+func iconBase() string {
+	if r2Public == "" {
+		return "/ico?host="
+	}
+	return r2Public + "/ico/"
 }
 
 func iconURL(host string) string {

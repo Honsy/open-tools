@@ -241,6 +241,8 @@ func adminSaveLink(db *gorm.DB, update bool) gin.HandlerFunc {
 		} else {
 			row.CreatedAt = time.Now()
 		}
+		oldURL := row.URL
+		oldStatus := row.Status
 		row.CategorySlug = req.CategorySlug
 		row.Name = req.Name
 		row.URL = req.URL
@@ -253,6 +255,10 @@ func adminSaveLink(db *gorm.DB, update bool) gin.HandlerFunc {
 		row.ICP = req.ICP
 		row.Body = req.Body
 		row.Status = req.Status
+		if update && (oldURL != req.URL || (req.Status == "online" && oldStatus != "online")) {
+			row.CheckFails = 0
+			row.CheckedAt = nil
+		}
 		row.Sort = req.Sort
 		row.Pinned = req.Pinned
 		row.PinSort = req.PinSort
