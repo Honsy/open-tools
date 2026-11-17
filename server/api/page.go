@@ -273,6 +273,9 @@ func writeBody(c *gin.Context, status int, contentType string, body []byte) {
 func homePage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		label, today := seed.Today(time.Now())
+		if len(today) == 1 && today[0].Year == 0 {
+			today = nil
+		}
 		var sections []models.Category
 		db.Where("kind = ? AND show_on_home = ?", "section", true).Order("sort").Find(&sections)
 		views := make([]sectionView, 0, len(sections))
@@ -289,7 +292,7 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			view.Fold = section.ContentKind == "tags"
 			for i := range view.Tabs {
 				if view.Tabs[i].On {
-					view.Tabs[i].Links = firstLinks(view.Tabs[i].Links, 6)
+					paginatePreview(&view.Tabs[i])
 				}
 			}
 			views = append(views, view)
@@ -300,8 +303,8 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 		boards, liveHot := homeBoards(func() ([]boardItem, []boardItem) {
 			return boardFrom(popular), boardFrom(latest)
 		})
-		latest = firstModelLinks(latest, 8)
-		popular = firstModelLinks(popular, 8)
+		latest = firstModelLinks(latest, 12)
+		popular = firstModelLinks(popular, 12)
 		for i := range boards {
 			if len(boards[i].Items) > 8 {
 				boards[i].Items = boards[i].Items[:8]
@@ -521,7 +524,7 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 		} else {
 			view = makeSection(db, cat, layoutOf(cat.Slug), "", true)
 			if len(view.Tabs) > 0 && view.Tabs[0].On {
-				view.Tabs[0].Links = firstLinks(view.Tabs[0].Links, 6)
+				paginatePreview(&view.Tabs[0])
 				view.More = "/c/" + view.Tabs[0].Slug
 			}
 		}
@@ -566,6 +569,27 @@ func positivePage(raw string) int {
 		return 1
 	}
 	return page
+}
+
+// Homepage and parent-category previews link to the same paginated category URLs.
+func paginatePreview(tab *tabView) {
+	if tab.Kind == "articles" {
+		return
+	}
+	tab.Total = len(tab.Links)
+	tab.Page = 1
+	tab.PageCount = (tab.Total + 23) / 24
+	tab.Links = firstLinks(tab.Links, 24)
+	for n := 1; n <= tab.PageCount; n++ {
+		url := "/c/" + tab.Slug
+		if n > 1 {
+			url += "?page=" + strconv.Itoa(n)
+		}
+		tab.Pages = append(tab.Pages, pageLink{Number: n, URL: url, Current: n == 1})
+	}
+	if tab.PageCount > 1 {
+		tab.NextURL = "/c/" + tab.Slug + "?page=2"
+	}
 }
 
 func firstLinks(links []linkView, limit int) []linkView {
@@ -692,6 +716,17 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 			},
 		})
 		external := strings.HasPrefix(link.URL, "http://") || strings.HasPrefix(link.URL, "https://")
+		bodyParagraphs := splitParagraphs(link.Body)
+		bodyLead := ""
+		var bodyTips []string
+		if len(bodyParagraphs) > 0 {
+			bodyLead = bodyParagraphs[0]
+			bodyTips = bodyParagraphs[1:]
+		}
+		favoriteJSON := "{}"
+		if views := toViews([]models.Link{link}, "row"); len(views) > 0 {
+			favoriteJSON = views[0].JSON
+		}
 		render(c, db, http.StatusOK, shell{
 			Title:       title + " - 开物录",
 			Description: clip(summary, 140),
@@ -700,11 +735,12 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 			OGType:      "article",
 			JSONLD:      template.JS(ld),
 		}, "site", map[string]any{
-			"Name": link.Name, "Desc": desc, "Body": strings.TrimSpace(link.Body), "ID": link.ID,
+			"Name": link.Name, "Desc": desc, "BodyLead": bodyLead, "BodyTips": bodyTips, "ID": link.ID,
 			"ViewsText": formatCount(link.Views), "ClicksText": formatCount(link.Clicks),
 			"External": external, "URL": link.URL, "Host": host, "IconHost": iconHost, "Letter": letter,
-			"Tags":  tags,
-			"Alias": link.Alias, "Lang": link.Lang, "Region": link.Region,
+			"FavoriteJSON": favoriteJSON,
+			"Tags":         tags,
+			"Alias":        link.Alias, "Lang": link.Lang, "Region": link.Region,
 			"Spare": link.Spare, "ICP": link.ICP,
 			"Date": link.CreatedAt.Format("2006-01-02"), "ISO": link.CreatedAt.Format(time.RFC3339),
 			"ParentName": parent.Name, "ParentSlug": parent.Slug,
@@ -712,6 +748,21 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 			"Related": toViews(related, "row"),
 		})
 	}
+}
+
+func splitParagraphs(body string) []string {
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return nil
+	}
+	parts := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n\n")
+	paragraphs := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			paragraphs = append(paragraphs, part)
+		}
+	}
+	return paragraphs
 }
 
 func searchPage(db *gorm.DB) gin.HandlerFunc {

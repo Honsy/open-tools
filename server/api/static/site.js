@@ -173,7 +173,7 @@
     panel.setAttribute("data-loaded", "1");
     var grid = panel.querySelector(".link-grid");
     var layout = panel.getAttribute("data-layout") || "row";
-    fetch("/api/categories/" + encodeURIComponent(slug) + "?limit=6", { credentials: "same-origin" })
+    fetch("/api/categories/" + encodeURIComponent(slug) + "?limit=24", { credentials: "same-origin" })
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var links = (data.tabs && data.tabs[0] && data.tabs[0].links) || [];
@@ -202,7 +202,10 @@
 
   function show(box, id) {
     box.querySelectorAll("[data-tab]").forEach(function (btn) {
-      btn.classList.toggle("tab-active", btn.getAttribute("data-tab") === id);
+      var active = btn.getAttribute("data-tab") === id;
+      btn.classList.toggle("tab-active", active);
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
     });
     box.querySelectorAll("[data-panel]").forEach(function (panel) {
       var on = panel.getAttribute("data-panel") === id;
@@ -216,10 +219,50 @@
     box.querySelectorAll("[data-tab]").forEach(function (btn) {
       btn.addEventListener("click", function (event) {
         if (btn.tagName === "A") {
-          if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-          event.preventDefault();
+          return; // Category links open the complete, server-paginated catalog.
         }
         show(box, btn.getAttribute("data-tab"));
+      });
+    });
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
+    var target = event.target;
+    if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+    var search = document.getElementById("home-query");
+    if (!search) return;
+    event.preventDefault();
+    search.focus();
+  });
+
+  document.querySelectorAll("[data-home-browse]").forEach(function (box) {
+    var tabs = box.querySelectorAll("[data-home-tab]");
+    var panels = box.querySelectorAll("[data-home-panel]");
+    tabs.forEach(function (tab, index) {
+      tab.addEventListener("click", function () {
+        var id = tab.getAttribute("data-home-tab");
+        tabs.forEach(function (item) {
+          var active = item === tab;
+          item.classList.toggle("active", active);
+          item.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        panels.forEach(function (panel) {
+          var active = panel.getAttribute("data-home-panel") === id;
+          panel.hidden = !active;
+          if (active) watchIcons(panel);
+        });
+      });
+      tab.addEventListener("keydown", function (event) {
+        var next = index;
+        if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+        else if (event.key === "ArrowLeft") next = (index + tabs.length - 1) % tabs.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = tabs.length - 1;
+        else return;
+        event.preventDefault();
+        tabs[next].focus();
+        tabs[next].click();
       });
     });
   });
@@ -321,6 +364,7 @@
       var on = list.some(function (row) { return row.id === item.id; });
       btn.classList.toggle("on", on);
       btn.setAttribute("aria-label", on ? "取消收藏" : "收藏");
+      if (btn.classList.contains("site-save")) btn.textContent = on ? "✓ 已收藏" : "☆ 收藏";
     });
   }
 

@@ -2,7 +2,7 @@
 
 网址导航。游客不用登录就能看收录。没登录时收藏和最近使用记在浏览器 `localStorage`（`ot-custom`、`ot-recent`），登录后改记在账号上。读者登录和管理员登录分开，见下面「权限」。
 
-站点名是开物录。`kaiwulu.com` / `.net` / `.cn` 在 2026-10-03 查过还没人注册，也还没买。现网用 IP 访问。
+站点名是开物录。`kaiwulu.com` 已启用，公开入口通过 Nginx 反代到上海服务器 `8.153.64.49`；旧的“域名未注册、现网用 IP”记录已过期。
 
 ## 结构
 
@@ -20,13 +20,13 @@
 
 ## 设计
 
-公开页样式是 Tailwind CSS 4 加 daisyUI 5，主题按仓库根目录 `DESIGN.md`（IBM Plex Corporate）。源文件在 `ui/public.css`，`npm run build` 写到 `server/api/static/site.css`。改颜色、圆角、间距先改 `ui/public.css` 里的 daisyUI 主题，组件用 daisyUI 的 `btn`、`card`、`menu`、`navbar`、`tabs`、`badge`，布局用 Tailwind。不要再手写一套组件样式。
+公开页样式是 Tailwind CSS 4 加 daisyUI 5，主题按仓库根目录 `DESIGN.md`（蓝白统一导航）。源文件在 `ui/public.css`，`npm run build` 写到 `server/api/static/site.css`。改颜色、圆角、间距先改 `ui/public.css` 里的 daisyUI 主题，组件用 daisyUI 的 `btn`、`card`、`menu`、`navbar`、`tabs`、`badge`，布局用 Tailwind。不要再手写一套组件样式。
 
 - 字体 IBM Plex Sans。中文回退 PingFang SC、Microsoft YaHei。标题 600，正文 14px，标签 12px / 500。
 - 主色 `#0f62fe`，按下 `#004ccd`。页面底 `#fbf9f8`，卡片表面 `#f5f3f3` / `#ffffff`，字 `#1b1c1c`，次级字 `#424656`。成功绿 `#198038` 只用于确认，不拿来做装饰。
 - 层次靠细边框和表面色差，不要重阴影。控件圆角约 0.25rem，大容器最多 0.75rem。
 - 同目录的设计稿 HTML 只参考版式。站点、分类、热榜、介绍以库里的现有内容为准，不要换成稿子里的假站、广告或备案号。
-- 邮箱、网盘、翻译、地图在桌面只靠悬停展开。
+- 邮箱、网盘、翻译、地图收在统一工具菜单中。
 
 ## 权限
 

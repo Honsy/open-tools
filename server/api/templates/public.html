@@ -15,19 +15,13 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=28">
+  <link rel="stylesheet" href="/static/site.css?v=36">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
-<body class="font-sans bg-canvas text-base-content text-sm" data-icon="{{iconBase}}"{{if .UserName}} data-user="{{.UserName}}"{{end}}>
+<body class="font-sans bg-canvas text-base-content text-sm{{if eq .Path "/"}} is-home{{end}}" data-icon="{{iconBase}}"{{if .UserName}} data-user="{{.UserName}}"{{end}}>
   <header class="navbar public-header sticky top-0 z-40 min-h-16 bg-base-100/95 backdrop-blur border-b border-base-300 px-3 gap-2 flex-wrap">
     <div class="navbar-start w-auto gap-3">
       <a class="flex items-baseline gap-2 no-underline text-base-content" href="/"><b class="text-xl font-semibold tracking-tight">开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
-      <ul class="menu menu-horizontal bg-base-200 rounded-box p-1 max-lg:hidden">
-        <li><a class="rounded-lg{{if .Home}} menu-active{{end}}" href="/">首页</a></li>
-        <li><a class="rounded-lg{{if eq .Path "/hot"}} menu-active{{end}}" href="/hot">今日热榜</a></li>
-        <li><a class="rounded-lg{{if eq .Path "/c/ai"}} menu-active{{end}}" href="/c/ai">AI 工具</a></li>
-        <li><a class="rounded-lg{{if eq .Path "/submit"}} menu-active{{end}}" href="/submit">提交收录</a></li>
-      </ul>
     </div>
     <form class="search join bg-base-200 rounded-full flex-1 min-w-48" action="/search" method="get">
       <select class="select select-ghost select-sm w-24" aria-label="搜索引擎" name="engine">
@@ -44,16 +38,15 @@
       <button class="btn btn-ghost btn-sm text-primary" type="submit">搜索</button>
     </form>
     <div class="navbar-end w-auto gap-1">
-      {{range .Utils}}
-      <div class="dropdown dropdown-end dropdown-hover">
-        <button class="btn btn-ghost btn-sm" type="button" aria-label="{{.Name}}">{{.Name}}</button>
-        <ul class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm border border-base-300">
-          {{range .Links}}<li><a href="{{.Href}}" rel="nofollow noopener" target="_blank">{{.Name}}</a></li>{{end}}
-          <li><a class="font-semibold text-primary" href="/c/{{.Slug}}">全部{{.Name}}</a></li>
-        </ul>
-      </div>
-      {{end}}
-      <button class="btn btn-ghost btn-sm" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
+      <a class="btn btn-ghost btn-sm max-lg:hidden" href="/hot">热榜</a>
+      <a class="btn btn-ghost btn-sm max-lg:hidden" href="/submit">提交</a>
+      {{if .Utils}}<div class="dropdown dropdown-end dropdown-hover">
+        <button class="btn btn-ghost btn-sm" type="button" aria-label="工具导航">工具</button>
+        <div class="dropdown-content utility-menu bg-base-100 rounded-box z-50 border border-base-300">
+          {{range .Utils}}<section class="utility-group"><h2>{{.Name}}</h2><ul class="menu">{{range $i, $link := .Links}}{{if lt $i 5}}<li><a href="{{$link.Href}}" rel="nofollow noopener" target="_blank">{{$link.Name}}</a></li>{{end}}{{end}}</ul><a class="utility-more" href="/c/{{.Slug}}">全部{{.Name}} →</a></section>{{end}}
+        </div>
+      </div>{{end}}
+      <button class="btn btn-ghost btn-sm lg:hidden" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
       {{if .UserName}}
       <a class="btn btn-ghost btn-sm" href="/mine">{{.UserName}}</a>
       <form method="post" action="/logout"><button class="btn btn-ghost btn-sm" type="submit">退出</button></form>
@@ -62,7 +55,7 @@
       <a class="btn btn-primary btn-sm" href="/register" data-auth-open="register">注册</a>
       {{end}}
     </div>
-    <div class="cat-pop basis-full" id="cat-pop" hidden>
+    <div class="cat-pop basis-full lg:hidden" id="cat-pop" hidden>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 py-3">
         {{range .Launcher}}
         {{if eq .Href "#simple"}}
@@ -82,11 +75,6 @@
         {{range .Sidebar}}
         <li>
           <a class="{{if .Tool}}{{.Icon}}{{end}}{{if eq .Href $.Path}} menu-active{{end}}" href="{{.Href}}">{{.Name}}</a>
-          {{if .Children}}
-          <ul>
-            {{range .Children}}<li><a class="child{{if eq .Href $.Path}} menu-active{{end}}" href="{{.Href}}">{{.Name}}</a></li>{{end}}
-          </ul>
-          {{end}}
         </li>
         {{end}}
       </ul>
@@ -140,7 +128,7 @@
   </dialog>
   {{end}}
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js?v=14"></script>
+  <script src="/static/site.js?v=17"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {
@@ -217,66 +205,39 @@
 {{end}}
 
 {{define "home"}}
-<section class="card bg-base-100 border border-base-300 shadow-none mb-4">
-  <div class="card-body gap-3">
-    <h1 class="text-2xl font-semibold">开物录 · 常用网站与在线工具导航</h1>
-    <p class="opacity-70">{{.Intro}}</p>
-    {{if .Tasks}}
-    <nav class="flex flex-wrap gap-2" aria-label="按用途找网站">
-      {{range .Tasks}}<a class="btn btn-outline btn-sm" href="{{.Href}}">{{.Name}}</a>{{end}}
-    </nav>
-    {{end}}
+<section class="home-overview">
+<h1>开物录 · 网站与在线工具导航</h1><p>{{.Intro}}</p>
+<nav class="home-intents" aria-label="按用途找网站">{{range .Tasks}}<a href="{{.Href}}">{{.Name}}</a>{{end}}</nav>
+</section>
+<section class="home-shortcuts" id="sec-shortcuts" data-tabs aria-label="你的常用网站">
+  <div class="home-section-heading">
+    <div><p class="home-eyebrow">YOUR WEB, IN ONE PLACE</p><h2>常用入口</h2></div>
+    <div class="home-shortcut-switch" role="tablist" aria-label="常用入口内容">
+      <button class="active" type="button" data-tab="hot" aria-selected="true">精选</button>
+      <button type="button" data-tab="recent" aria-selected="false">最近</button>
+      <button type="button" data-tab="edit" aria-selected="false">收藏</button>
+    </div>
+  </div>
+  <div class="tab-panel home-shortcut-panel" data-panel="hot"><div class="home-pinned-grid">{{range .Pinned}}{{template "link" .}}{{end}}</div></div>
+  <div class="tab-panel home-shortcut-panel" data-panel="recent" hidden><div class="home-pinned-grid" id="desk-recent">还没有打开过网站。</div></div>
+  <div class="tab-panel home-shortcut-panel" data-panel="edit" hidden><div class="home-pinned-grid" id="desk-custom">点星星，把网站留在这里。</div></div>
+</section>
+<section class="home-live" id="sec-boards" data-tabs>
+  <div class="home-section-heading">
+    <div><p class="home-eyebrow">WHAT PEOPLE ARE READING</p><h2><a href="/hot">正在发生 <span aria-hidden="true">↗</span></a></h2></div>
+    <div class="home-shortcut-switch" role="tablist" aria-label="热榜来源">{{range .Boards}}<button class="{{if .On}}active{{end}}" type="button" data-tab="{{.Key}}" aria-selected="{{if .On}}true{{else}}false{{end}}">{{.Name}}</button>{{end}}</div>
+  </div>
+  <div class="home-live-columns">
+    {{range .Boards}}<ol class="board home-live-list tab-panel" data-panel="{{.Key}}" {{if not .On}}hidden{{end}}>{{range $i, $item := .Items}}<li><span class="home-live-index">{{printf "%02d" (inc $i)}}</span><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span class="home-live-heat">{{$item.Heat}}</span></li>{{end}}</ol>{{end}}
+    <div class="home-live-note"><span class="home-live-orbit" aria-hidden="true">◉</span><p>{{if .LiveHot}}热搜来自百度、微博、知乎、哔哩哔哩和抖音，约每十分钟更新。{{else}}实时热搜暂时不可用，这里展示站内热度与最新收录。{{end}}</p><a href="/hot">查看今日热榜 <span aria-hidden="true">→</span></a></div>
   </div>
 </section>
-<div class="hero-grid">
-  <div class="hero-main">
-  <section id="sec-shortcuts" data-tabs>
-    <div role="tablist" class="tabs tabs-box mb-2">
-      <button class="tab tab-active" type="button" data-tab="hot">热门推荐</button>
-      <button class="tab" type="button" data-tab="recent">最近使用</button>
-      <button class="tab" type="button" data-tab="edit">我的收藏</button>
-    </div>
-    <div class="tab-panel" data-panel="hot"><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Pinned}}{{template "link" .}}{{end}}</div></div>
-    <div class="tab-panel" data-panel="recent" hidden><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-recent">还没有打开过网站。</div></div>
-    <div class="tab-panel" data-panel="edit" hidden><div class="link-grid tile grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-custom">点星星，把网站留在这里。</div></div>
-  </section>
-  </div>
-  <div class="hero-side">
-  <section class="card bg-base-200 shadow-none" id="sec-boards" data-tabs>
-    <div class="card-body py-3 gap-2">
-      <div class="flex items-center justify-between">
-        <h2 class="text-base font-semibold"><a class="no-underline" href="/hot">今日热榜</a></h2>
-        <a class="btn btn-ghost btn-xs" href="/hot">更多</a>
-      </div>
-      <div role="tablist" class="tabs tabs-box tabs-xs">{{range .Boards}}<button class="tab{{if .On}} tab-active{{end}}" type="button" data-tab="{{.Key}}">{{.Name}}</button>{{end}}</div>
-      {{range .Boards}}
-      <ol class="board tab-panel" data-panel="{{.Key}}" {{if not .On}}hidden{{end}}>
-        {{range $i, $item := .Items}}<li><span class="badge badge-xs font-bold {{if eq $i 0}}badge-error{{else if eq $i 1}}badge-neutral{{else if eq $i 2}}badge-primary{{else}}badge-ghost{{end}}">{{inc $i}}</span><a href="{{$item.Href}}"{{if $item.External}} rel="nofollow noopener" target="_blank"{{end}}>{{$item.Title}}</a><span class="text-xs opacity-60">{{$item.Heat}}</span></li>{{end}}
-      </ol>
-      {{end}}
-      {{if .LiveHot}}<p class="kicker text-xs opacity-60">热搜来自百度、微博、知乎、哔哩哔哩和抖音，大约每十分钟更新一次。</p>{{else}}<p class="kicker text-xs opacity-60">实时热搜暂时取不到，这里是站内点击和刚收录的网站。</p>{{end}}
-    </div>
-  </section>
-  </div>
-  <section class="today-bar card card-compact bg-base-200 shadow-none" id="sec-today">
-    <div class="card-body flex-row flex-wrap items-baseline gap-x-4 gap-y-1 py-3">
-      <h2 class="text-base font-semibold">{{.TodayLabel}}</h2>
-      <p class="kicker text-xs opacity-60">历史上的今天</p>
-      <ul class="today flex flex-wrap gap-x-4 gap-y-1 text-sm">{{range .Today}}<li>{{if .Year}}<b class="text-primary">{{.Year}}</b> {{end}}{{.Text}}</li>{{end}}</ul>
-    </div>
-  </section>
-</div>
-{{range .Sections}}{{template "section" .}}{{end}}
-<section class="mt-6" id="sec-latest" data-tabs>
-  <div class="flex flex-wrap items-center gap-2 mb-3">
-    <h2 class="text-base font-semibold"><a class="no-underline" href="/latest">最新收录</a></h2>
-    <div role="tablist" class="tabs tabs-box">
-      <button class="tab tab-active" type="button" data-tab="latest">最新收录</button>
-      <button class="tab" type="button" data-tab="popular">热门网址</button>
-    </div>
-  </div>
-  <div class="tab-panel" data-panel="latest"><div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Latest}}{{template "link" .}}{{end}}</div></div>
-  <div class="tab-panel" data-panel="popular" hidden><div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">{{range .Popular}}{{template "link" .}}{{end}}</div></div>
+{{if .Today}}<section class="today-bar home-today" id="sec-today"><p class="home-eyebrow">ON THIS DAY · {{.TodayLabel}}</p><ul class="today">{{range .Today}}<li>{{if .Year}}<b>{{.Year}}</b> {{end}}{{.Text}}</li>{{end}}</ul></section>{{end}}
+<div class="home-browse" id="home-browse">{{range .Sections}}{{template "section" .}}{{end}}</div>
+<section class="home-latest" id="sec-latest" data-tabs>
+  <div class="home-section-heading"><div><p class="home-eyebrow">FRESHLY ADDED</p><h2><a href="/latest">新鲜收录 <span aria-hidden="true">↗</span></a></h2></div><div class="home-shortcut-switch" role="tablist" aria-label="新鲜收录内容"><button class="active" type="button" data-tab="latest" aria-selected="true">最新</button><button type="button" data-tab="popular" aria-selected="false">热门</button></div></div>
+  <div class="tab-panel" data-panel="latest"><div class="home-latest-grid">{{range .Latest}}{{template "link" .}}{{end}}</div></div>
+  <div class="tab-panel" data-panel="popular" hidden><div class="home-latest-grid">{{range .Popular}}{{template "link" .}}{{end}}</div></div>
 </section>
 {{end}}
 
@@ -355,16 +316,17 @@
             <p class="text-xs font-medium text-primary">{{if .CatName}}{{.CatName}}{{else}}开物录收录{{end}}</p>
             <h1 class="text-3xl font-semibold tracking-tight">{{.Name}}</h1>
             <p class="text-base opacity-70">{{.Desc}}</p>
-            {{if .Tags}}<p class="flex flex-wrap gap-2 mt-1">{{range .Tags}}<a class="badge badge-ghost" href="/search?q={{.}}">{{.}}</a>{{end}}</p>{{end}}
+            {{if .Tags}}<p class="flex flex-wrap gap-2 mt-1">{{range .Tags}}<a class="badge badge-ghost" href="/search?q={{. | urlquery}}">{{.}}</a>{{end}}</p>{{end}}
             <div class="site-detail-actions">
               {{if .External}}<a class="btn btn-primary" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">打开网站</a>{{else}}<a class="btn btn-primary" href="{{.URL}}">打开页面</a>{{end}}
+              <button class="btn btn-outline site-save" type="button" data-star="{{.FavoriteJSON}}">☆ 收藏</button>
               <span class="text-sm opacity-60">{{.Host}}</span>
               <span class="site-stat"><b>{{.ViewsText}}</b><span>浏览</span></span>
               <span class="site-stat"><b>{{.ClicksText}}</b><span>打开</span></span>
             </div>
           </div>
         </header>
-        {{if .Body}}<section class="site-description"><h2 class="text-lg font-semibold">网站介绍</h2><div class="prose whitespace-pre-wrap">{{.Body}}</div></section>{{end}}
+        {{if .BodyLead}}<section class="site-description"><h2 class="text-lg font-semibold">网站介绍</h2><div class="site-body"><p>{{.BodyLead}}</p></div>{{if .BodyTips}}<aside class="site-tips"><h3 class="text-sm font-semibold">使用提示</h3>{{range .BodyTips}}<p>{{.}}</p>{{end}}</aside>{{end}}</section>{{end}}
         {{if .Related}}<section class="site-related"><h2 class="text-lg font-semibold mb-3">同类网站</h2><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">{{range .Related}}{{template "link" .}}{{end}}</div></section>{{end}}
       </div>
     </article>
@@ -372,7 +334,7 @@
       <div class="card-body">
         <h2 class="text-base font-semibold">收录信息</h2>
         <dl class="site-facts-list">
-          <dt>网址</dt><dd class="break-all">{{.URL}}</dd>
+          <dt>网址</dt><dd class="break-all" title="{{.URL}}">{{.Host}}</dd>
           {{if .Alias}}<dt>别名</dt><dd>{{.Alias}}</dd>{{end}}
           {{if .Lang}}<dt>语言</dt><dd>{{.Lang}}</dd>{{end}}
           {{if .Region}}<dt>地区</dt><dd>{{.Region}}</dd>{{end}}
@@ -459,7 +421,7 @@
   <title>{{.Title}} - 开物录</title>
   <meta name="robots" content="noindex,follow">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=28">
+  <link rel="stylesheet" href="/static/site.css?v=36">
 </head>
 <body class="auth-page min-h-screen bg-canvas font-sans text-base-content text-sm">
   <main class="auth-layout">
