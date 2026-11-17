@@ -81,12 +81,35 @@ type postView struct {
 }
 
 type tabView struct {
-	Slug  string
-	Name  string
-	Kind  string
-	On    bool
-	Links []linkView
-	Posts []postView
+	Slug      string
+	Name      string
+	Kind      string
+	On        bool
+	Links     []linkView
+	Posts     []postView
+	Total     int
+	Page      int
+	PageCount int
+	PrevURL   string
+	NextURL   string
+	Pages     []pageLink
+}
+
+type pageLink struct {
+	Number  int
+	URL     string
+	Current bool
+}
+
+type searchView struct {
+	Query     string
+	Links     []linkView
+	Total     int
+	Page      int
+	PageCount int
+	PrevURL   string
+	NextURL   string
+	Pages     []pageLink
 }
 
 type sectionView struct {
@@ -264,6 +287,11 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			}
 			view := makeSection(db, section, layout, more, false)
 			view.Fold = section.ContentKind == "tags"
+			for i := range view.Tabs {
+				if view.Tabs[i].On {
+					view.Tabs[i].Links = firstLinks(view.Tabs[i].Links, 6)
+				}
+			}
 			views = append(views, view)
 		}
 		pinned := pinnedLinks(db)
@@ -272,6 +300,13 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 		boards, liveHot := homeBoards(func() ([]boardItem, []boardItem) {
 			return boardFrom(popular), boardFrom(latest)
 		})
+		latest = firstModelLinks(latest, 8)
+		popular = firstModelLinks(popular, 8)
+		for i := range boards {
+			if len(boards[i].Items) > 8 {
+				boards[i].Items = boards[i].Items[:8]
+			}
+		}
 		origin := publicOrigin(c)
 		desc := "查找 AI 助手、在线工具、设计素材、学习资源和生活查询入口。按用途浏览网站，先看介绍，再打开原站。"
 		var tasks []sideItem
@@ -445,10 +480,50 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 			db.Where("slug = ?", cat.ParentSlug).First(&parent)
 		}
 		var view sectionView
-		if cat.Kind == "tab" {
+		categoryPageNum := 1
+		if cat.Kind == "tab" && cat.ContentKind == "articles" {
 			view = makeSection(db, cat, layoutOf(parent.Slug), "", true)
+		} else if cat.Kind == "tab" {
+			view = sectionView{Slug: cat.Slug, Name: cat.Name, Layout: "row", HideTitle: true}
+			page := positivePage(c.Query("page"))
+			const pageSize = 24
+			var total int64
+			db.Model(&models.Link{}).Where("category_slug = ? AND status = ?", cat.Slug, "online").Count(&total)
+			pageCount := int((total + pageSize - 1) / pageSize)
+			if pageCount < 1 {
+				pageCount = 1
+			}
+			if page > pageCount {
+				page = pageCount
+			}
+			categoryPageNum = page
+			var rows []models.Link
+			db.Where("category_slug = ? AND status = ?", cat.Slug, "online").
+				Order("sort asc, id asc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows)
+			tab := tabView{Slug: cat.Slug, Name: cat.Name, On: true, Links: toViews(rows, "row"), Total: int(total), Page: page, PageCount: pageCount}
+			for n := 1; n <= pageCount; n++ {
+				pageURL := "/c/" + cat.Slug
+				if n > 1 {
+					pageURL += "?page=" + strconv.Itoa(n)
+				}
+				tab.Pages = append(tab.Pages, pageLink{Number: n, URL: pageURL, Current: n == page})
+			}
+			if page > 1 {
+				tab.PrevURL = "/c/" + cat.Slug
+				if page > 2 {
+					tab.PrevURL += "?page=" + strconv.Itoa(page-1)
+				}
+			}
+			if page < pageCount {
+				tab.NextURL = "/c/" + cat.Slug + "?page=" + strconv.Itoa(page+1)
+			}
+			view.Tabs = []tabView{tab}
 		} else {
 			view = makeSection(db, cat, layoutOf(cat.Slug), "", true)
+			if len(view.Tabs) > 0 && view.Tabs[0].On {
+				view.Tabs[0].Links = firstLinks(view.Tabs[0].Links, 6)
+				view.More = "/c/" + view.Tabs[0].Slug
+			}
 		}
 		title, intro := cat.Name, ""
 		if guide, ok := categoryGuides[cat.Slug]; ok {
@@ -468,17 +543,43 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 			"@type":           "BreadcrumbList",
 			"itemListElement": crumbLD(crumbs),
 		})
+		canonical := "/c/" + cat.Slug
+		if categoryPageNum > 1 {
+			canonical += "?page=" + strconv.Itoa(categoryPageNum)
+		}
 		render(c, db, http.StatusOK, shell{
 			Title:       title + " - 开物录",
 			Description: description,
 			Keywords:    joinWords(cat.Name, parent.Name, "网址导航"),
-			Canonical:   "/c/" + cat.Slug,
+			Canonical:   canonical,
 			JSONLD:      template.JS(ld),
 		}, "category", map[string]any{
 			"Name": cat.Name, "Heading": title, "Intro": intro, "Section": view,
 			"ParentName": parent.Name, "ParentSlug": parent.Slug,
 		})
 	}
+}
+
+func positivePage(raw string) int {
+	page, err := strconv.Atoi(raw)
+	if err != nil || page < 1 {
+		return 1
+	}
+	return page
+}
+
+func firstLinks(links []linkView, limit int) []linkView {
+	if len(links) > limit {
+		return links[:limit]
+	}
+	return links
+}
+
+func firstModelLinks(links []models.Link, limit int) []models.Link {
+	if len(links) > limit {
+		return links[:limit]
+	}
+	return links
 }
 
 func articlePage(db *gorm.DB) gin.HandlerFunc {
@@ -618,18 +719,48 @@ func searchPage(db *gorm.DB) gin.HandlerFunc {
 		q := strings.TrimSpace(c.Query("q"))
 		title := "搜索 - 开物录"
 		desc := "在开物录导航里搜索已收录的网站。"
-		var links []models.Link
+		view := searchView{Query: q, Page: 1, PageCount: 1}
 		if q != "" && utf8Count(q) <= 40 {
 			safe := strings.NewReplacer("%", "", "_", "").Replace(q)
 			like := "%" + safe + "%"
-			db.Where("status = ? AND (name LIKE ? OR `desc` LIKE ? OR tags LIKE ? OR alias LIKE ?)", "online", like, like, like, like).
-				Order("clicks desc").Limit(50).Find(&links)
+			query := db.Model(&models.Link{}).Where("status = ? AND (name LIKE ? OR `desc` LIKE ? OR tags LIKE ? OR alias LIKE ?)", "online", like, like, like, like)
+			var total int64
+			query.Count(&total)
+			page := positivePage(c.Query("page"))
+			const pageSize = 24
+			pageCount := int((total + pageSize - 1) / pageSize)
+			if pageCount < 1 {
+				pageCount = 1
+			}
+			if page > pageCount {
+				page = pageCount
+			}
+			var links []models.Link
+			query.Order("clicks desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&links)
+			view.Total, view.Page, view.PageCount = int(total), page, pageCount
+			view.Links = toViews(links, "row")
+			for n := 1; n <= pageCount; n++ {
+				pageURL := "/search?q=" + url.QueryEscape(q)
+				if n > 1 {
+					pageURL += "&page=" + strconv.Itoa(n)
+				}
+				view.Pages = append(view.Pages, pageLink{Number: n, URL: pageURL, Current: n == page})
+			}
+			if page > 1 {
+				view.PrevURL = "/search?q=" + url.QueryEscape(q)
+				if page > 2 {
+					view.PrevURL += "&page=" + strconv.Itoa(page-1)
+				}
+			}
+			if page < pageCount {
+				view.NextURL = "/search?q=" + url.QueryEscape(q) + "&page=" + strconv.Itoa(page+1)
+			}
 			title = q + " - 搜索 - 开物录"
 			desc = "开物录导航里和「" + q + "」有关的网站。"
 		}
 		render(c, db, http.StatusOK, shell{
 			Title: title, Description: desc, Canonical: "/search", Robots: "noindex,follow", Query: q,
-		}, "search", map[string]any{"Query": q, "Links": toViews(links, "row")})
+		}, "search", view)
 	}
 }
 

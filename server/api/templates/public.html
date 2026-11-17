@@ -15,11 +15,11 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=27">
+  <link rel="stylesheet" href="/static/site.css?v=28">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body class="font-sans bg-canvas text-base-content text-sm" data-icon="{{iconBase}}"{{if .UserName}} data-user="{{.UserName}}"{{end}}>
-  <header class="navbar sticky top-0 z-40 min-h-16 bg-base-100/90 backdrop-blur border-b border-base-300 px-3 gap-2 flex-wrap">
+  <header class="navbar public-header sticky top-0 z-40 min-h-16 bg-base-100/95 backdrop-blur border-b border-base-300 px-3 gap-2 flex-wrap">
     <div class="navbar-start w-auto gap-3">
       <a class="flex items-baseline gap-2 no-underline text-base-content" href="/"><b class="text-xl font-semibold tracking-tight">开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
       <ul class="menu menu-horizontal bg-base-200 rounded-box p-1 max-lg:hidden">
@@ -74,9 +74,9 @@
       </div>
     </div>
   </header>
-  <div class="{{if .Account}}max-w-5xl mx-auto w-full{{else}}lg:grid lg:grid-cols-[220px_minmax(0,1fr)]{{end}} min-h-[calc(100vh-4rem)]">
+  <div class="{{if .Account}}max-w-5xl mx-auto w-full{{else}}max-w-[1440px] mx-auto lg:grid lg:grid-cols-[220px_minmax(0,1fr)]{{end}} min-h-[calc(100vh-4rem)]">
     {{if not .Account}}
-    <aside class="bg-base-100 border-base-300 max-lg:border-b max-lg:overflow-x-auto lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-auto lg:border-r">
+    <aside class="public-sidebar bg-base-100 border-base-300 max-lg:border-b max-lg:overflow-x-auto lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-auto lg:border-r">
       <ul class="menu menu-horizontal lg:menu-vertical w-max lg:w-full px-2 py-2">
         <li class="menu-title max-lg:hidden">常驻索引</li>
         {{range .Sidebar}}
@@ -92,7 +92,7 @@
       </ul>
     </aside>
     {{end}}
-    <main class="min-w-0 p-4">
+    <main class="public-main min-w-0">
       {{.Content}}
       <footer class="footer sm:footer-horizontal bg-base-100 text-base-content border-t border-base-300 rounded-box mt-8 p-6">
         <aside><b class="text-base">开物录</b><p class="max-w-xs opacity-70">点名字先看介绍，确认后再打开。</p></aside>
@@ -133,13 +133,14 @@
         <label class="flex flex-col gap-1 text-sm">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" autocomplete="email"><span class="text-xs opacity-60">用来重置密码</span></label>
         <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="new-password"><span class="text-xs opacity-60">至少 8 位</span></label>
         <button class="btn btn-primary w-full" type="submit">注册</button>
+        <p class="text-sm text-center">已有账号？<a class="link link-hover text-primary" href="/login" data-auth-open="login">去登录</a></p>
       </form>
     </div>
     <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
   </dialog>
   {{end}}
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js?v=13"></script>
+  <script src="/static/site.js?v=14"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {
@@ -195,6 +196,16 @@
     </div>
     {{else if .On}}
     <div class="link-grid {{$.Layout}} grid gap-2 {{if eq $.Layout "tile"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else if eq $.Layout "mini"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else}}sm:grid-cols-2 xl:grid-cols-3{{end}}">{{range .Links}}{{template "link" .}}{{end}}</div>
+    {{if gt .PageCount 1}}
+    <nav class="pagination mt-5" aria-label="分类分页">
+      <p class="pagination-summary">共 {{.Total}} 个网站 · 第 {{.Page}} / {{.PageCount}} 页</p>
+      <div class="join pagination-controls">
+        {{if .PrevURL}}<a class="btn btn-sm join-item" href="{{.PrevURL}}" rel="prev">上一页</a>{{else}}<span class="btn btn-sm join-item btn-disabled" aria-disabled="true">上一页</span>{{end}}
+        {{range .Pages}}{{if .Current}}<span class="btn btn-sm join-item btn-primary" aria-current="page">{{.Number}}</span>{{else}}<a class="btn btn-sm join-item" href="{{.URL}}">{{.Number}}</a>{{end}}{{end}}
+        {{if .NextURL}}<a class="btn btn-sm join-item" href="{{.NextURL}}" rel="next">下一页</a>{{else}}<span class="btn btn-sm join-item btn-disabled" aria-disabled="true">下一页</span>{{end}}
+      </div>
+    </nav>
+    {{end}}
     {{else}}
     <div class="link-grid {{$.Layout}} grid gap-2 {{if eq $.Layout "tile"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else if eq $.Layout "mini"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else}}sm:grid-cols-2 xl:grid-cols-3{{end}}"><p class="text-sm opacity-60 py-2"><a class="link link-hover" href="/c/{{.Slug}}">查看{{.Name}}</a></p></div>
     {{end}}
@@ -308,6 +319,7 @@
 {{end}}
 
 {{define "category"}}
+<div class="category-page">
 <article class="card bg-base-100 border border-base-300 shadow-none mb-2">
   <div class="card-body">
     <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a>{{if .ParentSlug}} / <a class="link link-hover" href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}} / <span>{{.Name}}</span></nav>
@@ -316,6 +328,7 @@
   </div>
 </article>
 {{template "section" .Section}}
+</div>
 {{end}}
 
 {{define "article"}}
@@ -331,49 +344,67 @@
 {{end}}
 
 {{define "site"}}
-<article class="card bg-base-100 border border-base-300 shadow-none">
-  <div class="card-body">
-    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a>{{if .ParentSlug}} / <a class="link link-hover" href="/c/{{.ParentSlug}}">{{.ParentName}}</a>{{end}}{{if .CatSlug}} / <a class="link link-hover" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}} / <span>{{.Name}}</span></nav>
-    <div class="site-head grid grid-cols-[7rem_minmax(0,1fr)] gap-4 max-sm:grid-cols-[4.5rem_minmax(0,1fr)]">
-      <div>
-        <span class="mark lg">{{if .IconHost}}<img alt="" data-src="{{iconURL .IconHost}}" decoding="async" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b>{{if .Region}}<i class="region">{{.Region}}</i>{{end}}</span>
-        <div class="flex justify-center gap-4 mt-2 text-xs opacity-70">
-          <span class="flex flex-col items-center"><b class="text-base-content">{{.ViewsText}}</b>浏览</span>
-          <span class="flex flex-col items-center"><b class="text-base-content">{{.ClicksText}}</b>打开</span>
-        </div>
+<div class="site-detail">
+  <nav class="breadcrumbs text-sm opacity-70 mb-4" aria-label="面包屑"><ul><li><a href="/">首页</a></li>{{if .ParentSlug}}<li><a href="/c/{{.ParentSlug}}">{{.ParentName}}</a></li>{{end}}{{if .CatSlug}}<li><a href="/c/{{.CatSlug}}">{{.CatName}}</a></li>{{end}}<li>{{.Name}}</li></ul></nav>
+  <div class="site-detail-grid">
+    <article class="card bg-base-100 border border-base-300 shadow-none">
+      <div class="card-body">
+        <header class="site-detail-head">
+          <span class="mark lg">{{if .IconHost}}<img alt="" data-src="{{iconURL .IconHost}}" decoding="async" onload="this.nextElementSibling.remove()" onerror="this.remove()">{{end}}<b>{{.Letter}}</b>{{if .Region}}<i class="region">{{.Region}}</i>{{end}}</span>
+          <div class="site-detail-title">
+            <p class="text-xs font-medium text-primary">{{if .CatName}}{{.CatName}}{{else}}开物录收录{{end}}</p>
+            <h1 class="text-3xl font-semibold tracking-tight">{{.Name}}</h1>
+            <p class="text-base opacity-70">{{.Desc}}</p>
+            {{if .Tags}}<p class="flex flex-wrap gap-2 mt-1">{{range .Tags}}<a class="badge badge-ghost" href="/search?q={{.}}">{{.}}</a>{{end}}</p>{{end}}
+            <div class="site-detail-actions">
+              {{if .External}}<a class="btn btn-primary" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">打开网站</a>{{else}}<a class="btn btn-primary" href="{{.URL}}">打开页面</a>{{end}}
+              <span class="text-sm opacity-60">{{.Host}}</span>
+              <span class="site-stat"><b>{{.ViewsText}}</b><span>浏览</span></span>
+              <span class="site-stat"><b>{{.ClicksText}}</b><span>打开</span></span>
+            </div>
+          </div>
+        </header>
+        {{if .Body}}<section class="site-description"><h2 class="text-lg font-semibold">网站介绍</h2><div class="prose whitespace-pre-wrap">{{.Body}}</div></section>{{end}}
+        {{if .Related}}<section class="site-related"><h2 class="text-lg font-semibold mb-3">同类网站</h2><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">{{range .Related}}{{template "link" .}}{{end}}</div></section>{{end}}
       </div>
-      <div class="flex flex-col items-start gap-2">
-        <h1 class="text-2xl font-semibold">{{.Name}}</h1>
-        <p class="opacity-70">{{.Desc}}</p>
-        {{if or .Tags .CatName}}<p class="flex flex-wrap gap-2 text-sm">{{range .Tags}}<a class="badge badge-ghost" href="/search?q={{.}}">{{.}}</a>{{end}}{{if .CatName}}<a class="badge badge-outline" href="/c/{{.CatSlug}}">{{.CatName}}</a>{{end}}</p>{{end}}
-        <p class="flex items-center gap-3">
-          {{if .External}}<a class="btn btn-primary btn-sm" href="/go/{{.ID}}" rel="nofollow noopener" target="_blank">打开网站</a>{{else}}<a class="btn btn-primary btn-sm" href="{{.URL}}">打开页面</a>{{end}}
-          <span class="text-xs opacity-60">{{.Host}}</span>
-        </p>
+    </article>
+    <aside class="site-facts card bg-base-200 shadow-none">
+      <div class="card-body">
+        <h2 class="text-base font-semibold">收录信息</h2>
+        <dl class="site-facts-list">
+          <dt>网址</dt><dd class="break-all">{{.URL}}</dd>
+          {{if .Alias}}<dt>别名</dt><dd>{{.Alias}}</dd>{{end}}
+          {{if .Lang}}<dt>语言</dt><dd>{{.Lang}}</dd>{{end}}
+          {{if .Region}}<dt>地区</dt><dd>{{.Region}}</dd>{{end}}
+          {{if .Spare}}<dt>备用地址</dt><dd class="break-all">{{.Spare}}</dd>{{end}}
+          {{if .ICP}}<dt>备案</dt><dd>{{.ICP}}</dd>{{end}}
+          <dt>收录时间</dt><dd><time datetime="{{.ISO}}">{{.Date}}</time></dd>
+        </dl>
       </div>
-    </div>
-    {{if .Body}}
-    <h2 class="text-base font-semibold mt-4">网站介绍</h2>
-    <div class="whitespace-pre-wrap">{{.Body}}</div>
-    {{end}}
-    <h2 class="text-base font-semibold mt-4">收录信息</h2>
-    <dl class="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
-      <dt class="opacity-60">网址</dt><dd class="break-all">{{.URL}}</dd>
-      {{if .Alias}}<dt class="opacity-60">别名</dt><dd>{{.Alias}}</dd>{{end}}
-      {{if .Lang}}<dt class="opacity-60">语言</dt><dd>{{.Lang}}</dd>{{end}}
-      {{if .Region}}<dt class="opacity-60">地区</dt><dd>{{.Region}}</dd>{{end}}
-      {{if .Spare}}<dt class="opacity-60">备用</dt><dd class="break-all">{{.Spare}}</dd>{{end}}
-      {{if .ICP}}<dt class="opacity-60">备案</dt><dd>{{.ICP}}</dd>{{end}}
-      <dt class="opacity-60">收录</dt><dd><time datetime="{{.ISO}}">{{.Date}}</time></dd>
-    </dl>
-    {{if .Related}}<h2 class="text-base font-semibold">相关网站</h2><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">{{range .Related}}{{template "link" .}}{{end}}</div>{{end}}
+    </aside>
   </div>
-</article>
+</div>
 {{end}}
 
 {{define "search"}}
-<h1 class="text-2xl font-semibold mb-4">{{if .Query}}搜索「{{.Query}}」{{else}}搜索{{end}}</h1>
-{{if .Links}}<div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">{{range .Links}}{{template "link" .}}{{end}}</div>{{else}}<p class="opacity-70">没有匹配的网站。</p>{{end}}
+<header class="search-heading">
+  <p class="text-xs font-medium text-primary">开物录网址导航</p>
+  <h1 class="text-2xl font-semibold">{{if .Query}}搜索「{{.Query}}」{{else}}搜索{{end}}</h1>
+  {{if .Query}}<p class="text-sm opacity-60">找到 {{.Total}} 个匹配的网站</p>{{end}}
+</header>
+{{if .Links}}
+<div class="search-results grid sm:grid-cols-2 xl:grid-cols-3 gap-3">{{range .Links}}{{template "link" .}}{{end}}</div>
+{{if gt .PageCount 1}}
+<nav class="pagination mt-5" aria-label="搜索结果分页">
+  <p class="pagination-summary">第 {{.Page}} / {{.PageCount}} 页</p>
+  <div class="join pagination-controls">
+    {{if .PrevURL}}<a class="btn btn-sm join-item" href="{{.PrevURL}}" rel="prev">上一页</a>{{else}}<span class="btn btn-sm join-item btn-disabled" aria-disabled="true">上一页</span>{{end}}
+    {{range .Pages}}{{if .Current}}<span class="btn btn-sm join-item btn-primary" aria-current="page">{{.Number}}</span>{{else}}<a class="btn btn-sm join-item" href="{{.URL}}">{{.Number}}</a>{{end}}{{end}}
+    {{if .NextURL}}<a class="btn btn-sm join-item" href="{{.NextURL}}" rel="next">下一页</a>{{else}}<span class="btn btn-sm join-item btn-disabled" aria-disabled="true">下一页</span>{{end}}
+  </div>
+</nav>
+{{end}}
+{{else}}<p class="empty-state">{{if .Query}}没有匹配的网站，换个关键词试试。{{else}}输入网站名称、用途或标签开始搜索。{{end}}</p>{{end}}
 {{end}}
 
 {{define "notice"}}
@@ -428,29 +459,38 @@
   <title>{{.Title}} - 开物录</title>
   <meta name="robots" content="noindex,follow">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=27">
+  <link rel="stylesheet" href="/static/site.css?v=28">
 </head>
-<body class="min-h-screen bg-canvas font-sans text-base-content text-sm">
-  <main class="min-h-screen flex items-center justify-center px-4 py-10">
-    <div class="w-full max-w-sm">
-      <a class="text-xl font-semibold tracking-tight text-base-content no-underline" href="/">开物录</a>
-      <p class="mt-1 text-sm opacity-60">个人网址导航，不出售首页位置。</p>
-      <form class="mt-8 bg-base-100 border border-base-300 rounded-box p-6 flex flex-col gap-4" method="post" action="{{.Action}}">
-        <h1 class="text-2xl font-semibold">{{.Title}}</h1>
-        <p class="text-sm opacity-70">{{if eq .Kind "register"}}注册后，收藏和最近使用记在这个账号上。{{else if eq .Kind "forgot"}}填写注册时的邮箱。重置链接发到这个邮箱。{{else if eq .Kind "reset"}}给这个账号设置一个新密码。{{else}}登录后，收藏和最近使用记在这个账号上。{{end}}</p>
+<body class="auth-page min-h-screen bg-canvas font-sans text-base-content text-sm">
+  <main class="auth-layout">
+    <section class="auth-intro">
+      <a class="auth-brand" href="/"><b>开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
+      <p class="auth-eyebrow">PERSONAL LINK LIBRARY</p>
+      <h1>常用网站，<br>随时都在。</h1>
+      <p class="auth-copy">登录后同步收藏与最近使用。把值得保留的入口整理在一处。</p>
+      <a class="btn btn-ghost auth-back" href="/">← 返回首页</a>
+    </section>
+    <form class="auth-form card bg-base-100 border border-base-300 shadow-none" method="post" action="{{.Action}}">
+      <div class="card-body gap-4">
+        <div>
+          <p class="auth-form-kicker">{{if eq .Kind "register"}}创建账号{{else if eq .Kind "forgot"}}账号帮助{{else if eq .Kind "reset"}}更新凭证{{else}}欢迎回来{{end}}</p>
+          <h2 class="text-2xl font-semibold mt-1">{{.Title}}</h2>
+          <p class="text-sm opacity-70 mt-2">{{if eq .Kind "register"}}注册后，收藏和最近使用记在这个账号上。{{else if eq .Kind "forgot"}}填写注册时的邮箱，我们会发送密码重置链接。{{else if eq .Kind "reset"}}设置新密码，至少 8 位。{{else}}登录后继续使用你的收藏和最近使用。{{end}}</p>
+        </div>
         <input type="hidden" name="next" value="{{.Next}}">
         {{if .Token}}<input type="hidden" name="token" value="{{.Token}}">{{end}}
         {{if .Notice}}<p class="alert alert-success">{{.Notice}}</p>{{end}}
         {{if .Error}}<p class="alert alert-error">{{.Error}}</p>{{end}}
-        {{if or (eq .Kind "login") (eq .Kind "register")}}<label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" value="{{.User}}" autocomplete="username">{{if eq .Kind "register"}}<span class="text-xs opacity-60">20 字以内</span>{{end}}</label>{{end}}
-        {{if or (eq .Kind "register") (eq .Kind "forgot")}}<label class="flex flex-col gap-1 text-sm">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" value="{{.Email}}" autocomplete="email">{{if eq .Kind "register"}}<span class="text-xs opacity-60">用来重置密码</span>{{end}}</label>{{end}}
-        {{if or (eq .Kind "login") (eq .Kind "register") (eq .Kind "reset")}}<label class="flex flex-col gap-1 text-sm">{{if eq .Kind "reset"}}新密码{{else}}密码{{end}}<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="{{if eq .Kind "login"}}current-password{{else}}new-password{{end}}"><span class="text-xs opacity-60">至少 8 位</span></label>{{end}}
-        {{if eq .Kind "reset"}}<label class="flex flex-col gap-1 text-sm">再输入一次<input class="input input-bordered w-full" name="password2" type="password" required minlength="8" autocomplete="new-password"></label>{{end}}
-        <button class="btn btn-primary w-full" type="submit">{{if eq .Kind "forgot"}}发送重置邮件{{else if eq .Kind "reset"}}保存新密码{{else}}{{.Title}}{{end}}</button>
-        {{if eq .Kind "login"}}<p class="text-sm text-center"><a class="link link-hover" href="/forgot">忘记密码</a></p><p class="text-sm text-center">没有账号？<a class="link link-hover text-primary" href="{{.SwitchTo}}">去注册</a></p>{{end}}
-        {{if eq .Kind "forgot"}}<p class="text-sm text-center"><a class="link link-hover" href="/login">返回登录</a></p>{{end}}
-      </form>
-    </div>
+        {{if or (eq .Kind "login") (eq .Kind "register")}}<label class="auth-field">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" value="{{.User}}" autocomplete="username">{{if eq .Kind "register"}}<span class="text-xs opacity-60">最多 20 个字符</span>{{end}}</label>{{end}}
+        {{if or (eq .Kind "register") (eq .Kind "forgot")}}<label class="auth-field">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" value="{{.Email}}" autocomplete="email">{{if eq .Kind "register"}}<span class="text-xs opacity-60">用于重置密码</span>{{end}}</label>{{end}}
+        {{if or (eq .Kind "login") (eq .Kind "register") (eq .Kind "reset")}}<label class="auth-field">{{if eq .Kind "reset"}}新密码{{else}}密码{{end}}<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="{{if eq .Kind "login"}}current-password{{else}}new-password{{end}}"><span class="text-xs opacity-60">至少 8 位</span></label>{{end}}
+        {{if eq .Kind "reset"}}<label class="auth-field">再输入一次<input class="input input-bordered w-full" name="password2" type="password" required minlength="8" autocomplete="new-password"></label>{{end}}
+        <button class="btn btn-primary w-full mt-1" type="submit">{{if eq .Kind "forgot"}}发送重置邮件{{else if eq .Kind "reset"}}保存新密码{{else}}{{.Title}}{{end}}</button>
+        {{if eq .Kind "login"}}<div class="auth-links"><a class="link link-hover" href="/forgot">忘记密码</a><span>没有账号？<a class="link link-hover text-primary" href="{{.SwitchTo}}">去注册</a></span></div>{{end}}
+        {{if eq .Kind "register"}}<p class="auth-switch">已有账号？<a class="link link-hover text-primary" href="{{.SwitchTo}}">去登录</a></p>{{end}}
+        {{if eq .Kind "forgot"}}<p class="auth-switch"><a class="link link-hover" href="/login">返回登录</a></p>{{end}}
+      </div>
+    </form>
   </main>
 </body>
 </html>{{end}}

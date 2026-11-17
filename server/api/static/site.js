@@ -173,7 +173,7 @@
     panel.setAttribute("data-loaded", "1");
     var grid = panel.querySelector(".link-grid");
     var layout = panel.getAttribute("data-layout") || "row";
-    fetch("/api/categories/" + encodeURIComponent(slug), { credentials: "same-origin" })
+    fetch("/api/categories/" + encodeURIComponent(slug) + "?limit=6", { credentials: "same-origin" })
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var links = (data.tabs && data.tabs[0] && data.tabs[0].links) || [];
@@ -186,6 +186,11 @@
         links.forEach(function (link) {
           grid.appendChild(card(link, layout));
         });
+        var more = document.createElement("a");
+        more.className = "grid-more btn btn-ghost btn-sm";
+        more.href = "/c/" + encodeURIComponent(slug);
+        more.textContent = "查看全部 " + (data.name || "网站") + " →";
+        grid.appendChild(more);
         if (typeof paintStars === "function") paintStars(state.stars);
         watchIcons(panel);
       })

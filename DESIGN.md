@@ -115,3 +115,13 @@ The shape language uses a **Soft** roundedness level (`roundedness: 1`), providi
 - **Inputs:** Clean border outlines with high-contrast text and clear focus states.
 - **Cards & Containers:** Structured surfaces defined by light neutral borders and soft corner radii.
 - **Chips & Badges:** Compact pill or softly rounded tags indicating metadata or status using the tertiary green or neutral tones.
+
+## 开物录公开站规则
+
+- **先减量，再排版**：首页每个分类只展示 6 个入口；分类与搜索列表每页 24 个，给出总数、页码和上一页/下一页。不要把整库长列表铺在一个页面里。
+- **留白有节奏**：页面内容最大宽度约 1200px；主区外边距 24px，卡片间距 12px，卡片内边距 16px。桌面列表 2–3 列，窄屏 1 列；避免小屏两列挤压标题和简介。
+- **信息层级固定**：页面标题和说明在前，操作和筛选在列表前，内容后接分页；详情页先给名称、用途和主要操作，次要收录信息单独成组。
+- **导航按屏幕收敛**：桌面保留主导航；手机把搜索放在首屏，低频快捷工具收起，分类导航可横向滑动但隐藏滚动条。
+- **认证页面专注完成任务**：登录、注册、找回和重置密码使用同一版心、表单宽度、字段间距和反馈样式；只展示当前任务需要的字段，并提供明确的登录/注册切换入口。
+- **组件与状态统一**：继续使用 Tailwind 和 daisyUI；主操作用蓝色，次操作用描边或文字按钮，错误/成功用语义色。卡片、输入框、按钮保持一致的圆角和边框，不加重阴影。
+- **可读优先于装饰**：简介最多两行截断，链接与元信息允许换行；键盘焦点清晰，操作有文字标签或无障碍名称。

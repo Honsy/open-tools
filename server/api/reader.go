@@ -110,7 +110,7 @@ func registerPage(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		showAuth(c, db, http.StatusOK, authView{
-			Kind: "register", Title: "注册", Action: "/register", Next: next,
+			Kind: "register", Title: "注册", Action: "/register", SwitchTo: "/login", Next: next,
 		})
 	}
 }
@@ -170,7 +170,7 @@ func registerPost(db *gorm.DB) gin.HandlerFunc {
 		password := c.PostForm("password")
 		fail := func(status int, msg string) {
 			showAuth(c, db, status, authView{
-				Kind: "register", Title: "注册", Action: "/register",
+				Kind: "register", Title: "注册", Action: "/register", SwitchTo: "/login",
 				User: name, Email: email, Error: msg, Next: next,
 			})
 		}

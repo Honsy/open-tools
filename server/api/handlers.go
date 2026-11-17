@@ -187,6 +187,16 @@ func buildSection(db *gorm.DB, s models.Category) sectionDTO {
 
 func category(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		limit := 0
+		if rawLimit := c.Query("limit"); rawLimit != "" {
+			limit = positivePage(rawLimit)
+		}
+		capLinks := func(links []linkDTO) []linkDTO {
+			if limit > 0 && len(links) > limit {
+				return links[:limit]
+			}
+			return links
+		}
 		var cat models.Category
 		if err := db.Where("slug = ?", c.Param("slug")).First(&cat).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "没有这个分类"})
@@ -197,14 +207,20 @@ func category(db *gorm.DB) gin.HandlerFunc {
 			if cat.ContentKind == "articles" {
 				tab.Articles = articleCards(db)
 			} else {
-				tab.Links = toLinks(onlineLinks(db, cat.Slug))
+				tab.Links = capLinks(toLinks(onlineLinks(db, cat.Slug)))
 			}
 			c.JSON(http.StatusOK, sectionDTO{
 				Slug: cat.Slug, Name: cat.Name, Kind: cat.ContentKind, Tabs: []tabDTO{tab},
 			})
 			return
 		}
-		c.JSON(http.StatusOK, buildSection(db, cat))
+		section := buildSection(db, cat)
+		if limit > 0 {
+			for i := range section.Tabs {
+				section.Tabs[i].Links = capLinks(section.Tabs[i].Links)
+			}
+		}
+		c.JSON(http.StatusOK, section)
 	}
 }
 
