@@ -115,3 +115,32 @@ test("migrated templates preserve article HTML, feedback, pagination and escaped
   } });
   assert.ok(category.includes("共 29 个网站"));
 });
+
+test("public navigation and board entries render from the Go JSON field names", () => {
+  const navigation = {
+    ...shell,
+    Sidebar: [{ name: "AI 工具", href: "/c/ai", tool: true, icon: "tool" }],
+    Launcher: [{ name: "简约模式", href: "#simple", icon: "simple" }],
+  };
+  const boards = [{ Key: "local", Name: "热搜", On: true, Items: [{
+    title: "热搜条目", href: "https://example.test/news", heat: "99", external: true,
+  }] }];
+  const home = renderPage({ template: "home", shell: navigation, data: {
+    Tasks: [{ name: "学习", href: "/c/learn" }],
+    Boards: boards,
+    Today: [{ year: 1984, text: "历史事件" }],
+    Sections: [{ Slug: "collection", Groups: [{ name: "主题", tags: ["设计"] }] }],
+    ArticleSections: [{ Slug: "daily", Name: "每日一篇", More: "/c/daily", Tabs: [{
+      Slug: "daily", Kind: "articles", On: true, Posts: [{ ID: 42, Title: "一篇文章" }],
+    }] }],
+  } });
+  assert.match(home, /href="\/c\/ai">AI 工具<\/a>/);
+  assert.match(home, /data-simple>.*简约模式<\/button>/);
+  assert.ok(home.includes('href="/c/learn">学习</a>'));
+  assert.ok(home.includes("<b>1984</b> 历史事件"));
+  assert.ok(home.includes('href="/search?q=%E8%AE%BE%E8%AE%A1">设计</a>'));
+  for (const html of [home, renderPage({ template: "hot", shell: navigation, data: { Boards: boards } })]) {
+    assert.match(html, /href="https:\/\/example\.test\/news"[^>]*>热搜条目<\/a>/);
+  }
+  assert.match(home, /id="sec-latest"[\s\S]*id="sec-daily"[\s\S]*href="\/a\/42"[\s\S]*<footer/);
+});

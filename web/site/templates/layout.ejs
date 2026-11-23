@@ -58,11 +58,11 @@
     </div>
     <div class="cat-pop basis-full lg:hidden" id="cat-pop" hidden>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 py-3">
-        <% for (const item3 of (page?.Launcher ?? [])) { %>
-        <% if (shown((item3?.Href === "#simple"))) { %>
-        <button class="btn btn-ghost btn-sm justify-start" type="button" data-simple><i class="swatch <%= item3?.Icon %>"></i><%= item3?.Name %></button>
+        <% for (const item of (page?.Launcher ?? [])) { %>
+        <% if (item.href === "#simple") { %>
+        <button class="btn btn-ghost btn-sm justify-start" type="button" data-simple><i class="swatch <%= item.icon %>"></i><%= item.name %></button>
         <% } else { %>
-        <a class="btn btn-ghost btn-sm justify-start" href="<%= safeURL(item3?.Href) %>"><i class="swatch <%= item3?.Icon %>"></i><%= item3?.Name %></a>
+        <a class="btn btn-ghost btn-sm justify-start" href="<%= safeURL(item.href) %>"><i class="swatch <%= item.icon %>"></i><%= item.name %></a>
         <% } %>
         <% } %>
       </div>
@@ -73,9 +73,9 @@
     <aside class="public-sidebar bg-base-100 border-base-300 max-lg:border-b max-lg:overflow-x-auto lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-auto lg:border-r">
       <ul class="menu menu-horizontal lg:menu-vertical w-max lg:w-full px-2 py-2">
         <li class="menu-title max-lg:hidden">常驻索引</li>
-        <% for (const item4 of (page?.Sidebar ?? [])) { %>
+        <% for (const item of (page?.Sidebar ?? [])) { %>
         <li>
-          <a class="<% if (shown(item4?.Tool)) { %><%= item4?.Icon %><% } %><% if (shown((item4?.Href === page?.Path))) { %> menu-active<% } %>" href="<%= safeURL(item4?.Href) %>"><%= item4?.Name %></a>
+          <a class="<% if (item.tool) { %><%= item.icon %><% } %><% if (item.href === page.Path) { %> menu-active<% } %>" href="<%= safeURL(item.href) %>"><%= item.name %></a>
         </li>
         <% } %>
       </ul>

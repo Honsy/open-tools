@@ -65,16 +65,17 @@
 
 | 项 | 值 |
 |---|---|
-| Go 进程 | systemd `kaiwu`，工作目录 `/data/app/kaiwu`，二进制 `/data/app/kaiwu/opentools`。拆分版默认听 `127.0.0.1:8080`，可设置 `API_ADDR` |
+| Go 进程 | systemd `kaiwu`，工作目录 `/data/app/kaiwu`，二进制 `/data/app/kaiwu/opentools`，监听 `127.0.0.1:8080` |
+| Node 进程 | systemd `kaiwu-site`，监听 `127.0.0.1:8081`。独立的 Node 24 运行时在 `/data/app/kaiwu/runtime/` |
 | 配置 | `/data/app/kaiwu/config.yaml`（权限 600）。会话密钥用 `sessionSecret`，兼容旧的 `adminSecret`。全新初始化时用 `adminPassword` 创建首个管理员 |
-| 入口 | Nginx `:80` 根路径反代到 `127.0.0.1:8080`，带 `X-Forwarded-Host` |
-| 后台 | `/admin/`，静态在 `/data/app/kaiwu/admin`，构建用 `npm --prefix web/admin run build` |
+| 入口 | `kaiwulu.com` 的 HTTP 跳转 HTTPS。Nginx 按路径分别访问 Go、Node 和静态文件 |
+| 后台 | `/admin/`，静态在当前发布目录 `/data/app/kaiwu/releases/<版本>/admin`，构建用 `npm --prefix web/admin run build` |
 | YouGo | 同机 `/yougo/`，反代 `127.0.0.1:8000`。不要占 80 |
 | MySQL | 本机 `127.0.0.1:13366`，库 `opentools`。YouGo 仍用库 `laoyouba` |
 
 这台机器更新靠本机交叉编译后上传，不要在机器上 `git pull`。Linux 包：`CGO_ENABLED=0 GOOS=linux GOARCH=amd64`。编完把 `GOOS` 设回 `windows`，否则下一发本机编译会变成 ELF。不要编 Windows 可执行文件来跑本地接口。
 
-拆分版上线时，增加单个 Node 进程，监听 `127.0.0.1:8081`，用 `SITE_API_ORIGIN=http://127.0.0.1:8080` 访问 Go。Nginx 把 `/api/`、`/go/`、`/ico` 和 `/health` 发给 Go，直接提供 `/admin/` 和 `/static/` 的静态文件，其他公开 URL 发给 Node。`/_site/` 只在回环地址上供 Node 调用。Nginx 覆盖 `X-Forwarded-Host` 和 `X-Forwarded-Proto`，以保留 canonical、重置链接和 HTTPS Cookie。
+Node 公开站以单进程运行，用 `SITE_API_ORIGIN=http://127.0.0.1:8080` 访问 Go。Nginx 把 `/api/`、`/go/`、`/ico` 和 `/health` 发给 Go，直接提供 `/admin/` 和 `/static/` 的静态文件，其他公开 URL 发给 Node。`/_site/` 只在回环地址上供 Node 调用。Nginx 覆盖 `X-Forwarded-Host` 和 `X-Forwarded-Proto`，以保留 canonical、重置链接和 HTTPS Cookie。
 
 Node 公开站可独立构建并上传。在 `web/site/` 用 Node 24 LTS 执行 `npm ci`、`npm run build`，发布运行目录后用 `npm start` 启动。正式依赖可用 `npm ci --omit=dev` 安装。模板在 Node 进程启动时编译。CSS 和 JS 在 `static/`，可以独立发布。应用代码兼容 Node.js 22 及以上。
 

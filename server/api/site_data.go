@@ -229,6 +229,7 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 		var sections []models.Category
 		db.Where("kind = ? AND show_on_home = ?", "section", true).Order("sort").Find(&sections)
 		views := make([]sectionView, 0, len(sections))
+		var articles []sectionView
 		for _, section := range sections {
 			layout := "row"
 			if section.Slug == "fun" {
@@ -240,12 +241,28 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			}
 			view := makeSection(db, section, layout, more, false)
 			view.Fold = section.ContentKind == "tags"
-			for i := range view.Tabs {
-				if view.Tabs[i].On {
-					paginatePreview(&view.Tabs[i])
+			tabs := make([]tabView, 0, len(view.Tabs))
+			for _, tab := range view.Tabs {
+				if tab.Kind == "articles" {
+					tab.On = true
+					articles = append(articles, sectionView{
+						Slug: tab.Slug, Name: tab.Name, More: "/c/" + tab.Slug, Tabs: []tabView{tab},
+					})
+					continue
 				}
+				if len(tabs) == 0 && !tab.On {
+					tab.On = true
+					tab.Links = toViews(onlineLinks(db, tab.Slug), layout)
+				}
+				if tab.On {
+					paginatePreview(&tab)
+				}
+				tabs = append(tabs, tab)
 			}
-			views = append(views, view)
+			if len(tabs) > 0 || len(view.Tabs) == 0 {
+				view.Tabs = tabs
+				views = append(views, view)
+			}
 		}
 		pinned := pinnedLinks(db)
 		latest := recentLinks(db, 12)
@@ -293,16 +310,17 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 			JSONLD:      ld,
 			Home:        true,
 		}, "home", map[string]any{
-			"Intro":      desc,
-			"Tasks":      tasks,
-			"TodayLabel": label,
-			"Today":      today,
-			"Pinned":     toViews(pinned, "tile"),
-			"Latest":     toViews(latest, "mini"),
-			"Popular":    toViews(popular, "mini"),
-			"Boards":     boards,
-			"LiveHot":    liveHot,
-			"Sections":   views,
+			"Intro":           desc,
+			"Tasks":           tasks,
+			"TodayLabel":      label,
+			"Today":           today,
+			"Pinned":          toViews(pinned, "tile"),
+			"Latest":          toViews(latest, "mini"),
+			"Popular":         toViews(popular, "mini"),
+			"Boards":          boards,
+			"LiveHot":         liveHot,
+			"Sections":        views,
+			"ArticleSections": articles,
 		})
 	}
 }

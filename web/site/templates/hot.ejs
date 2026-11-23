@@ -10,7 +10,9 @@
   <div class="card-body">
     <h2 class="text-base font-semibold"><%= item1?.Name %></h2>
     <ol class="board">
-      <% for (const [v_i, v_item] of (item1?.Items ?? []).entries()) { %><li><span class="badge badge-xs font-bold <% if (shown((v_i === 0))) { %>badge-error<% } else if (shown((v_i === 1))) { %>badge-neutral<% } else if (shown((v_i === 2))) { %>badge-primary<% } else { %>badge-ghost<% } %>"><%= (v_i + 1) %></span><a href="<%= safeURL(v_item?.Href) %>"<% if (shown(v_item?.External)) { %> rel="nofollow noopener" target="_blank"<% } %>><%= v_item?.Title %></a><span class="text-xs opacity-60"><%= v_item?.Heat %></span></li><% } %>
+      <% for (const [index, item] of (item1?.Items ?? []).entries()) { %>
+      <li><span class="badge badge-xs font-bold <% if (index === 0) { %>badge-error<% } else if (index === 1) { %>badge-neutral<% } else if (index === 2) { %>badge-primary<% } else { %>badge-ghost<% } %>"><%= index + 1 %></span><a href="<%= safeURL(item.href) %>"<% if (item.external) { %> rel="nofollow noopener" target="_blank"<% } %>><%= item.title %></a><span class="text-xs opacity-60"><%= item.heat %></span></li>
+      <% } %>
     </ol>
   </div>
 </section>
