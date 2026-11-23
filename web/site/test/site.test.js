@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { renderPage } from "../render.js";
 import { createSite } from "../server.js";
@@ -95,6 +98,36 @@ test("the public Node process renders API views and forwards sessions without ex
   ]);
 });
 
+test("the public site links to built assets and gives only fingerprinted files a long cache lifetime", async t => {
+  const staticDir = await mkdtemp(join(tmpdir(), "kaiwulu-assets-"));
+  t.after(() => rm(staticDir, { recursive: true, force: true }));
+  const names = { css: "site.0123456789abcdef.css", js: "site.fedcba9876543210.js" };
+  const assets = { css: "/static/fingerprinted/" + names.css, js: "/static/fingerprinted/" + names.js };
+  await mkdir(join(staticDir, "fingerprinted"));
+  await Promise.all([
+    writeFile(join(staticDir, "fingerprinted", "manifest.json"), JSON.stringify(assets)),
+    writeFile(join(staticDir, "fingerprinted", names.css), "body {}"),
+    writeFile(join(staticDir, "fingerprinted", names.js), "void 0;"),
+    writeFile(join(staticDir, "site.css"), "body {}"),
+  ]);
+  const api = await listen(http.createServer((req, res) => {
+    if (req.url === "/_site/login") page(res, "authpage", { Kind: "login", Title: "登录" });
+    else page(res, "home", {}, shell);
+  }), t);
+  const site = await listen(createSite({ apiOrigin: api, staticDir }), t);
+  const home = await (await fetch(site + "/")).text();
+  assert.ok(home.includes(`href="${assets.css}"`));
+  assert.ok(home.includes(`src="${assets.js}"`));
+  const login = await (await fetch(site + "/login")).text();
+  assert.ok(login.includes(`href="${assets.css}"`));
+  for (const path of [assets.css, assets.js, "/static/site.css"]) {
+    const response = await fetch(site + path);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get("cache-control"), `public, max-age=${path === "/static/site.css" ? 3600 : 31536000}`);
+    await response.text();
+  }
+});
+
 test("migrated templates preserve article HTML, feedback, pagination and escaped links", () => {
   const article = renderPage({ template: "article", shell, data: {
     Title: "标题 <检查>", ID: 9, Rich: true, HTML: "<h2>正文</h2>", Video: "javascript:alert(1)",
@@ -114,6 +147,20 @@ test("migrated templates preserve article HTML, feedback, pagination and escaped
     Name: "AI", Section: { Name: "AI", Tabs: [{ Kind: "links", On: true, PageCount: 2, Total: 29, Page: 1 }] },
   } });
   assert.ok(category.includes("共 29 个网站"));
+});
+
+test("site details publish the guide and its metadata in the server-rendered HTML", () => {
+  const description = "Poe 是 Quora 提供的多模型 AI 聊天平台。";
+  const guide = renderPage({ template: "site", shell: { ...shell, Title: "Poe｜多模型 AI 聊天", Description: description }, data: {
+    Name: "Poe", Desc: "多模型 AI 聊天", ID: 29, External: true,
+    BodyHTML: '<p>首段介绍</p><h3>Poe 免费吗？</h3><p><a href="https://poe.com/explore">机器人目录</a></p>',
+  } });
+  assert.ok(guide.includes(`<meta name="description" content="${description}">`));
+  assert.ok(guide.includes("<h3>Poe 免费吗？</h3>"));
+  assert.ok(guide.includes('href="https://poe.com/explore">机器人目录</a>'));
+  assert.ok(guide.includes('href="/go/29"'));
+  const short = renderPage({ template: "site", shell, data: { Name: "Poe", Desc: "多模型 AI 聊天" } });
+  assert.ok(!short.includes('class="site-description"'));
 });
 
 test("public navigation and board entries render from the Go JSON field names", () => {

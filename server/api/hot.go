@@ -32,14 +32,16 @@ type hotSnap struct {
 	packs []hotPack
 }
 
-var (
-	hotMu       sync.Mutex
-	hotFetching bool
-	hotState    hotSnap
-)
+type hotCache struct {
+	mu       sync.Mutex
+	fetching bool
+	snapshot hotSnap
+}
+
+var hotState hotCache
 
 func homeBoards(dbLinks func() (popular, latest []boardItem)) ([]boardView, bool) {
-	sources := cachedHot()
+	sources := hotState.packs(fetchHot)
 	boards := make([]boardView, 0, len(sources)+2)
 	for _, src := range sources {
 		if len(src.items) == 0 {
@@ -56,33 +58,25 @@ func homeBoards(dbLinks func() (popular, latest []boardItem)) ([]boardView, bool
 	return boards, live
 }
 
-func cachedHot() []hotPack {
-	hotMu.Lock()
-	if freshHot() {
-		packs := hotState.packs
-		hotMu.Unlock()
-		return packs
+func (cache *hotCache) packs(fetch func() []hotPack) []hotPack {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	if !cache.fetching && !cache.snapshot.fresh() {
+		cache.fetching = true
+		go cache.refresh(fetch)
 	}
-	if hotFetching {
-		packs := hotState.packs
-		hotMu.Unlock()
-		return packs
-	}
-	hotFetching = true
-	hotMu.Unlock()
+	return cache.snapshot.packs
+}
 
-	packs := fetchHot()
-
-	hotMu.Lock()
-	hotFetching = false
-	if hotHasItems(packs) || hotState.at.IsZero() {
-		hotState = hotSnap{at: time.Now(), packs: packs}
-	} else {
-		hotState.at = time.Now()
+func (cache *hotCache) refresh(fetch func() []hotPack) {
+	packs := fetch()
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	cache.fetching = false
+	if hotHasItems(packs) || cache.snapshot.at.IsZero() {
+		cache.snapshot.packs = packs
 	}
-	packs = hotState.packs
-	hotMu.Unlock()
-	return packs
+	cache.snapshot.at = time.Now()
 }
 
 func hotHasItems(packs []hotPack) bool {
@@ -94,15 +88,15 @@ func hotHasItems(packs []hotPack) bool {
 	return false
 }
 
-func freshHot() bool {
-	if hotState.at.IsZero() {
+func (snap hotSnap) fresh() bool {
+	if snap.at.IsZero() {
 		return false
 	}
 	ttl := 10 * time.Minute
-	if !hotHasItems(hotState.packs) {
+	if !hotHasItems(snap.packs) {
 		ttl = 2 * time.Minute
 	}
-	return time.Since(hotState.at) < ttl
+	return time.Since(snap.at) < ttl
 }
 
 func fetchHot() []hotPack {

@@ -133,7 +133,7 @@ onMounted(load);
     <label>地区<input v-model="form.region" maxlength="20" placeholder="中国" /></label>
     <label class="wide">备用地址<input v-model="form.spare" placeholder="https://" /></label>
     <label>备案<input v-model="form.icp" maxlength="40" placeholder="选填" /></label>
-    <label class="full">网站介绍<textarea v-model="form.body" rows="8" maxlength="4000" placeholder="详情页正文，空一行分段" /></label>
+    <label class="full">网站介绍<textarea v-model="form.body" rows="8" maxlength="4000" placeholder="首段写网站简介，空一行分段。支持 Markdown 小标题和链接。" /></label>
     <label>分类
       <select v-model="form.categorySlug">
         <option v-for="cat in cats.filter((c) => c.kind === 'tab')" :key="cat.slug" :value="cat.slug">

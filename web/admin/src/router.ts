@@ -6,6 +6,7 @@ import AdminCategories from "./pages/admin/Categories.vue";
 import AdminArticles from "./pages/admin/Articles.vue";
 import AdminTags from "./pages/admin/Tags.vue";
 import AdminFeedback from "./pages/admin/Feedback.vue";
+import AdminUsers from "./pages/admin/Users.vue";
 
 const adminChildren = [
   { path: "", component: AdminReview },
@@ -14,6 +15,7 @@ const adminChildren = [
   { path: "articles", component: AdminArticles },
   { path: "tags", component: AdminTags },
   { path: "feedback", component: AdminFeedback },
+  { path: "users", component: AdminUsers },
 ];
 
 export const routes = [

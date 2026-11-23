@@ -38,6 +38,9 @@ func Run() error {
 	if err := seed.EnsureSlugs(db); err != nil {
 		return err
 	}
+	if err := editorial.BackfillSiteGuides(db); err != nil {
+		return err
+	}
 	if err := seed.EnsureIntros(db); err != nil {
 		return err
 	}

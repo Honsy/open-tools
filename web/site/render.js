@@ -10,15 +10,15 @@ for (const file of readdirSync(templateDir)) {
   templates.set(name, ejs.compile(source, { filename: file }));
 }
 
-export function renderPage({ template, shell, data }) {
-  const body = renderTemplate(template, data);
-  return template === "authpage" ? body : renderTemplate("layout", { ...shell, Content: body });
-}
+export function renderPage({ template, shell, data }, assets = {}) {
+  function partial(name, page) {
+    const render = templates.get(name);
+    if (!render) throw new Error("Unknown public template");
+    return render({ page, assets, partial, shown, safeURL, date, query, jsonScript });
+  }
 
-function renderTemplate(name, data) {
-  const render = templates.get(name);
-  if (!render) throw new Error("Unknown public template");
-  return render({ page: data, partial: renderTemplate, shown, safeURL, date, query, jsonScript });
+  const body = partial(template, data);
+  return template === "authpage" ? body : partial("layout", { ...shell, Content: body });
 }
 
 function shown(value) {

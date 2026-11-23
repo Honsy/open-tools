@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tailwindcss -i ./public.css -o ./static/site.css --minify",
+    "build": "tailwindcss -i ./public.css -o ./static/site.css --minify && node build-assets.js",
     "start": "node main.js",
     "test": "node --test"
   },

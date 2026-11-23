@@ -79,6 +79,8 @@ Node 公开站以单进程运行，用 `SITE_API_ORIGIN=http://127.0.0.1:8080` �
 
 Node 公开站可独立构建并上传。在 `web/site/` 用 Node 24 LTS 执行 `npm ci`、`npm run build`，发布运行目录后用 `npm start` 启动。正式依赖可用 `npm ci --omit=dev` 安装。模板在 Node 进程启动时编译。CSS 和 JS 在 `static/`，可以独立发布。应用代码兼容 Node.js 22 及以上。
 
+公开站构建会在 `static/fingerprinted/` 生成带内容指纹的主 CSS、JS 和清单。发布时先同步带指纹的文件并保留上一版，再切换清单和 Node 进程。Nginx 在 `http` 中加载 `deploy/nginx/kaiwulu-static-cache-map.conf`，现有 `/static/` 路由加上 `expires $kaiwulu_static_expires;`。在 `kaiwulu.com` 的 HTTPS `server` 中加载 `deploy/nginx/kaiwulu-gzip.conf`。生效前用 `nginx -t` 检查。
+
 ## 本地
 
 不主动起服务。开发时分别在 `server/` 用 `go run .`（`:8080`），在 `web/site/` 用 `npm start`（`:8081`），在 `web/admin/` 用 `npm run dev`（`:5173`）。用 `:5173` 同域调试公开站和 `/admin/`，Vite 把公开路由转到 Node，Node 把 API 转到 Go。本机 Go 若低于 `go.mod` 的 1.24，设 `GOTOOLCHAIN=auto`，代理用 `https://goproxy.cn,direct`。

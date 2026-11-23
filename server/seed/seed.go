@@ -230,8 +230,6 @@ func linkRows() []models.Link {
 	for i := range links {
 		if body, ok := intros[links[i].Name]; ok {
 			links[i].Body = body
-		} else if links[i].Desc != "" {
-			links[i].Body = links[i].Name + "，" + links[i].Desc + "。先看它是不是你要找的那一个，再打开。\n\n页面改版、要登录或分地区开放时，以网站自己的说明为准。"
 		}
 		links[i].CreatedAt = now.Add(-time.Hour * time.Duration(100+i))
 		if h, ok := fresh[links[i].Name]; ok {

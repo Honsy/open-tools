@@ -22,6 +22,7 @@ func MountAdmin(r *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"username": c.GetString("adminUser")})
 	})
 	g.GET("/stats", adminStats(db))
+	g.GET("/users", adminUsers(db))
 	g.GET("/links", adminLinks(db))
 	g.POST("/links", adminSaveLink(db, false))
 	g.PUT("/links/:id", adminSaveLink(db, true))

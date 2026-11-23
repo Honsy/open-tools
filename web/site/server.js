@@ -1,4 +1,4 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import http from "node:http";
 import https from "node:https";
@@ -31,6 +31,12 @@ export function createSite({
       api.pathname !== "/" || api.search || api.hash) {
     throw new Error("SITE_API_ORIGIN must be an HTTP(S) origin");
   }
+  let assets;
+  try {
+    assets = JSON.parse(readFileSync(join(staticDir, "fingerprinted", "manifest.json"), "utf8"));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
   return http.createServer({ requestTimeout: 120_000 }, async (req, res) => {
     let pathname = "";
     try {
@@ -49,7 +55,7 @@ export function createSite({
         return await serveAsset(req, res, staticDir, pathname.slice("/static/".length));
       }
       const forwardAPI = pathname.startsWith("/api/") || pathname.startsWith("/go/") || pathname === "/ico" || pathname === "/health";
-      await serveUpstream(req, res, api, url, !forwardAPI);
+      await serveUpstream(req, res, api, url, !forwardAPI, assets);
     } catch (error) {
       if (res.destroyed) return;
       if (res.headersSent) res.destroy();
@@ -81,7 +87,7 @@ function firstHeaderList(value) {
   return typeof value === "string" ? value.toLowerCase().split(",").map(part => part.trim()) : [];
 }
 
-async function serveUpstream(req, res, api, publicURL, page) {
+async function serveUpstream(req, res, api, publicURL, page, assets) {
   const target = new URL(api);
   target.pathname = (page ? privateSiteAPI : "") + publicURL.pathname;
   target.search = publicURL.search;
@@ -117,7 +123,7 @@ async function serveUpstream(req, res, api, publicURL, page) {
 
   const data = await readPageData(response);
   const sitemap = data.template === "sitemap";
-  const body = sitemap ? renderSitemap(data.data, publicOrigin.origin) : renderPage(data);
+  const body = sitemap ? renderSitemap(data.data, publicOrigin.origin) : renderPage(data, assets);
   responseHeaders["content-type"] = sitemap ? "application/xml; charset=utf-8" : "text/html; charset=utf-8";
   responseHeaders["content-length"] = Buffer.byteLength(body);
   delete responseHeaders["content-encoding"];
@@ -157,7 +163,8 @@ async function serveAsset(req, res, directory, name) {
     if (error.code === "ENOENT" || error.code === "ENOTDIR") return send(res, 404, "404 page not found\n");
     throw error;
   }
-  const headers = { "cache-control": "public, max-age=3600", "last-modified": metadata.mtime.toUTCString() };
+  const maxAge = /^fingerprinted\/site\.[0-9a-f]{16}\.(css|js)$/.test(name) ? 31536000 : 3600;
+  const headers = { "cache-control": `public, max-age=${maxAge}`, "last-modified": metadata.mtime.toUTCString() };
   if (Date.parse(req.headers["if-modified-since"]) >= Math.floor(metadata.mtimeMs / 1000) * 1000) {
     res.writeHead(304, headers).end();
     return;

@@ -8,7 +8,7 @@
           <div class="site-detail-title">
             <p class="text-xs font-medium text-primary"><% if (shown(page?.CatName)) { %><%= page?.CatName %><% } else { %>开物录收录<% } %></p>
             <h1 class="text-3xl font-semibold tracking-tight"><%= page?.Name %></h1>
-            <p class="text-base opacity-70"><%= page?.Desc %></p>
+            <% if (shown(page?.Desc)) { %><p class="text-base opacity-70"><%= page.Desc %></p><% } %>
             <% if (shown(page?.Tags)) { %><p class="flex flex-wrap gap-2 mt-1"><% for (const item1 of (page?.Tags ?? [])) { %><a class="badge badge-ghost" href="/search?q=<%= query(item1) %>"><%= item1 %></a><% } %></p><% } %>
             <div class="site-detail-actions">
               <% if (shown(page?.External)) { %><a class="btn btn-primary" href="/go/<%= page?.ID %>" rel="nofollow noopener" target="_blank">打开网站</a><% } else { %><a class="btn btn-primary" href="<%= safeURL(page?.URL) %>">打开页面</a><% } %>
@@ -19,7 +19,17 @@
             </div>
           </div>
         </header>
-        <% if (shown(page?.BodyLead)) { %><section class="site-description"><h2 class="text-lg font-semibold">网站介绍</h2><div class="site-body"><p><%= page?.BodyLead %></p></div><% if (shown(page?.BodyTips)) { %><aside class="site-tips"><h3 class="text-sm font-semibold">使用提示</h3><% for (const item2 of (page?.BodyTips ?? [])) { %><p><%= item2 %></p><% } %></aside><% } %></section><% } %>
+        <% if (shown(page?.BodyHTML) || shown(page?.BodyLead)) { %>
+        <section class="site-description">
+          <h2 class="text-lg font-semibold">网站介绍</h2>
+          <div class="site-body">
+            <% if (shown(page?.BodyHTML)) { %><%- page.BodyHTML %><% } else { %>
+            <p><%= page.BodyLead %></p>
+            <% for (const tip of (page.BodyTips ?? [])) { %><p><%= tip %></p><% } %>
+            <% } %>
+          </div>
+        </section>
+        <% } %>
         <% if (shown(page?.Related)) { %><section class="site-related"><h2 class="text-lg font-semibold mb-3">同类网站</h2><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3"><% for (const item3 of (page?.Related ?? [])) { %><%- partial("link", item3) %><% } %></div></section><% } %>
       </div>
     </article>

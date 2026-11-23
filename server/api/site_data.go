@@ -185,6 +185,7 @@ func mountSiteAPI(r *gin.RouterGroup, db *gorm.DB) {
 
 const siteAPIPrefix = "/_site"
 const sitePageType = "application/vnd.kaiwulu.page.v1+json"
+const categoryPageSize = 24
 
 type siteResponse struct {
 	Template string `json:"template"`
@@ -252,10 +253,7 @@ func homePage(db *gorm.DB) gin.HandlerFunc {
 				}
 				if len(tabs) == 0 && !tab.On {
 					tab.On = true
-					tab.Links = toViews(onlineLinks(db, tab.Slug), layout)
-				}
-				if tab.On {
-					paginatePreview(&tab)
+					paginatePreview(db, &tab, layout)
 				}
 				tabs = append(tabs, tab)
 			}
@@ -470,10 +468,9 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 		} else if cat.Kind == "tab" {
 			view = sectionView{Slug: cat.Slug, Name: cat.Name, Layout: "row", HideTitle: true}
 			page := positivePage(c.Query("page"))
-			const pageSize = 24
 			var total int64
-			db.Model(&models.Link{}).Where("category_slug = ? AND status = ?", cat.Slug, "online").Count(&total)
-			pageCount := int((total + pageSize - 1) / pageSize)
+			onlineCategoryLinks(db, cat.Slug).Count(&total)
+			pageCount := int((total + categoryPageSize - 1) / categoryPageSize)
 			if pageCount < 1 {
 				pageCount = 1
 			}
@@ -482,8 +479,8 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 			}
 			categoryPageNum = page
 			var rows []models.Link
-			db.Where("category_slug = ? AND status = ?", cat.Slug, "online").
-				Order("sort asc, id asc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows)
+			onlineCategoryLinks(db, cat.Slug).
+				Order("sort asc, id asc").Offset((page - 1) * categoryPageSize).Limit(categoryPageSize).Find(&rows)
 			tab := tabView{Slug: cat.Slug, Name: cat.Name, On: true, Links: toViews(rows, "row"), Total: int(total), Page: page, PageCount: pageCount}
 			for n := 1; n <= pageCount; n++ {
 				pageURL := "/c/" + cat.Slug
@@ -505,7 +502,6 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 		} else {
 			view = makeSection(db, cat, layoutOf(cat.Slug), "", true)
 			if len(view.Tabs) > 0 && view.Tabs[0].On {
-				paginatePreview(&view.Tabs[0])
 				view.More = "/c/" + view.Tabs[0].Slug
 			}
 		}
@@ -560,14 +556,18 @@ func positivePage(raw string) int {
 }
 
 // Homepage and parent-category previews link to the same paginated category URLs.
-func paginatePreview(tab *tabView) {
-	if tab.Kind == "articles" {
-		return
+func paginatePreview(db *gorm.DB, tab *tabView, layout string) {
+	var rows []models.Link
+	onlineCategoryLinks(db, tab.Slug).Order("sort asc, id asc").Limit(categoryPageSize).Find(&rows)
+	tab.Links = toViews(rows, layout)
+	tab.Total = len(rows)
+	if len(rows) == categoryPageSize {
+		var total int64
+		onlineCategoryLinks(db, tab.Slug).Count(&total)
+		tab.Total = max(tab.Total, int(total))
 	}
-	tab.Total = len(tab.Links)
 	tab.Page = 1
-	tab.PageCount = (tab.Total + 23) / 24
-	tab.Links = firstLinks(tab.Links, 24)
+	tab.PageCount = (tab.Total + categoryPageSize - 1) / categoryPageSize
 	for n := 1; n <= tab.PageCount; n++ {
 		url := "/c/" + tab.Slug
 		if n > 1 {
@@ -578,13 +578,6 @@ func paginatePreview(tab *tabView) {
 	if tab.PageCount > 1 {
 		tab.NextURL = "/c/" + tab.Slug + "?page=2"
 	}
-}
-
-func firstLinks(links []linkView, limit int) []linkView {
-	if len(links) > limit {
-		return links[:limit]
-	}
-	return links
 }
 
 func firstModelLinks(links []models.Link, limit int) []models.Link {
@@ -698,27 +691,23 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 		origin := publicOrigin(c)
 		canonical := origin + "/site/" + link.Slug
 		desc := strings.TrimSpace(link.Desc)
-		if desc == "" {
-			desc = link.Name + "，收录在开物录导航。"
-		}
-		intro := link.Name + "收录在开物录"
-		if parent.Name != "" {
-			intro += "的" + parent.Name + " / " + cat.Name
-		} else if cat.Name != "" {
-			intro += "的" + cat.Name
-		}
-		intro += "。" + desc
 		title := link.Name
-		if link.Desc != "" {
-			title = link.Name + "-" + link.Desc
+		if desc != "" {
+			title += "｜" + desc
 		}
 		tags := seed.SplitTags(link.Tags)
-		summary := strings.TrimSpace(link.Body)
-		if summary == "" {
-			summary = intro
-		} else if i := strings.Index(summary, "\n"); i > 0 {
-			summary = summary[:i]
+		body := link.Body
+		if seed.IsPlaceholderIntro(body) {
+			body = ""
 		}
+		var bodyLead string
+		var bodyTips []string
+		summary := title
+		if paragraphs := splitParagraphs(body); len(paragraphs) > 0 {
+			bodyLead, bodyTips = paragraphs[0], paragraphs[1:]
+			summary = strings.Join(strings.Fields(bodyLead), " ")
+		}
+		summary = clip(summary, 140)
 		host := link.URL
 		iconHost := ""
 		letter := "站"
@@ -751,26 +740,19 @@ func sitePage(db *gorm.DB) gin.HandlerFunc {
 			},
 		})
 		external := strings.HasPrefix(link.URL, "http://") || strings.HasPrefix(link.URL, "https://")
-		bodyParagraphs := splitParagraphs(link.Body)
-		bodyLead := ""
-		var bodyTips []string
-		if len(bodyParagraphs) > 0 {
-			bodyLead = bodyParagraphs[0]
-			bodyTips = bodyParagraphs[1:]
-		}
 		favoriteJSON := "{}"
 		if views := toViews([]models.Link{link}, "row"); len(views) > 0 {
 			favoriteJSON = views[0].JSON
 		}
 		sendSitePage(c, db, http.StatusOK, shell{
 			Title:       title + " - 开物录",
-			Description: clip(summary, 140),
+			Description: summary,
 			Keywords:    joinWords(append([]string{link.Name}, append(tags, cat.Name, parent.Name, "网址导航")...)...),
 			Canonical:   "/site/" + link.Slug,
 			OGType:      "article",
 			JSONLD:      ld,
 		}, "site", map[string]any{
-			"Name": link.Name, "Desc": desc, "BodyLead": bodyLead, "BodyTips": bodyTips, "ID": link.ID,
+			"Name": link.Name, "Desc": desc, "BodyHTML": markdownHTML(body), "BodyLead": bodyLead, "BodyTips": bodyTips, "ID": link.ID,
 			"ViewsText": formatCount(link.Views), "ClicksText": formatCount(link.Clicks),
 			"External": external, "URL": link.URL, "Host": host, "IconHost": iconHost, "Icon": iconURL(iconHost), "Letter": letter,
 			"FavoriteJSON": favoriteJSON,
@@ -954,7 +936,7 @@ func makeTab(db *gorm.DB, tab models.Category, layout string, on bool) tabView {
 	if !on {
 		return view
 	}
-	view.Links = toViews(onlineLinks(db, tab.Slug), layout)
+	paginatePreview(db, &view, layout)
 	return view
 }
 

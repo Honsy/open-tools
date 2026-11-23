@@ -15,7 +15,7 @@
   <meta property="og:url" content="<%= page?.Canonical %>">
   <meta name="robots" content="<%= page?.Robots %>">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=37">
+  <link rel="stylesheet" href="<%= assets.css ?? '/static/site.css?v=37' %>">
   <% if (shown(page?.JSONLD)) { %><script type="application/ld+json"><%- jsonScript(page?.JSONLD) %></script><% } %>
 </head>
 <body class="font-sans bg-canvas text-base-content text-sm<% if (shown((page?.Path === "/"))) { %> is-home<% } %>" data-icon="<%= page?.IconBase %>"<% if (shown(page?.UserName)) { %> data-user="<%= page?.UserName %>"<% } %>>
@@ -129,7 +129,7 @@
   </dialog>
   <% } %>
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js?v=18"></script>
+  <script src="<%= assets.js ?? '/static/site.js?v=18' %>"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {

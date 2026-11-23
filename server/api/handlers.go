@@ -369,8 +369,12 @@ func goOut(db *gorm.DB) gin.HandlerFunc {
 
 func onlineLinks(db *gorm.DB, slug string) []models.Link {
 	var links []models.Link
-	db.Where("category_slug = ? AND status = ?", slug, "online").Order("sort asc, id asc").Find(&links)
+	onlineCategoryLinks(db, slug).Order("sort asc, id asc").Find(&links)
 	return links
+}
+
+func onlineCategoryLinks(db *gorm.DB, slug string) *gorm.DB {
+	return db.Model(&models.Link{}).Where("category_slug = ? AND status = ?", slug, "online")
 }
 
 func pinnedLinks(db *gorm.DB) []models.Link {

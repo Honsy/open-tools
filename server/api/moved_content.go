@@ -63,10 +63,15 @@ func articleHTML(item models.Article) string {
 	case "html":
 		return articlePolicy.Sanitize(item.Body)
 	case "markdown":
-		var out bytes.Buffer
-		if err := articleMarkdown.Convert([]byte(item.Body), &out); err == nil {
-			return string(articlePolicy.SanitizeBytes(out.Bytes()))
-		}
+		return markdownHTML(item.Body)
+	}
+	return ""
+}
+
+func markdownHTML(body string) string {
+	var out bytes.Buffer
+	if err := articleMarkdown.Convert([]byte(body), &out); err == nil {
+		return string(articlePolicy.SanitizeBytes(out.Bytes()))
 	}
 	return ""
 }

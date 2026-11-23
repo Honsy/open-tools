@@ -33,8 +33,17 @@ func TestSharedLoginChecksAdminRoleOnEveryRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := db.Callback().Query().Replace("gorm:query", func(q *gorm.DB) {
-		*q.Statement.Dest.(*models.User) = user
-		q.RowsAffected = 1
+		switch dest := q.Statement.Dest.(type) {
+		case *models.User:
+			*dest = user
+			q.RowsAffected = 1
+		case *int64:
+			*dest = 51
+			q.RowsAffected = 1
+		case *[]adminUserRow:
+			*dest = []adminUserRow{{ID: 12, Username: "reader", Email: "reader@example.test"}}
+			q.RowsAffected = 1
+		}
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -61,6 +70,9 @@ func TestSharedLoginChecksAdminRoleOnEveryRequest(t *testing.T) {
 	if got := adminRequest(http.MethodGet, "/api/admin/me", nil, ""); got != http.StatusUnauthorized {
 		t.Fatalf("admin without cookie = %d, want 401", got)
 	}
+	if got := adminRequest(http.MethodGet, "/api/admin/users", nil, ""); got != http.StatusUnauthorized {
+		t.Fatalf("user directory without cookie = %d, want 401", got)
+	}
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, siteAPIPrefix+"/login?next=/admin/links", nil))
 	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != sitePageType ||
@@ -84,12 +96,27 @@ func TestSharedLoginChecksAdminRoleOnEveryRequest(t *testing.T) {
 	if got := adminRequest(http.MethodGet, "/api/admin/me", cookie, ""); got != http.StatusForbidden {
 		t.Fatalf("ordinary user in admin = %d, want 403", got)
 	}
+	if got := adminRequest(http.MethodGet, "/api/admin/users", cookie, ""); got != http.StatusForbidden {
+		t.Fatalf("ordinary user in user directory = %d, want 403", got)
+	}
 	user.IsAdmin = true
 	if got := adminRequest(http.MethodGet, "/api/admin/me", cookie, ""); got != http.StatusOK {
 		t.Fatalf("admin with the shared session = %d, want 200", got)
 	}
 	if got := adminRequest(http.MethodPost, "/api/admin/tags", cookie, "cross-site"); got != http.StatusForbidden {
 		t.Fatalf("cross-site admin write = %d, want 403", got)
+	}
+	request = httptest.NewRequest(http.MethodGet, "/api/admin/users?page=99", nil)
+	request.AddCookie(cookie)
+	response = httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("admin users request = %d, cache-control %q", response.Code, response.Header().Get("Cache-Control"))
+	}
+	for _, text := range []string{`"email":"reader@example.test"`, `"isAdmin":false`, `"page":2`, `"pageCount":2`, `"total":51`} {
+		if !strings.Contains(response.Body.String(), text) {
+			t.Fatalf("admin users response missing %s: %s", text, response.Body.String())
+		}
 	}
 	user.IsAdmin = false
 	if got := adminRequest(http.MethodGet, "/api/admin/me", cookie, ""); got != http.StatusForbidden {

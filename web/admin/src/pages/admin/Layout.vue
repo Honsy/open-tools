@@ -10,6 +10,7 @@ const items = [
   { to: adminPath("articles"), name: "文章" },
   { to: adminPath("tags"), name: "标签" },
   { to: adminPath("feedback"), name: "反馈" },
+  { to: adminPath("users"), name: "用户" },
 ];
 </script>
 
