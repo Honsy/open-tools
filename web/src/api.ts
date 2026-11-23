@@ -53,20 +53,8 @@ export type SideItem = { name: string; href: string; children?: SideItem[] };
 
 export type Article = ArticleCard & { body: string };
 
-export function adminToken() {
-  return sessionStorage.getItem("ot-admin") || "";
-}
-
-export function setAdminToken(token: string) {
-  if (token) sessionStorage.setItem("ot-admin", token);
-  else sessionStorage.removeItem("ot-admin");
-}
-
 export async function getJSON<T>(url: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  const token = adminToken();
-  if (token) headers.set("Authorization", "Bearer " + token);
-  const res = await fetch(url, { ...init, headers });
+  const res = await fetch(url, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const message = typeof data.error === "string" ? data.error : "请求失败";

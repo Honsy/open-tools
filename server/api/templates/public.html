@@ -15,7 +15,7 @@
   <meta property="og:url" content="{{.Canonical}}">
   <meta name="robots" content="{{.Robots}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=36">
+  <link rel="stylesheet" href="/static/site.css?v=37">
   {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD}}</script>{{end}}
 </head>
 <body class="font-sans bg-canvas text-base-content text-sm{{if eq .Path "/"}} is-home{{end}}" data-icon="{{iconBase}}"{{if .UserName}} data-user="{{.UserName}}"{{end}}>
@@ -49,6 +49,7 @@
       <button class="btn btn-ghost btn-sm lg:hidden" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
       {{if .UserName}}
       <a class="btn btn-ghost btn-sm" href="/mine">{{.UserName}}</a>
+      {{if .IsAdmin}}<a class="btn btn-ghost btn-sm" href="/admin/">管理后台</a>{{end}}
       <form method="post" action="/logout"><button class="btn btn-ghost btn-sm" type="submit">退出</button></form>
       {{else}}
       <a class="btn btn-ghost btn-sm" href="/login" data-auth-open="login">登录</a>
@@ -85,7 +86,7 @@
       <footer class="footer sm:footer-horizontal bg-base-100 text-base-content border-t border-base-300 rounded-box mt-8 p-6">
         <aside><b class="text-base">开物录</b><p class="max-w-xs opacity-70">点名字先看介绍，确认后再打开。</p></aside>
         <nav><h6 class="footer-title">快捷入口</h6><a class="link link-hover" href="/hot">今日热榜</a><a class="link link-hover" href="/latest">最新收录</a><a class="link link-hover" href="/submit">提交网站</a><a class="link link-hover" href="/notice">公告</a></nav>
-        <nav><h6 class="footer-title">本站</h6><a class="link link-hover" href="/rank">站点排行</a><a class="link link-hover" href="/cooperate">广告合作</a><a class="link link-hover" href="/admin/">管理</a></nav>
+        <nav><h6 class="footer-title">本站</h6><a class="link link-hover" href="/rank">站点排行</a><a class="link link-hover" href="/cooperate">广告合作</a><a class="link link-hover" href="/feedback">站点反馈</a><a class="link link-hover" href="/admin/">管理</a></nav>
       </footer>
     </main>
   </div>
@@ -99,8 +100,8 @@
       <p class="alert alert-error mt-4" data-auth-error hidden></p>
       <form class="mt-4 flex flex-col gap-3" method="post" action="/login">
         <input type="hidden" name="next" value="{{.Path}}">
-        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" autocomplete="username"></label>
-        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="current-password"><span class="text-xs opacity-60">至少 8 位</span></label>
+        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required autocomplete="username"></label>
+        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered w-full" name="password" type="password" required autocomplete="current-password"></label>
         <button class="btn btn-primary w-full" type="submit">登录</button>
         <p class="text-sm text-center"><a class="link link-hover" href="/forgot">忘记密码</a></p>
         <p class="text-sm text-center">没有账号？<a class="link link-hover text-primary" href="/register" data-auth-open="register">去注册</a></p>
@@ -128,7 +129,7 @@
   </dialog>
   {{end}}
   <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
-  <script src="/static/site.js?v=17"></script>
+  <script src="/static/site.js?v=18"></script>
   <script>
   var _hmt = _hmt || [];
   (function() {
@@ -176,12 +177,14 @@
   {{if .Groups}}
   {{template "taggroups" .}}
   {{else}}
-  {{range .Tabs}}
+  {{range $tab := .Tabs}}
   <div class="tab-panel" data-panel="{{.Slug}}"{{if not .On}} hidden{{end}}{{if and (not .On) (ne .Kind "articles")}} data-lazy="{{.Slug}}" data-layout="{{if $.Layout}}{{$.Layout}}{{else}}row{{end}}"{{end}}>
     {{if eq .Kind "articles"}}
+    {{if .Topics}}<nav class="flex flex-wrap gap-2 mb-3" aria-label="文章分类"><a class="btn btn-sm {{if not .Topic}}btn-primary{{end}}" href="/c/{{.Slug}}">全部</a>{{range .Topics}}<a class="btn btn-sm {{if eq . $tab.Topic}}btn-primary{{end}}" href="/c/{{$tab.Slug}}?topic={{.}}">{{.}}</a>{{end}}</nav>{{end}}
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {{range .Posts}}<a class="card bg-base-100 border border-base-300 no-underline text-base-content" href="/a/{{.ID}}"><div class="card-body"><time class="text-xs opacity-60" datetime="{{.ISO}}">{{.Date}}</time><strong>{{.Title}}</strong><p class="text-sm opacity-70">{{.Summary}}</p><span class="text-xs opacity-60">{{.Views}} 次阅读</span></div></a>{{end}}
     </div>
+    {{if or .PrevURL .NextURL}}<nav class="pagination mt-5" aria-label="文章分页"><p class="pagination-summary">共 {{.Total}} 篇 · 第 {{.Page}} / {{.PageCount}} 页</p><div class="join pagination-controls">{{if .PrevURL}}<a class="btn btn-sm join-item" href="{{.PrevURL}}" rel="prev">上一页</a>{{end}}{{if .NextURL}}<a class="btn btn-sm join-item" href="{{.NextURL}}" rel="next">下一页</a>{{end}}</div></nav>{{end}}
     {{else if .On}}
     <div class="link-grid {{$.Layout}} grid gap-2 {{if eq $.Layout "tile"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else if eq $.Layout "mini"}}grid-cols-2 md:grid-cols-3 xl:grid-cols-4{{else}}sm:grid-cols-2 xl:grid-cols-3{{end}}">{{range .Links}}{{template "link" .}}{{end}}</div>
     {{if gt .PageCount 1}}
@@ -299,9 +302,14 @@
     <p class="kicker text-xs opacity-60"><time datetime="{{.ISO}}">{{.Date}}</time> · {{.Views}} 次阅读</p>
     <h1 class="text-2xl font-semibold">{{.Title}}</h1>
     <p class="opacity-70">{{.Summary}}</p>
-    <div class="prose whitespace-pre-wrap">{{.Body}}</div>
+    {{if .Category}}<p class="text-sm opacity-70">{{.Category}}</p>{{end}}
+    {{if .Cover}}<img class="max-w-full rounded" src="{{.Cover}}" alt="{{.Title}}">{{end}}
+    {{if .Embed}}<iframe class="w-full aspect-video rounded" src="{{.Embed}}" title="{{.Title}}视频" loading="lazy" allowfullscreen></iframe>
+    {{else if .Video}}<p><a class="btn btn-outline btn-sm" href="{{.Video}}" target="_blank" rel="noopener noreferrer">观看视频</a></p>{{end}}
+    {{if .Rich}}<nav data-article-toc class="border border-base-300 rounded p-3" aria-label="文章目录" hidden></nav><div class="article-body">{{.HTML}}</div>{{else}}<div class="whitespace-pre-wrap">{{.Body}}</div>{{end}}
   </div>
 </article>
+{{template "comments" .}}
 {{end}}
 
 {{define "site"}}
@@ -387,8 +395,9 @@
 {{define "rank"}}
 <article class="card bg-base-100 border border-base-300 shadow-none">
   <div class="card-body">
-    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>站点排行</span></nav>
-    <h1 class="text-2xl font-semibold">站点排行</h1>
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>{{.Title}}</span></nav>
+    <h1 class="text-2xl font-semibold">{{.Title}}</h1>
+    <div class="join"><a class="btn btn-sm join-item {{if not .AI}}btn-primary{{end}}" href="/rank">全部站点</a><a class="btn btn-sm join-item {{if .AI}}btn-primary{{end}}" href="/rank?category=ai">AI 站点</a></div>
     <p class="opacity-70">{{.Intro}}</p>
     <ol class="board">
       {{range $i, $item := .Links}}<li><span class="badge badge-xs font-bold {{if eq $i 0}}badge-error{{else if eq $i 1}}badge-neutral{{else if eq $i 2}}badge-primary{{else}}badge-ghost{{end}}">{{inc $i}}</span><a href="{{$item.Href}}">{{$item.Name}}</a><span class="text-xs opacity-60">{{$item.Clicks}} 次打开</span></li>{{end}}
@@ -421,7 +430,7 @@
   <title>{{.Title}} - 开物录</title>
   <meta name="robots" content="noindex,follow">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/site.css?v=36">
+  <link rel="stylesheet" href="/static/site.css?v=37">
 </head>
 <body class="auth-page min-h-screen bg-canvas font-sans text-base-content text-sm">
   <main class="auth-layout">
@@ -443,9 +452,9 @@
         {{if .Token}}<input type="hidden" name="token" value="{{.Token}}">{{end}}
         {{if .Notice}}<p class="alert alert-success">{{.Notice}}</p>{{end}}
         {{if .Error}}<p class="alert alert-error">{{.Error}}</p>{{end}}
-        {{if or (eq .Kind "login") (eq .Kind "register")}}<label class="auth-field">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" value="{{.User}}" autocomplete="username">{{if eq .Kind "register"}}<span class="text-xs opacity-60">最多 20 个字符</span>{{end}}</label>{{end}}
+        {{if or (eq .Kind "login") (eq .Kind "register")}}<label class="auth-field">用户名<input class="input input-bordered w-full" name="username" required{{if eq .Kind "register"}} maxlength="20"{{end}} value="{{.User}}" autocomplete="username">{{if eq .Kind "register"}}<span class="text-xs opacity-60">最多 20 个字符</span>{{end}}</label>{{end}}
         {{if or (eq .Kind "register") (eq .Kind "forgot")}}<label class="auth-field">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" value="{{.Email}}" autocomplete="email">{{if eq .Kind "register"}}<span class="text-xs opacity-60">用于重置密码</span>{{end}}</label>{{end}}
-        {{if or (eq .Kind "login") (eq .Kind "register") (eq .Kind "reset")}}<label class="auth-field">{{if eq .Kind "reset"}}新密码{{else}}密码{{end}}<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="{{if eq .Kind "login"}}current-password{{else}}new-password{{end}}"><span class="text-xs opacity-60">至少 8 位</span></label>{{end}}
+        {{if or (eq .Kind "login") (eq .Kind "register") (eq .Kind "reset")}}<label class="auth-field">{{if eq .Kind "reset"}}新密码{{else}}密码{{end}}<input class="input input-bordered w-full" name="password" type="password" required{{if ne .Kind "login"}} minlength="8"{{end}} autocomplete="{{if eq .Kind "login"}}current-password{{else}}new-password{{end}}">{{if ne .Kind "login"}}<span class="text-xs opacity-60">至少 8 位</span>{{end}}</label>{{end}}
         {{if eq .Kind "reset"}}<label class="auth-field">再输入一次<input class="input input-bordered w-full" name="password2" type="password" required minlength="8" autocomplete="new-password"></label>{{end}}
         <button class="btn btn-primary w-full mt-1" type="submit">{{if eq .Kind "forgot"}}发送重置邮件{{else if eq .Kind "reset"}}保存新密码{{else}}{{.Title}}{{end}}</button>
         {{if eq .Kind "login"}}<div class="auth-links"><a class="link link-hover" href="/forgot">忘记密码</a><span>没有账号？<a class="link link-hover text-primary" href="{{.SwitchTo}}">去注册</a></span></div>{{end}}

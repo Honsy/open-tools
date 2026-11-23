@@ -90,6 +90,7 @@ func sitemap(db *gorm.DB) gin.HandlerFunc {
 		writeURL(&b, origin+"/latest")
 		writeURL(&b, origin+"/rank")
 		writeURL(&b, origin+"/notice")
+		writeURL(&b, origin+"/rank?category=ai")
 		var cats []models.Category
 		db.Order("sort asc, id asc").Find(&cats)
 		for _, cat := range cats {
@@ -99,7 +100,7 @@ func sitemap(db *gorm.DB) gin.HandlerFunc {
 			writeURL(&b, origin+"/c/"+cat.Slug)
 		}
 		var articles []models.Article
-		db.Order("id asc").Find(&articles)
+		db.Select("id").Where("draft = ?", false).Order("id asc").Find(&articles)
 		for _, article := range articles {
 			writeURL(&b, origin+"/a/"+itoa(article.ID))
 		}
@@ -121,7 +122,7 @@ func writeURL(b *strings.Builder, loc string) {
 
 func robots() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		body := "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /go/\nDisallow: /login\nDisallow: /register\nDisallow: /forgot\nDisallow: /reset\nDisallow: /mine\nDisallow: /random\nSitemap: " + publicOrigin(c) + "/sitemap.xml\n"
+		body := "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /go/\nDisallow: /login\nDisallow: /register\nDisallow: /forgot\nDisallow: /reset\nDisallow: /mine\nDisallow: /random\nDisallow: /tools/\nDisallow: /feedback\nSitemap: " + publicOrigin(c) + "/sitemap.xml\n"
 		c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(body))
 	}
 }

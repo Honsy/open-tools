@@ -32,9 +32,15 @@ function isDocument(url: string) {
     path === "/" ||
     path.startsWith("/c/") ||
     path.startsWith("/a/") ||
+    path === "/ai" ||
+    path.startsWith("/ai/") ||
+    path === "/ranking/ai" ||
+    path === "/feedback" ||
+    path === "/rank" ||
     path.startsWith("/site/") ||
     path === "/search" ||
     path === "/submit" ||
+    ["/login", "/logout", "/register", "/forgot", "/reset", "/mine", "/mine/email"].includes(path) ||
     path.startsWith("/tools/") ||
     path.startsWith("/static/") ||
     path.startsWith("/ico") ||

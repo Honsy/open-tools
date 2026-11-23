@@ -3,7 +3,6 @@ import { createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 import App from "./App.vue";
 import { routes } from "./router";
-import { getJSON } from "./api";
 import { adminApp, adminPath } from "./adminPath";
 import "./styles.css";
 
@@ -19,21 +18,21 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const inAdmin = adminApp || to.path === "/admin" || to.path.startsWith("/admin/");
   if (!inAdmin) return true;
-  const loginPath = adminPath("login");
-  if (to.path === loginPath) {
-    try {
-      await getJSON("/api/admin/me");
-      return adminPath();
-    } catch {
-      return true;
-    }
-  }
+  const accessPath = adminPath("access");
+  if (to.path === accessPath) return true;
   try {
-    await getJSON("/api/admin/me");
-    return true;
+    const response = await fetch("/api/admin/me");
+    if (response.ok) return true;
+    if (response.status === 401) {
+      const next = router.resolve(to.fullPath).href;
+      window.location.replace(`/login?${new URLSearchParams({ next })}`);
+      return false;
+    }
+    if (response.status === 403) return accessPath;
   } catch {
-    return { path: loginPath, query: { next: to.fullPath } };
+    // The access page also handles an unavailable API.
   }
+  return { path: accessPath, query: { unavailable: "1" } };
 });
 
 createApp(App).use(createPinia()).use(router).mount("#app");

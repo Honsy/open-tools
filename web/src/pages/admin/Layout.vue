@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { useRoute, useRouter } from "vue-router";
-import { setAdminToken } from "../../api";
+import { useRoute } from "vue-router";
 import { adminPath } from "../../adminPath";
 
 const route = useRoute();
-const router = useRouter();
 const items = [
   { to: adminPath(), name: "待审" },
   { to: adminPath("links"), name: "网址" },
   { to: adminPath("categories"), name: "分类" },
   { to: adminPath("articles"), name: "文章" },
   { to: adminPath("tags"), name: "标签" },
+  { to: adminPath("feedback"), name: "反馈" },
 ];
-
-function logout() {
-  setAdminToken("");
-  router.push(adminPath("login"));
-}
 </script>
 
 <template>
@@ -25,7 +19,7 @@ function logout() {
       <strong>开物录管理</strong>
       <div>
         <a href="/">返回前台</a>
-        <button type="button" @click="logout">退出</button>
+        <form method="post" action="/logout"><button type="submit">退出</button></form>
       </div>
     </header>
     <div class="adm-body">

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @source "../server/api/templates";
 @source "../server/api/static/site.js";
+@source "../server/api/static/lab";
 
 @plugin "daisyui" {
   themes: false;
@@ -411,3 +412,16 @@ html.simple .menu a.child { display: none; }
 .board li { min-height: 40px; line-height: 24px; }
 .home-section-heading { min-height: 36px; margin-bottom: var(--space-3); }
 @media(max-width: 767px) { .public-main .card-body { padding: var(--space-4); } }
+
+@layer components {
+  .article-body { @apply break-words leading-relaxed; }
+  .article-body :where(h1, h2, h3, h4) { @apply font-semibold mt-5 mb-2; }
+  .article-body :where(p, pre, blockquote, ul, ol, table) { @apply my-3; }
+  .article-body a { @apply text-primary underline; }
+  .article-body img { @apply max-w-full h-auto rounded; }
+  .article-body pre { @apply bg-base-200 p-3 rounded overflow-x-auto; }
+  .article-body ul { @apply list-disc pl-6; }
+  .article-body ol { @apply list-decimal pl-6; }
+  .article-body table { @apply block max-w-full overflow-x-auto; }
+  .article-body :where(th, td) { @apply border border-base-300 px-2 py-1; }
+}

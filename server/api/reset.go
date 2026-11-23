@@ -172,7 +172,7 @@ func resetPost(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Where("user_id = ?", user.ID).Delete(&models.PasswordReset{})
-		setReaderCookie(c, user)
+		setSessionCookie(c, user)
 		c.Redirect(http.StatusSeeOther, "/mine")
 	}
 }
@@ -205,7 +205,7 @@ func emailTaken(db *gorm.DB, email string, exceptID uint) bool {
 
 func saveEmail(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, ok := currentReader(c, db)
+		user, ok := currentUser(c, db)
 		if !ok {
 			c.Redirect(http.StatusFound, "/login?next=/mine")
 			return

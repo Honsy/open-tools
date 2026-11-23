@@ -10,6 +10,8 @@ import (
 
 	"opentools/api"
 	"opentools/config"
+	"opentools/editorial"
+	"opentools/lab"
 	"opentools/linkcheck"
 	"opentools/models"
 	"opentools/seed"
@@ -45,9 +47,6 @@ func Run() error {
 	if err := seed.EnsureProfile(db); err != nil {
 		return err
 	}
-	if err := seed.EnsureAdmin(db, cfg.AdminUser, cfg.AdminPassword); err != nil {
-		return err
-	}
 	addr := ":8080"
 	if p := os.Getenv("PORT"); p != "" {
 		addr = ":" + p
@@ -56,7 +55,11 @@ func Run() error {
 	api.Configure(cfg)
 	r := api.Router(db)
 	api.WarmIcons(db)
-	api.MountAdmin(r, db, cfg)
+	api.MountAdmin(r, db)
+	api.MountLab(r, db, cfg)
+	if cfg.DailyArticles {
+		editorial.StartDaily(db, lab.FromConfig(cfg))
+	}
 	linkcheck.Start(db)
 	return r.Run(addr)
 }
@@ -83,11 +86,14 @@ func openDB(cfg config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	sqlDB.SetMaxOpenConns(10)
-	if err := db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.Tag{}, &models.Admin{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}); err != nil {
+	if err := db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.ArticleComment{}, &models.Feedback{}, &models.Tag{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}); err != nil {
 		return nil, err
 	}
 	if err := ensureUserEmail(db); err != nil {
 		return nil, err
+	}
+	if err := seed.MigrateAccounts(db, cfg.AdminUser, cfg.AdminPassword); err != nil {
+		return nil, fmt.Errorf("migrate accounts: %w", err)
 	}
 	return db, nil
 }

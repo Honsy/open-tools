@@ -226,17 +226,17 @@ footer a { color: #1d4f91; }
   .panel { min-height: 0; }
 }
 
-.login-box {
-  width: 320px;
+.admin-access {
+  width: min(320px, calc(100% - 32px));
   margin: 80px auto;
   background: #fff;
   border: 1px solid #ddd;
   padding: 20px;
 }
-.login-box h1 { font-size: 18px; margin-bottom: 14px; }
-.login-box label { display: block; margin-bottom: 10px; font-size: 13px; }
-.login-box input { display: block; width: 100%; margin-top: 4px; border: 1px solid #ccc; padding: 6px 8px; }
-.login-box button { margin-top: 6px; background: #1d4f91; color: #fff; border: 0; padding: 6px 16px; cursor: pointer; }
+.admin-access h1 { font-size: 18px; margin-bottom: 14px; }
+.admin-access form { margin-bottom: 10px; }
+.admin-access a { display: block; margin-top: 8px; }
+.admin-access button { background: #1d4f91; color: #fff; border: 0; padding: 6px 16px; cursor: pointer; }
 .adm { min-height: 100vh; background: #f0f2f5; }
 .adm-top {
   height: 48px;
@@ -249,6 +249,7 @@ footer a { color: #1d4f91; }
 }
 .adm-top strong { font-size: 15px; }
 .adm-top a, .adm-top button { color: #333; background: none; border: 0; cursor: pointer; margin-left: 12px; }
+.adm-top form { display: inline; }
 .adm-body { display: grid; grid-template-columns: 148px 1fr; min-height: calc(100vh - 48px); }
 .adm-side { background: #fff; border-right: 1px solid #ddd; }
 .adm-side a { display: block; padding: 10px 14px; text-decoration: none; color: #333; border-left: 3px solid transparent; }

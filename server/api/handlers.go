@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -125,6 +126,8 @@ func sidebar(db *gorm.DB) []sideItem {
 		items = append(items, item)
 	}
 	items = append(items,
+		sideItem{Name: "在线工具", Href: "/tools/"},
+		sideItem{Name: "文章", Href: "/c/daily"},
 		sideItem{Name: "最新收录", Href: "/latest"},
 		sideItem{Name: "公告", Href: "/notice", Icon: "bell", Tool: true},
 		sideItem{Name: "站点排行", Href: "/rank", Icon: "rank", Tool: true},
@@ -247,7 +250,8 @@ func search(db *gorm.DB) gin.HandlerFunc {
 func article(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var item models.Article
-		if err := db.First(&item, c.Param("id")).Error; err != nil {
+		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil || db.Where("draft = ?", false).First(&item, id).Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "没有这篇文章"})
 			return
 		}
@@ -292,7 +296,7 @@ func submit(db *gorm.DB) gin.HandlerFunc {
 		req.Name = strings.TrimSpace(req.Name)
 		req.URL = strings.TrimSpace(req.URL)
 		req.Desc = strings.TrimSpace(req.Desc)
-		user, ok := currentReader(c, db)
+		user, ok := currentUser(c, db)
 		if !ok {
 			if form {
 				c.Redirect(http.StatusSeeOther, "/login?next=/submit")
@@ -389,7 +393,7 @@ func popularLinks(db *gorm.DB, n int) []models.Link {
 
 func articleCards(db *gorm.DB) []articleCard {
 	var rows []models.Article
-	db.Order("created_at desc").Find(&rows)
+	db.Select("id", "title", "summary", "views", "created_at").Where("draft = ?", false).Order("created_at desc").Limit(24).Find(&rows)
 	out := make([]articleCard, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, articleCard{

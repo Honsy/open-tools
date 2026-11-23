@@ -1,6 +1,6 @@
 # 开物录
 
-网址导航。游客不用登录就能看收录。没登录时收藏和最近使用记在浏览器 `localStorage`（`ot-custom`、`ot-recent`），登录后改记在账号上。读者登录和管理员登录分开，见下面「权限」。
+网址导航。游客不用登录就能看收录。没登录时收藏和最近使用记在浏览器 `localStorage`（`ot-custom`、`ot-recent`），登录后改记在账号上。前台和后台共用账号和登录会话，见下面「权限」。
 
 站点名是开物录。`kaiwulu.com` 已启用，公开入口通过 Nginx 反代到上海服务器 `8.153.64.49`；旧的“域名未注册、现网用 IP”记录已过期。
 
@@ -30,7 +30,7 @@
 
 ## 权限
 
-读者和管理员是两套登录，token 不通用。
+所有账号存放在 `users`，默认 `is_admin = false`。首次初始化的后台管理员和旧后台迁入的账号标记为 `is_admin = true`。迁移保留已有用户 ID 和旧管理员密码。用户名重名时保留原读者账号，旧管理员使用迁移日志记录的新用户名。
 
 不登录就能看、就能用：首页、分类、站点介绍、搜索、热榜、排行、公告、打开网站。这时收藏和最近使用只在这台浏览器。
 
@@ -42,7 +42,7 @@
 - 标明「登录后才展示」的区块。未登录时整段不要渲染进 HTML，页面上只留登录入口。不要用 CSS 把正文藏起来。
 - 收藏和最近使用登录后写在 `user_links`，按 `user_id` 分开。每人最多 16 个收藏、12 条最近使用。登录时把这台浏览器里还没同步的记录并进账号，然后清掉本地那份。退出后再点的星和最近使用重新只留在这台浏览器。
 
-管理员只用于 `/admin/` 和 `/api/admin`：审核提交、改网址、分类、文章、标签。读者登录不能进后台。
+后台未登录时转到统一的 `/login`，登录后回到原后台页面。`/api/admin` 每次请求都检查账号的 `is_admin`，管理员可以审核提交、改网址、分类、文章、标签。前台和后台退出时清除同一个会话。
 
 ## 页面
 
@@ -51,6 +51,13 @@
 - 公开页服务端渲染，带独立 title、description、canonical。`/go`、`/search`、`/submit`、`/random`、`/tools/`、`/admin`、`/api` 不进收录。
 - 图标走 `/ico?host=`，取目标站自己的图标。不要用 Google s2。
 
+## 从 LaoYou8 迁入的内容
+
+- AI 网址进入现有 `/c/ai`，文章进入 `/c/daily`，AI 排行复用 `/rank?category=ai`。文章支持 Markdown、清理后的 HTML、封面、视频入口、草稿和评论。旧文章访问通过 `/ai/articles/:id` 查映射。
+- 非游戏实验室工具走 `/tools/`。趣味测试、房贷和退休计算在浏览器运行。AI 工具使用开物录账号、`AI_BAILIAN_API_KEY` 和可选的 `AI_BAILIAN_CHAT_MODELS`。换背景的 PNG 和后台文章图片使用开物录的 R2 配置。
+- 切换两站前，先让开物录启动一次，建好新字段和表。在 `server/` 运行 `go run ./cmd/import-laoyou8` 预览来源，再加 `-apply` 导入。`LAOYOU8_SOURCE_DSN` 使用指向 `laoyouba` 的只读账号或 SSH 隧道，目标按开物录配置连接 `opentools`。同网址或同标题、正文的已有内容会复用，已经迁入的记录可以重复导入核对。旧评论保留显示名，历史站点留言和 AI 投稿进入后台「反馈」。游戏记录、友情链接及其投稿留在 LaoYou8。
+- 老文章媒体继续使用原有公开地址。LaoYou8 移除已迁走的公开入口、接口和任务。原日报和 GitHub 趋势任务用开物录的 `DAILY_ARTICLES=true` 启用，配置后每天北京时间 08:00 写入文章。
+
 ## 线上（上海，和 YouGo 同一台）
 
 `8.153.64.49`。口令不要写进这个仓库。
@@ -58,7 +65,7 @@
 | 项 | 值 |
 |---|---|
 | 进程 | systemd `kaiwu`，工作目录 `/data/app/kaiwu`，二进制 `/data/app/kaiwu/opentools`，听 `:8080` |
-| 配置 | `/data/app/kaiwu/config.yaml`（权限 600）。环境变量盖过 yaml。管理员口令为空则起不来 |
+| 配置 | `/data/app/kaiwu/config.yaml`（权限 600）。会话密钥用 `sessionSecret`，兼容旧的 `adminSecret`。全新初始化时用 `adminPassword` 创建首个管理员 |
 | 入口 | Nginx `:80` 根路径反代到 `127.0.0.1:8080`，带 `X-Forwarded-Host` |
 | 后台 | `/admin/`，静态在 `/data/app/kaiwu/admin`，构建用 `vite build --base /admin/` |
 | YouGo | 同机 `/yougo/`，反代 `127.0.0.1:8000`。不要占 80 |

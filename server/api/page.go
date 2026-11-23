@@ -20,14 +20,14 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:embed templates/public.html static/site.css static/site.js static/baidu_verify_codeva-LbSF6vH8BX.html
+//go:embed templates/*.html static/lab/*.js static/site.css static/site.js static/baidu_verify_codeva-LbSF6vH8BX.html
 var publicFiles embed.FS
 
 var publicPages = template.Must(template.New("public").Funcs(template.FuncMap{
 	"inc":      func(i int) int { return i + 1 },
 	"iconURL":  iconURL,
 	"iconBase": iconBase,
-}).ParseFS(publicFiles, "templates/public.html"))
+}).ParseFS(publicFiles, "templates/*.html"))
 
 type shell struct {
 	Title       string
@@ -45,6 +45,7 @@ type shell struct {
 	Launcher    []sideItem
 	Content     template.HTML
 	UserName    string
+	IsAdmin     bool
 	Account     bool
 }
 
@@ -93,6 +94,8 @@ type tabView struct {
 	PrevURL   string
 	NextURL   string
 	Pages     []pageLink
+	Topics    []string
+	Topic     string
 }
 
 type pageLink struct {
@@ -182,6 +185,7 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/rank", rankPage(db))
 	r.GET("/cooperate", cooperatePage(db))
 	r.GET("/a/:id", articlePage(db))
+	mountMovedContent(r, db)
 	r.GET("/site/:slug", sitePage(db))
 	r.GET("/search", searchPage(db))
 	r.GET("/login", loginPage(db))
@@ -197,6 +201,7 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 	r.GET("/mine", minePage(db))
 	r.GET("/submit", submitPage(db))
 	r.POST("/submit", submit(db))
+	r.GET("/tools/", toolIndex(db))
 	r.GET("/tools/:slug", toolPage(db))
 	r.GET("/random", randomRedirect(db))
 	r.GET("/static/site.css", func(c *gin.Context) {
@@ -217,6 +222,20 @@ func mountPages(r *gin.Engine, db *gorm.DB) {
 		c.Header("Cache-Control", "public, max-age=3600")
 		writeBody(c, http.StatusOK, "application/javascript; charset=utf-8", body)
 	})
+	r.GET("/static/lab/:file", func(c *gin.Context) {
+		name := c.Param("file")
+		if !strings.HasSuffix(name, ".js") || strings.Contains(name, "/") {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		body, err := publicFiles.ReadFile("static/lab/" + name)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Header("Cache-Control", "public, max-age=3600")
+		writeBody(c, http.StatusOK, "application/javascript; charset=utf-8", body)
+	})
 }
 
 func render(c *gin.Context, db *gorm.DB, status int, s shell, name string, data any) {
@@ -230,8 +249,9 @@ func render(c *gin.Context, db *gorm.DB, status int, s shell, name string, data 
 		s.Canonical = publicOrigin(c) + s.Canonical
 	}
 	s.Path = c.Request.URL.Path
-	if user, ok := currentReader(c, db); ok {
+	if user, ok := currentUser(c, db); ok {
 		s.UserName = user.Username
+		s.IsAdmin = user.IsAdmin
 	}
 	s.Sidebar = sidebar(db)
 	s.Utils = utilMenus(db)
@@ -406,11 +426,22 @@ func noticePage(db *gorm.DB) gin.HandlerFunc {
 func rankPage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		intro := "站点排行按从本站打开的次数排列。次数相同的，浏览多的靠前。点名字先看介绍，再打开原站。"
+		title, canonical := "站点排行", "/rank"
+		var rows []models.Link
+		isAI := c.Query("category") == "ai"
+		if isAI {
+			title, canonical = "AI 站点排行", "/rank?category=ai"
+			categories := db.Model(&models.Category{}).Select("slug").Where("parent_slug = ?", "ai")
+			db.Where("status = ? AND category_slug IN (?)", "online", categories).
+				Order("clicks desc, views desc, sort asc, id asc").Limit(60).Find(&rows)
+		} else {
+			rows = popularLinks(db, 60)
+		}
 		render(c, db, http.StatusOK, shell{
-			Title: "站点排行 - 开物录", Description: intro, Keywords: "站点排行,热门网站,开物录", Canonical: "/rank",
+			Title: title + " - 开物录", Description: intro, Keywords: "站点排行,热门网站,开物录", Canonical: canonical,
 		}, "rank", map[string]any{
-			"Intro": intro,
-			"Links": toViews(popularLinks(db, 60), "row"),
+			"Intro": intro, "Title": title, "AI": isAI,
+			"Links": toViews(rows, "row"),
 		})
 	}
 }
@@ -485,7 +516,9 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 		var view sectionView
 		categoryPageNum := 1
 		if cat.Kind == "tab" && cat.ContentKind == "articles" {
-			view = makeSection(db, cat, layoutOf(parent.Slug), "", true)
+			tab := articleCategoryTab(db, cat, positivePage(c.Query("page")), clip(strings.TrimSpace(c.Query("topic")), 64))
+			categoryPageNum = tab.Page
+			view = sectionView{Slug: cat.Slug, Name: cat.Name, HideTitle: true, Tabs: []tabView{tab}}
 		} else if cat.Kind == "tab" {
 			view = sectionView{Slug: cat.Slug, Name: cat.Name, Layout: "row", HideTitle: true}
 			page := positivePage(c.Query("page"))
@@ -547,8 +580,15 @@ func categoryPage(db *gorm.DB) gin.HandlerFunc {
 			"itemListElement": crumbLD(crumbs),
 		})
 		canonical := "/c/" + cat.Slug
+		params := url.Values{}
 		if categoryPageNum > 1 {
-			canonical += "?page=" + strconv.Itoa(categoryPageNum)
+			params.Set("page", strconv.Itoa(categoryPageNum))
+		}
+		if cat.ContentKind == "articles" && len(view.Tabs) > 0 && view.Tabs[0].Topic != "" {
+			params.Set("topic", view.Tabs[0].Topic)
+		}
+		if len(params) > 0 {
+			canonical += "?" + params.Encode()
 		}
 		render(c, db, http.StatusOK, shell{
 			Title:       title + " - 开物录",
@@ -609,7 +649,8 @@ func firstModelLinks(links []models.Link, limit int) []models.Link {
 func articlePage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var item models.Article
-		if err := db.First(&item, c.Param("id")).Error; err != nil {
+		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil || db.Where("draft = ?", false).First(&item, id).Error != nil {
 			render(c, db, http.StatusNotFound, shell{
 				Title: "没有这篇文章 - 开物录", Robots: "noindex", Canonical: "/a/" + c.Param("id"),
 			}, "missing", map[string]string{"Heading": "没有这篇文章", "Text": "这篇说明不存在。"})
@@ -619,6 +660,9 @@ func articlePage(db *gorm.DB) gin.HandlerFunc {
 		item.Views++
 		origin := publicOrigin(c)
 		canonical := origin + "/a/" + itoa(item.ID)
+		user, signedIn := currentUser(c, db)
+		commentPage := min(positivePage(c.Query("comments")), 1000000)
+		comments, moreComments := articleDiscussion(db, item.ID, user, commentPage)
 		ld, _ := json.Marshal(map[string]any{
 			"@context":         "https://schema.org",
 			"@type":            "Article",
@@ -636,8 +680,51 @@ func articlePage(db *gorm.DB) gin.HandlerFunc {
 		}, "article", map[string]any{
 			"Title": item.Title, "Summary": item.Summary, "Body": item.Body, "Views": item.Views,
 			"Date": item.CreatedAt.Format("2006-01-02"), "ISO": item.CreatedAt.Format(time.RFC3339),
+			"Category": item.Category, "HTML": articleHTML(item), "Rich": item.Format == "html" || item.Format == "markdown",
+			"Cover": publicMedia(item.CoverURL), "Video": publicMedia(item.VideoURL), "Embed": youtubeEmbed(item.VideoURL), "ID": item.ID,
+			"Comments": comments, "SignedIn": signedIn, "UserID": user.ID, "CommentError": c.Query("commentError") == "1",
+			"PreviousComments": commentPage - 1, "NextComments": commentPage + 1, "MoreComments": moreComments,
 		})
 	}
+}
+
+func articleCategoryTab(db *gorm.DB, category models.Category, page int, topic string) tabView {
+	const perPage = 24
+	var topics []string
+	db.Model(&models.Article{}).Where("draft = ? AND category <> ''", false).Distinct("category").Order("category").Pluck("category", &topics)
+	query := func() *gorm.DB {
+		rows := db.Model(&models.Article{}).Where("draft = ?", false)
+		if topic != "" {
+			rows = rows.Where("category = ?", topic)
+		}
+		return rows
+	}
+	var total int64
+	query().Count(&total)
+	pageCount := max(1, int((total+perPage-1)/perPage))
+	page = min(page, pageCount)
+	var rows []models.Article
+	query().Select("id", "title", "summary", "views", "created_at").
+		Order("featured desc, sort asc, created_at desc, id desc").Offset((page - 1) * perPage).Limit(perPage).Find(&rows)
+	tab := tabView{Slug: category.Slug, Name: category.Name, Kind: "articles", On: true, Total: int(total), Page: page, PageCount: pageCount, Topics: topics, Topic: topic}
+	for _, row := range rows {
+		tab.Posts = append(tab.Posts, postView{ID: row.ID, Title: row.Title, Summary: clip(row.Summary, 160), Views: row.Views,
+			Date: row.CreatedAt.Format("2006-01-02"), ISO: row.CreatedAt.Format(time.RFC3339)})
+	}
+	pageURL := func(n int) string {
+		values := url.Values{"page": {strconv.Itoa(n)}}
+		if topic != "" {
+			values.Set("topic", topic)
+		}
+		return "/c/" + category.Slug + "?" + values.Encode()
+	}
+	if page > 1 {
+		tab.PrevURL = pageURL(page - 1)
+	}
+	if page < pageCount {
+		tab.NextURL = pageURL(page + 1)
+	}
+	return tab
 }
 
 func sitePage(db *gorm.DB) gin.HandlerFunc {
@@ -817,7 +904,7 @@ func searchPage(db *gorm.DB) gin.HandlerFunc {
 
 func submitPage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, ok := currentReader(c, db)
+		user, ok := currentUser(c, db)
 		if !ok {
 			c.Redirect(http.StatusFound, "/login?next=/submit")
 			return
@@ -854,6 +941,12 @@ func toolPage(db *gorm.DB) gin.HandlerFunc {
 		"rmbconvert": {"人民币大写", "金额转中文大写。"},
 	}
 	return func(c *gin.Context) {
+		for _, tool := range migratedTools {
+			if c.Param("slug") == tool.Slug {
+				showLabTool(c, db, tool)
+				return
+			}
+		}
 		item, ok := pages[c.Param("slug")]
 		if !ok {
 			render(c, db, http.StatusNotFound, shell{

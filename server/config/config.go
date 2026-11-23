@@ -19,6 +19,7 @@ type Config struct {
 	MySQLDB       string `yaml:"mysqlDB"`
 	AdminUser     string `yaml:"adminUser"`
 	AdminPassword string `yaml:"adminPassword"`
+	SessionSecret string `yaml:"sessionSecret"`
 	AdminSecret   string `yaml:"adminSecret"`
 
 	R2AccountID       string `yaml:"r2AccountId"`
@@ -33,6 +34,10 @@ type Config struct {
 	SMTPUser     string `yaml:"smtpUser"`
 	SMTPPassword string `yaml:"smtpPassword"`
 	SMTPFrom     string `yaml:"smtpFrom"`
+
+	AIBailianAPIKey     string `yaml:"aiBailianApiKey"`
+	AIBailianChatModels string `yaml:"aiBailianChatModels"`
+	DailyArticles       bool   `yaml:"dailyArticles"`
 }
 
 func Load() (Config, error) {
@@ -64,9 +69,9 @@ func Load() (Config, error) {
 		cfg.MySQLPassword = v
 	}
 	cfg.MySQLDB = first(os.Getenv("MYSQL_DB"), cfg.MySQLDB)
-	cfg.AdminUser = first(os.Getenv("ADMIN_USER"), cfg.AdminUser)
+	cfg.AdminUser = first(os.Getenv("ADMIN_USER"), cfg.AdminUser, "admin")
 	cfg.AdminPassword = first(os.Getenv("ADMIN_PASSWORD"), cfg.AdminPassword)
-	cfg.AdminSecret = first(os.Getenv("ADMIN_SECRET"), cfg.AdminSecret)
+	cfg.SessionSecret = first(os.Getenv("SESSION_SECRET"), os.Getenv("ADMIN_SECRET"), cfg.SessionSecret, cfg.AdminSecret)
 	cfg.R2AccountID = first(os.Getenv("R2_ACCOUNT_ID"), cfg.R2AccountID)
 	cfg.R2AccessKeyID = first(os.Getenv("R2_ACCESS_KEY_ID"), cfg.R2AccessKeyID)
 	cfg.R2SecretAccessKey = first(os.Getenv("R2_SECRET_ACCESS_KEY"), cfg.R2SecretAccessKey)
@@ -78,11 +83,16 @@ func Load() (Config, error) {
 	cfg.SMTPUser = first(os.Getenv("SMTP_USER"), cfg.SMTPUser)
 	cfg.SMTPPassword = first(os.Getenv("SMTP_PASSWORD"), cfg.SMTPPassword)
 	cfg.SMTPFrom = first(os.Getenv("SMTP_FROM"), cfg.SMTPFrom)
+	cfg.AIBailianAPIKey = first(os.Getenv("AI_BAILIAN_API_KEY"), cfg.AIBailianAPIKey)
+	cfg.AIBailianChatModels = first(os.Getenv("AI_BAILIAN_CHAT_MODELS"), cfg.AIBailianChatModels)
+	if value, ok := os.LookupEnv("DAILY_ARTICLES"); ok {
+		cfg.DailyArticles = strings.EqualFold(strings.TrimSpace(value), "true") || value == "1"
+	}
 	if cfg.R2Endpoint == "" && cfg.R2AccountID != "" {
 		cfg.R2Endpoint = "https://" + cfg.R2AccountID + ".r2.cloudflarestorage.com"
 	}
-	if cfg.AdminPassword == "" || cfg.AdminSecret == "" {
-		return cfg, fmt.Errorf("config.yaml 里要有 adminPassword 和 adminSecret")
+	if cfg.SessionSecret == "" {
+		return cfg, fmt.Errorf("config.yaml 里要有 sessionSecret")
 	}
 	return cfg, nil
 }

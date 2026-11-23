@@ -531,6 +531,28 @@
     applyDesk(load(customKey), load(recentKey));
   }
 
+  var toc = document.querySelector("[data-article-toc]");
+  if (toc) {
+    var headings = document.querySelectorAll(".article-body h2, .article-body h3, .article-body h4");
+    if (headings.length > 1) {
+      var tocTitle = document.createElement("h2");
+      tocTitle.textContent = "目录";
+      var headingList = document.createElement("ol");
+      headings.forEach(function (heading, index) {
+        heading.id = "article-heading-" + (index + 1);
+        var listItem = document.createElement("li");
+        var anchor = document.createElement("a");
+        anchor.href = "#" + heading.id;
+        anchor.className = "link link-hover";
+        anchor.textContent = heading.textContent.trim();
+        listItem.appendChild(anchor);
+        headingList.appendChild(listItem);
+      });
+      toc.append(tocTitle, headingList);
+      toc.hidden = false;
+    }
+  }
+
   var form = document.querySelector("form.search");
   if (!form) return;
   var engines = {

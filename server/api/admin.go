@@ -1,31 +1,23 @@
 package api
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"opentools/config"
 	"opentools/models"
 	"opentools/seed"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 var slugRe = regexp.MustCompile(`^[a-z0-9-]{1,64}$`)
 
-func MountAdmin(r *gin.Engine, db *gorm.DB, cfg config.Config) {
-	r.POST("/api/admin/login", adminLogin(db, cfg))
-	g := r.Group("/api/admin", requireAdmin(cfg.AdminSecret))
+func MountAdmin(r *gin.Engine, db *gorm.DB) {
+	g := r.Group("/api/admin", requireAdmin(db))
 	g.GET("/me", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"username": c.GetString("adminUser")})
 	})
@@ -40,88 +32,47 @@ func MountAdmin(r *gin.Engine, db *gorm.DB, cfg config.Config) {
 	g.DELETE("/categories/:id", adminDeleteCategory(db))
 	g.GET("/articles", adminArticles(db))
 	g.POST("/articles", adminSaveArticle(db, false))
+	g.POST("/articles/images", uploadArticleImage)
 	g.PUT("/articles/:id", adminSaveArticle(db, true))
 	g.DELETE("/articles/:id", adminDelete(db, func() any { return &models.Article{} }))
+	g.GET("/feedback", func(c *gin.Context) {
+		rows := make([]models.Feedback, 0)
+		if err := db.Order("id desc").Find(&rows).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "反馈读取失败"})
+			return
+		}
+		c.JSON(http.StatusOK, rows)
+	})
+	g.PUT("/feedback/:id", updateFeedback(db))
 	g.GET("/tags", adminTags(db))
 	g.POST("/tags", adminSaveTag(db, false))
 	g.PUT("/tags/:id", adminSaveTag(db, true))
 	g.DELETE("/tags/:id", adminDelete(db, func() any { return &models.Tag{} }))
 }
 
-func adminLogin(db *gorm.DB, cfg config.Config) gin.HandlerFunc {
+func requireAdmin(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-		}
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "提交格式不对"})
-			return
-		}
-		var admin models.Admin
-		if err := db.Where("username = ?", strings.TrimSpace(req.Username)).First(&admin).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "账号或密码不对"})
-			return
-		}
-		if bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.Password)) != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "账号或密码不对"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"username": admin.Username,
-			"token":    makeToken(admin.Username, cfg.AdminSecret),
-		})
-	}
-}
-
-func requireAdmin(secret string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		raw := ""
-		if h := c.GetHeader("Authorization"); strings.HasPrefix(h, "Bearer ") {
-			raw = strings.TrimPrefix(h, "Bearer ")
-		}
-		user, ok := parseToken(raw, secret)
+		c.Header("Cache-Control", "no-store")
+		user, ok := currentUser(c, db)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
 			return
 		}
-		c.Set("adminUser", user)
+		if !user.IsAdmin || (c.Request.Method != http.MethodGet && !sameOrigin(c)) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "没有后台操作权限"})
+			return
+		}
+		c.Set("adminUser", user.Username)
 		c.Next()
 	}
 }
 
-func makeToken(user, secret string) string {
-	exp := time.Now().Add(7 * 24 * time.Hour).Unix()
-	payload := user + "|" + strconv.FormatInt(exp, 10)
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(payload))
-	sig := hex.EncodeToString(mac.Sum(nil))
-	return base64.RawURLEncoding.EncodeToString([]byte(payload)) + "." + sig
-}
-
-func parseToken(token, secret string) (string, bool) {
-	parts := strings.Split(token, ".")
-	if len(parts) != 2 {
-		return "", false
+func sameOrigin(c *gin.Context) bool {
+	if site := c.GetHeader("Sec-Fetch-Site"); site != "" {
+		return site == "same-origin"
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(parts[0])
-	if err != nil {
-		return "", false
-	}
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(raw)
-	if !hmac.Equal([]byte(parts[1]), []byte(hex.EncodeToString(mac.Sum(nil)))) {
-		return "", false
-	}
-	bits := strings.Split(string(raw), "|")
-	if len(bits) != 2 || bits[0] == "" {
-		return "", false
-	}
-	exp, err := strconv.ParseInt(bits[1], 10, 64)
-	if err != nil || time.Now().Unix() > exp {
-		return "", false
-	}
-	return bits[0], true
+	origin := c.GetHeader("Origin")
+	return origin == "" || strings.EqualFold(origin, publicOrigin(c))
 }
 
 func adminStats(db *gorm.DB) gin.HandlerFunc {
@@ -381,9 +332,16 @@ func adminArticles(db *gorm.DB) gin.HandlerFunc {
 func adminSaveArticle(db *gorm.DB, update bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
-			Title   string `json:"title"`
-			Summary string `json:"summary"`
-			Body    string `json:"body"`
+			Title    string  `json:"title"`
+			Summary  string  `json:"summary"`
+			Body     string  `json:"body"`
+			Format   *string `json:"format"`
+			CoverURL *string `json:"coverUrl"`
+			VideoURL *string `json:"videoUrl"`
+			Category *string `json:"category"`
+			Featured *bool   `json:"featured"`
+			Sort     *int    `json:"sort"`
+			Draft    *bool   `json:"draft"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "提交格式不对"})
@@ -408,6 +366,31 @@ func adminSaveArticle(db *gorm.DB, update bool) gin.HandlerFunc {
 		row.Title = req.Title
 		row.Summary = req.Summary
 		row.Body = req.Body
+		if req.Format != nil {
+			if *req.Format != "" && *req.Format != "html" && *req.Format != "markdown" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "正文格式不正确"})
+				return
+			}
+			row.Format = *req.Format
+		}
+		if req.CoverURL != nil {
+			row.CoverURL = publicMedia(strings.TrimSpace(*req.CoverURL))
+		}
+		if req.VideoURL != nil {
+			row.VideoURL = publicMedia(strings.TrimSpace(*req.VideoURL))
+		}
+		if req.Category != nil {
+			row.Category = clip(strings.TrimSpace(*req.Category), 64)
+		}
+		if req.Featured != nil {
+			row.Featured = *req.Featured
+		}
+		if req.Sort != nil {
+			row.Sort = *req.Sort
+		}
+		if req.Draft != nil {
+			row.Draft = *req.Draft
+		}
 		var err error
 		if update {
 			err = db.Save(&row).Error

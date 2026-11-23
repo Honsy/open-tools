@@ -4,13 +4,14 @@ import Search from "./pages/Search.vue";
 import Article from "./pages/Article.vue";
 import Submit from "./pages/Submit.vue";
 import Tool from "./pages/Tool.vue";
-import AdminLogin from "./pages/admin/Login.vue";
+import AdminAccess from "./pages/admin/Access.vue";
 import AdminLayout from "./pages/admin/Layout.vue";
 import AdminReview from "./pages/admin/Review.vue";
 import AdminLinks from "./pages/admin/Links.vue";
 import AdminCategories from "./pages/admin/Categories.vue";
 import AdminArticles from "./pages/admin/Articles.vue";
 import AdminTags from "./pages/admin/Tags.vue";
+import AdminFeedback from "./pages/admin/Feedback.vue";
 import { adminApp } from "./adminPath";
 
 const adminChildren = [
@@ -19,15 +20,18 @@ const adminChildren = [
   { path: "categories", component: AdminCategories },
   { path: "articles", component: AdminArticles },
   { path: "tags", component: AdminTags },
+  { path: "feedback", component: AdminFeedback },
 ];
 
 const adminRoutes = adminApp
   ? [
-      { path: "/login", component: AdminLogin },
+      { path: "/login", redirect: "/" },
+      { path: "/access", component: AdminAccess },
       { path: "/", component: AdminLayout, children: adminChildren },
     ]
   : [
-      { path: "/admin/login", component: AdminLogin },
+      { path: "/admin/login", redirect: "/admin" },
+      { path: "/admin/access", component: AdminAccess },
       { path: "/admin", component: AdminLayout, children: adminChildren },
     ];
 

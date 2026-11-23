@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -17,47 +16,12 @@ import (
 	"gorm.io/gorm"
 )
 
-const readerCookie = "ot_reader"
-
-func readerSecret() string {
-	return readerKey + ":reader"
-}
-
-func currentReader(c *gin.Context, db *gorm.DB) (models.User, bool) {
-	token, _ := c.Cookie(readerCookie)
-	if token == "" {
-		if h := c.GetHeader("Authorization"); strings.HasPrefix(h, "Bearer ") {
-			token = strings.TrimPrefix(h, "Bearer ")
-		}
-	}
-	idText, ok := parseToken(token, readerSecret())
-	if !ok {
-		return models.User{}, false
-	}
-	id, err := strconv.ParseUint(idText, 10, 64)
-	if err != nil || id == 0 {
-		return models.User{}, false
-	}
-	var user models.User
-	if err := db.First(&user, id).Error; err != nil {
-		return models.User{}, false
-	}
-	return user, true
-}
-
-func setReaderCookie(c *gin.Context, user models.User) {
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(readerCookie, makeToken(strconv.FormatUint(uint64(user.ID), 10), readerSecret()), 7*24*3600, "/", "", false, true)
-}
-
-func clearReaderCookie(c *gin.Context) {
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(readerCookie, "", -1, "/", "", false, true)
-}
-
 func safeNext(raw string) string {
 	raw = strings.TrimSpace(raw)
-	if raw == "" || !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.Contains(raw, "://") {
+	if !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.Contains(raw, "\\") {
+		return "/"
+	}
+	if _, err := url.ParseRequestURI(raw); err != nil {
 		return "/"
 	}
 	return raw
@@ -92,7 +56,7 @@ type authView struct {
 func loginPage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		next := safeNext(c.Query("next"))
-		if _, ok := currentReader(c, db); ok {
+		if _, ok := currentUser(c, db); ok {
 			c.Redirect(http.StatusFound, next)
 			return
 		}
@@ -105,7 +69,7 @@ func loginPage(db *gorm.DB) gin.HandlerFunc {
 func registerPage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		next := safeNext(c.Query("next"))
-		if _, ok := currentReader(c, db); ok {
+		if _, ok := currentUser(c, db); ok {
 			c.Redirect(http.StatusFound, next)
 			return
 		}
@@ -153,7 +117,7 @@ func loginPost(db *gorm.DB) gin.HandlerFunc {
 			fail("账号或密码不对")
 			return
 		}
-		setReaderCookie(c, user)
+		setSessionCookie(c, user)
 		if authModal(c) {
 			c.JSON(http.StatusOK, gin.H{"ok": true, "next": next})
 			return
@@ -206,7 +170,7 @@ func registerPost(db *gorm.DB) gin.HandlerFunc {
 			fail(http.StatusInternalServerError, "没有注册上")
 			return
 		}
-		setReaderCookie(c, user)
+		setSessionCookie(c, user)
 		if authModal(c) {
 			c.JSON(http.StatusOK, gin.H{"ok": true, "next": next})
 			return
@@ -216,8 +180,8 @@ func registerPost(db *gorm.DB) gin.HandlerFunc {
 }
 
 func logout(c *gin.Context) {
-	clearReaderCookie(c)
-	c.Redirect(http.StatusSeeOther, "/")
+	clearSessionCookie(c)
+	c.Redirect(http.StatusSeeOther, safeNext(c.PostForm("next")))
 }
 
 type mineItem struct {
@@ -228,7 +192,7 @@ type mineItem struct {
 }
 
 func requireReader(c *gin.Context, db *gorm.DB) (models.User, bool) {
-	user, ok := currentReader(c, db)
+	user, ok := currentUser(c, db)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
 		return models.User{}, false
@@ -369,7 +333,7 @@ func trimMarks(db *gorm.DB, userID uint, kind string, keep int) {
 
 func minePage(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, ok := currentReader(c, db)
+		user, ok := currentUser(c, db)
 		if !ok {
 			c.Redirect(http.StatusFound, "/login?next=/mine")
 			return

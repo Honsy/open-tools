@@ -15,6 +15,7 @@ type Category struct {
 
 type Link struct {
 	ID           uint       `gorm:"primaryKey" json:"id"`
+	ImportedFrom *string    `gorm:"uniqueIndex;size:96" json:"-"`
 	Slug         string     `gorm:"size:80;index" json:"slug"`
 	CategorySlug string     `gorm:"size:64;index" json:"categorySlug"`
 	Name         string     `gorm:"size:128" json:"name"`
@@ -44,6 +45,7 @@ type User struct {
 	Username     string    `gorm:"uniqueIndex;size:64" json:"username"`
 	Email        string    `gorm:"size:254" json:"-"`
 	PasswordHash string    `gorm:"size:255" json:"-"`
+	IsAdmin      bool      `gorm:"not null;default:false" json:"-"`
 	CreatedAt    time.Time `json:"createdAt"`
 }
 
@@ -64,11 +66,42 @@ type UserLink struct {
 }
 
 type Article struct {
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	LegacyID   *string   `gorm:"uniqueIndex;size:64" json:"-"`
+	LegacySlug string    `gorm:"index;size:255" json:"-"`
+	Title      string    `gorm:"size:255" json:"title"`
+	Summary    string    `gorm:"type:text" json:"summary"`
+	Body       string    `gorm:"type:longtext" json:"body"`
+	Format     string    `gorm:"size:16" json:"format"`
+	CoverURL   string    `gorm:"size:512" json:"coverUrl"`
+	VideoURL   string    `gorm:"size:512" json:"videoUrl"`
+	Category   string    `gorm:"size:64;index" json:"category"`
+	Featured   bool      `json:"featured"`
+	Sort       int       `json:"sort"`
+	Draft      bool      `gorm:"not null;default:false;index" json:"draft"`
+	Views      int       `json:"views"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+type ArticleComment struct {
+	ID        uint   `gorm:"primaryKey"`
+	LegacyID  *uint  `gorm:"uniqueIndex"`
+	ArticleID uint   `gorm:"index;not null"`
+	ParentID  *uint  `gorm:"index"`
+	UserID    uint   `gorm:"index"`
+	Author    string `gorm:"size:128"`
+	Body      string `gorm:"type:text"`
+	Hidden    bool   `gorm:"not null;default:false"`
+	CreatedAt time.Time
+}
+
+type Feedback struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	Title     string    `gorm:"size:200" json:"title"`
-	Summary   string    `gorm:"size:400" json:"summary"`
+	LegacyID  *uint     `gorm:"uniqueIndex" json:"-"`
+	UserID    uint      `gorm:"index" json:"userId"`
+	Kind      string    `gorm:"size:16" json:"kind"`
 	Body      string    `gorm:"type:text" json:"body"`
-	Views     int       `json:"views"`
+	Status    string    `gorm:"size:16;index" json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
@@ -77,11 +110,4 @@ type Tag struct {
 	Group string `gorm:"size:32;index" json:"group"`
 	Name  string `gorm:"size:64" json:"name"`
 	Sort  int    `json:"sort"`
-}
-
-type Admin struct {
-	ID           uint      `gorm:"primaryKey" json:"id"`
-	Username     string    `gorm:"uniqueIndex;size:64" json:"username"`
-	PasswordHash string    `gorm:"size:255" json:"-"`
-	CreatedAt    time.Time `json:"createdAt"`
 }
