@@ -1,0 +1,11 @@
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span><%= page?.Title %></span></nav>
+    <h1 class="text-2xl font-semibold"><%= page?.Title %></h1>
+    <div class="join"><a class="btn btn-sm join-item <% if (shown(!shown(page?.AI))) { %>btn-primary<% } %>" href="/rank">全部站点</a><a class="btn btn-sm join-item <% if (shown(page?.AI)) { %>btn-primary<% } %>" href="/rank?category=ai">AI 站点</a></div>
+    <p class="opacity-70"><%= page?.Intro %></p>
+    <ol class="board">
+      <% for (const [v_i, v_item] of (page?.Links ?? []).entries()) { %><li><span class="badge badge-xs font-bold <% if (shown((v_i === 0))) { %>badge-error<% } else if (shown((v_i === 1))) { %>badge-neutral<% } else if (shown((v_i === 2))) { %>badge-primary<% } else { %>badge-ghost<% } %>"><%= (v_i + 1) %></span><a href="<%= safeURL(v_item?.Href) %>"><%= v_item?.Name %></a><span class="text-xs opacity-60"><%= v_item?.Clicks %> 次打开</span></li><% } %>
+    </ol>
+  </div>
+</article>

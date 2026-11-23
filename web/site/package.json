@@ -1,0 +1,21 @@
+{
+  "name": "kaiwulu-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tailwindcss -i ./public.css -o ./static/site.css --minify",
+    "start": "node main.js",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.14",
+    "daisyui": "^5.1.26",
+    "tailwindcss": "^4.1.14"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ejs": "7.0.2"
+  }
+}

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"html/template"
 	"net"
 	"net/http"
 	"strings"
@@ -11,11 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
-func mountSEO(r *gin.Engine, db *gorm.DB) {
-	r.GET("/sitemap.xml", sitemap(db))
-	r.GET("/robots.txt", robots())
-}
 
 func crumbLD(items []map[string]string) []map[string]any {
 	out := make([]map[string]any, 0, len(items))
@@ -81,48 +75,24 @@ func headerFirst(c *gin.Context, name string) string {
 
 func sitemap(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		origin := publicOrigin(c)
-		var b strings.Builder
-		b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-		b.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
-		writeURL(&b, origin+"/")
-		writeURL(&b, origin+"/hot")
-		writeURL(&b, origin+"/latest")
-		writeURL(&b, origin+"/rank")
-		writeURL(&b, origin+"/notice")
-		writeURL(&b, origin+"/rank?category=ai")
+		paths := []string{"/", "/hot", "/latest", "/rank", "/notice", "/rank?category=ai"}
 		var cats []models.Category
-		db.Order("sort asc, id asc").Find(&cats)
+		db.Select("slug").Order("sort asc, id asc").Find(&cats)
 		for _, cat := range cats {
-			if cat.Slug == "" {
-				continue
+			if cat.Slug != "" {
+				paths = append(paths, "/c/"+cat.Slug)
 			}
-			writeURL(&b, origin+"/c/"+cat.Slug)
 		}
 		var articles []models.Article
 		db.Select("id").Where("draft = ?", false).Order("id asc").Find(&articles)
 		for _, article := range articles {
-			writeURL(&b, origin+"/a/"+itoa(article.ID))
+			paths = append(paths, "/a/"+itoa(article.ID))
 		}
 		var links []models.Link
-		db.Where("status = ? AND slug <> ?", "online", "").Order("id asc").Find(&links)
+		db.Select("slug").Where("status = ? AND slug <> ?", "online", "").Order("id asc").Find(&links)
 		for _, link := range links {
-			writeURL(&b, origin+"/site/"+link.Slug)
+			paths = append(paths, "/site/"+link.Slug)
 		}
-		b.WriteString(`</urlset>`)
-		c.Data(http.StatusOK, "application/xml; charset=utf-8", []byte(b.String()))
-	}
-}
-
-func writeURL(b *strings.Builder, loc string) {
-	b.WriteString("<url><loc>")
-	template.HTMLEscape(b, []byte(loc))
-	b.WriteString("</loc></url>")
-}
-
-func robots() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		body := "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /go/\nDisallow: /login\nDisallow: /register\nDisallow: /forgot\nDisallow: /reset\nDisallow: /mine\nDisallow: /random\nDisallow: /tools/\nDisallow: /feedback\nSitemap: " + publicOrigin(c) + "/sitemap.xml\n"
-		c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(body))
+		sitePageData(c, http.StatusOK, "sitemap", nil, paths)
 	}
 }

@@ -1,0 +1,48 @@
+<section class="mt-6" id="sec-<%= page?.Slug %>" data-tabs>
+  <% if (shown((shown(page?.Groups) && shown(page?.Fold)))) { %>
+  <div class="collapse collapse-arrow bg-base-200 rounded-box">
+    <input type="checkbox" aria-label="展开<%= page?.Name %>" />
+    <div class="collapse-title font-semibold min-h-12 py-3"><%= page?.Name %></div>
+    <div class="collapse-content"><%- partial("taggroups", page) %></div>
+  </div>
+  <% } else { %>
+  <div class="flex flex-wrap items-center gap-2 mb-3">
+    <% if (shown(!shown(page?.HideTitle))) { %><h2 class="text-base font-semibold px-1"><%= page?.Name %></h2><% } %>
+    <% if (shown(((page?.Tabs?.length ?? 0) > 1))) { %>
+    <div role="tablist" class="tabs tabs-box">
+      <% for (const item1 of (page?.Tabs ?? [])) { %><a class="tab<% if (shown(item1?.On)) { %> tab-active<% } %>" href="/c/<%= item1?.Slug %>" id="tab-<%= item1?.Slug %>" data-tab="<%= item1?.Slug %>" data-scroll="sec-<%= page?.Slug %>"><%= item1?.Name %></a><% } %>
+    </div>
+    <% } %>
+    <% if (shown(page?.More)) { %><a class="btn btn-ghost btn-sm ml-auto" href="<%= safeURL(page?.More) %>">更多</a><% } %>
+  </div>
+  <% if (shown(page?.Groups)) { %>
+  <%- partial("taggroups", page) %>
+  <% } else { %>
+  <% for (const v_tab of (page?.Tabs ?? [])) { %>
+  <div class="tab-panel" data-panel="<%= v_tab?.Slug %>"<% if (shown(!shown(v_tab?.On))) { %> hidden<% } %><% if (shown((shown(!shown(v_tab?.On)) && shown((v_tab?.Kind !== "articles"))))) { %> data-lazy="<%= v_tab?.Slug %>" data-layout="<% if (shown(page?.Layout)) { %><%= page?.Layout %><% } else { %>row<% } %>"<% } %>>
+    <% if (shown((v_tab?.Kind === "articles"))) { %>
+    <% if (shown(v_tab?.Topics)) { %><nav class="flex flex-wrap gap-2 mb-3" aria-label="文章分类"><a class="btn btn-sm <% if (shown(!shown(v_tab?.Topic))) { %>btn-primary<% } %>" href="/c/<%= v_tab?.Slug %>">全部</a><% for (const item3 of (v_tab?.Topics ?? [])) { %><a class="btn btn-sm <% if (shown((item3 === v_tab?.Topic))) { %>btn-primary<% } %>" href="/c/<%= v_tab?.Slug %>?topic=<%= item3 %>"><%= item3 %></a><% } %></nav><% } %>
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <% for (const item4 of (v_tab?.Posts ?? [])) { %><a class="card bg-base-100 border border-base-300 no-underline text-base-content" href="/a/<%= item4?.ID %>"><div class="card-body"><time class="text-xs opacity-60" datetime="<%= item4?.ISO %>"><%= item4?.Date %></time><strong><%= item4?.Title %></strong><p class="text-sm opacity-70"><%= item4?.Summary %></p><span class="text-xs opacity-60"><%= item4?.Views %> 次阅读</span></div></a><% } %>
+    </div>
+    <% if (shown((shown(v_tab?.PrevURL) || shown(v_tab?.NextURL)))) { %><nav class="pagination mt-5" aria-label="文章分页"><p class="pagination-summary">共 <%= v_tab?.Total %> 篇 · 第 <%= v_tab?.Page %> / <%= v_tab?.PageCount %> 页</p><div class="join pagination-controls"><% if (shown(v_tab?.PrevURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(v_tab?.PrevURL) %>" rel="prev">上一页</a><% } %><% if (shown(v_tab?.NextURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(v_tab?.NextURL) %>" rel="next">下一页</a><% } %></div></nav><% } %>
+    <% } else if (shown(v_tab?.On)) { %>
+    <div class="link-grid <%= page?.Layout %> grid gap-2 <% if (shown((page?.Layout === "tile"))) { %>grid-cols-2 md:grid-cols-3 xl:grid-cols-4<% } else if (shown((page?.Layout === "mini"))) { %>grid-cols-2 md:grid-cols-3 xl:grid-cols-4<% } else { %>sm:grid-cols-2 xl:grid-cols-3<% } %>"><% for (const item5 of (v_tab?.Links ?? [])) { %><%- partial("link", item5) %><% } %></div>
+    <% if (shown((v_tab?.PageCount > 1))) { %>
+    <nav class="pagination mt-5" aria-label="分类分页">
+      <p class="pagination-summary">共 <%= v_tab?.Total %> 个网站 · 第 <%= v_tab?.Page %> / <%= v_tab?.PageCount %> 页</p>
+      <div class="join pagination-controls">
+        <% if (shown(v_tab?.PrevURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(v_tab?.PrevURL) %>" rel="prev">上一页</a><% } else { %><span class="btn btn-sm join-item btn-disabled" aria-disabled="true">上一页</span><% } %>
+        <% for (const item6 of (v_tab?.Pages ?? [])) { %><% if (shown(item6?.Current)) { %><span class="btn btn-sm join-item btn-primary" aria-current="page"><%= item6?.Number %></span><% } else { %><a class="btn btn-sm join-item" href="<%= safeURL(item6?.URL) %>"><%= item6?.Number %></a><% } %><% } %>
+        <% if (shown(v_tab?.NextURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(v_tab?.NextURL) %>" rel="next">下一页</a><% } else { %><span class="btn btn-sm join-item btn-disabled" aria-disabled="true">下一页</span><% } %>
+      </div>
+    </nav>
+    <% } %>
+    <% } else { %>
+    <div class="link-grid <%= page?.Layout %> grid gap-2 <% if (shown((page?.Layout === "tile"))) { %>grid-cols-2 md:grid-cols-3 xl:grid-cols-4<% } else if (shown((page?.Layout === "mini"))) { %>grid-cols-2 md:grid-cols-3 xl:grid-cols-4<% } else { %>sm:grid-cols-2 xl:grid-cols-3<% } %>"><p class="text-sm opacity-60 py-2"><a class="link link-hover" href="/c/<%= v_tab?.Slug %>">查看<%= v_tab?.Name %></a></p></div>
+    <% } %>
+  </div>
+  <% } %>
+  <% } %>
+  <% } %>
+</section>

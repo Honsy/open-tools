@@ -1,0 +1,34 @@
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body">
+    <nav class="text-sm opacity-70"><a class="link link-hover" href="/tools/">在线工具</a></nav>
+    <h1 class="text-2xl font-semibold"><%= page?.Name %></h1>
+    <p class="opacity-70"><%= page?.Desc %></p>
+    <% if (shown(page?.Fields)) { %>
+      <% if (shown(page?.SignedIn)) { %>
+      <form class="grid gap-4 mt-3" data-ai-tool="<%= page?.Slug %>" <% if (shown((page?.Slug === "bg-replace"))) { %>enctype="multipart/form-data"<% } %>>
+        <% for (const item1 of (page?.Fields ?? [])) { %><label class="grid gap-1"><%= item1?.Label %>
+          <% if (shown(item1?.Options)) { %><select class="select select-bordered w-full" name="<%= item1?.Name %>"><% for (const item2 of (item1?.Options ?? [])) { %><option value="<%= item2 %>"><%= item2 %></option><% } %></select>
+          <% } else if (shown((item1?.Type === "textarea"))) { %><textarea class="textarea textarea-bordered w-full" name="<%= item1?.Name %>" maxlength="1200" <% if (shown(!shown(item1?.Optional))) { %>required<% } %>></textarea>
+          <% } else if (shown((item1?.Type === "file"))) { %><input class="file-input file-input-bordered w-full" type="file" name="<%= item1?.Name %>" accept="image/png" required>
+          <% } else { %><input class="input input-bordered w-full" name="<%= item1?.Name %>" maxlength="64" required><% } %>
+        </label><% } %>
+        <button type="submit" class="btn btn-primary justify-self-start">生成</button>
+      </form>
+      <% } else { %>
+      <p class="mt-3"><a class="btn btn-primary" href="/login?next=/tools/<%= page?.Slug %>">登录后使用</a></p>
+      <% } %>
+    <% } else if (shown((page?.Slug === "mortgage-calc"))) { %><%- partial("mortgageForm", {}) %>
+    <% } else if (shown((page?.Slug === "retirement-calc"))) { %><%- partial("retirementForm", {}) %>
+    <% } else if (shown((page?.Slug === "sbti"))) { %>
+      <form class="grid gap-3 mt-4" id="sbti-form">
+        <progress class="progress progress-primary w-full" value="0" max="1" aria-label="答题进度"></progress>
+        <p data-progress></p><div class="grid gap-4" data-questions></div>
+        <button class="btn btn-primary justify-self-start" type="submit" disabled>查看结果</button>
+      </form>
+      <script type="module" src="/static/lab/sbti-page.js"></script>
+    <% } %>
+    <p data-lab-error class="text-error" role="alert" hidden></p>
+    <section data-lab-result class="mt-3 grid gap-3" aria-live="polite" hidden></section>
+  </div>
+</article>
+<% if (shown((page?.Slug !== "sbti"))) { %><script type="module" src="/static/lab/tools.js"></script><% } %>

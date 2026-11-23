@@ -1,0 +1,34 @@
+<section class="home-overview">
+<h1>开物录 · 网站与在线工具导航</h1><p><%= page?.Intro %></p>
+<nav class="home-intents" aria-label="按用途找网站"><% for (const item1 of (page?.Tasks ?? [])) { %><a href="<%= safeURL(item1?.Href) %>"><%= item1?.Name %></a><% } %></nav>
+</section>
+<section class="home-shortcuts" id="sec-shortcuts" data-tabs aria-label="你的常用网站">
+  <div class="home-section-heading">
+    <div><p class="home-eyebrow">YOUR WEB, IN ONE PLACE</p><h2>常用入口</h2></div>
+    <div class="home-shortcut-switch" role="tablist" aria-label="常用入口内容">
+      <button class="active" type="button" data-tab="hot" aria-selected="true">精选</button>
+      <button type="button" data-tab="recent" aria-selected="false">最近</button>
+      <button type="button" data-tab="edit" aria-selected="false">收藏</button>
+    </div>
+  </div>
+  <div class="tab-panel home-shortcut-panel" data-panel="hot"><div class="home-pinned-grid"><% for (const item2 of (page?.Pinned ?? [])) { %><%- partial("link", item2) %><% } %></div></div>
+  <div class="tab-panel home-shortcut-panel" data-panel="recent" hidden><div class="home-pinned-grid" id="desk-recent">还没有打开过网站。</div></div>
+  <div class="tab-panel home-shortcut-panel" data-panel="edit" hidden><div class="home-pinned-grid" id="desk-custom">点星星，把网站留在这里。</div></div>
+</section>
+<section class="home-live" id="sec-boards" data-tabs>
+  <div class="home-section-heading">
+    <div><p class="home-eyebrow">WHAT PEOPLE ARE READING</p><h2><a href="/hot">正在发生 <span aria-hidden="true">↗</span></a></h2></div>
+    <div class="home-shortcut-switch" role="tablist" aria-label="热榜来源"><% for (const item3 of (page?.Boards ?? [])) { %><button class="<% if (shown(item3?.On)) { %>active<% } %>" type="button" data-tab="<%= item3?.Key %>" aria-selected="<% if (shown(item3?.On)) { %>true<% } else { %>false<% } %>"><%= item3?.Name %></button><% } %></div>
+  </div>
+  <div class="home-live-columns">
+    <% for (const item4 of (page?.Boards ?? [])) { %><ol class="board home-live-list tab-panel" data-panel="<%= item4?.Key %>" <% if (shown(!shown(item4?.On))) { %>hidden<% } %>><% for (const [v_i, v_item] of (item4?.Items ?? []).entries()) { %><li><span class="home-live-index"><%= String((v_i + 1)).padStart(2, "0") %></span><a href="<%= safeURL(v_item?.Href) %>"<% if (shown(v_item?.External)) { %> rel="nofollow noopener" target="_blank"<% } %>><%= v_item?.Title %></a><span class="home-live-heat"><%= v_item?.Heat %></span></li><% } %></ol><% } %>
+    <div class="home-live-note"><span class="home-live-orbit" aria-hidden="true">◉</span><p><% if (shown(page?.LiveHot)) { %>热搜来自百度、微博、知乎、哔哩哔哩和抖音，约每十分钟更新。<% } else { %>实时热搜暂时不可用，这里展示站内热度与最新收录。<% } %></p><a href="/hot">查看今日热榜 <span aria-hidden="true">→</span></a></div>
+  </div>
+</section>
+<% if (shown(page?.Today)) { %><section class="today-bar home-today" id="sec-today"><p class="home-eyebrow">ON THIS DAY · <%= page?.TodayLabel %></p><ul class="today"><% for (const item6 of (page?.Today ?? [])) { %><li><% if (shown(item6?.Year)) { %><b><%= item6?.Year %></b> <% } %><%= item6?.Text %></li><% } %></ul></section><% } %>
+<div class="home-browse" id="home-browse"><% for (const item7 of (page?.Sections ?? [])) { %><%- partial("section", item7) %><% } %></div>
+<section class="home-latest" id="sec-latest" data-tabs>
+  <div class="home-section-heading"><div><p class="home-eyebrow">FRESHLY ADDED</p><h2><a href="/latest">新鲜收录 <span aria-hidden="true">↗</span></a></h2></div><div class="home-shortcut-switch" role="tablist" aria-label="新鲜收录内容"><button class="active" type="button" data-tab="latest" aria-selected="true">最新</button><button type="button" data-tab="popular" aria-selected="false">热门</button></div></div>
+  <div class="tab-panel" data-panel="latest"><div class="home-latest-grid"><% for (const item8 of (page?.Latest ?? [])) { %><%- partial("link", item8) %><% } %></div></div>
+  <div class="tab-panel" data-panel="popular" hidden><div class="home-latest-grid"><% for (const item9 of (page?.Popular ?? [])) { %><%- partial("link", item9) %><% } %></div></div>
+</section>

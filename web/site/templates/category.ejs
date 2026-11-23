@@ -1,0 +1,10 @@
+<div class="category-page">
+<article class="card bg-base-100 border border-base-300 shadow-none mb-2">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a><% if (shown(page?.ParentSlug)) { %> / <a class="link link-hover" href="/c/<%= page?.ParentSlug %>"><%= page?.ParentName %></a><% } %> / <span><%= page?.Name %></span></nav>
+    <h1 class="text-2xl font-semibold"><%= page?.Heading %></h1>
+    <% if (shown(page?.Intro)) { %><p class="opacity-70"><%= page?.Intro %></p><% } %>
+  </div>
+</article>
+<%- partial("section", page?.Section) %>
+</div>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="kaiwu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= page?.Title %> - 开物录</title>
+  <meta name="robots" content="noindex,follow">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/site.css?v=37">
+</head>
+<body class="auth-page min-h-screen bg-canvas font-sans text-base-content text-sm">
+  <main class="auth-layout">
+    <section class="auth-intro">
+      <a class="auth-brand" href="/"><b>开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
+      <p class="auth-eyebrow">PERSONAL LINK LIBRARY</p>
+      <h1>常用网站，<br>随时都在。</h1>
+      <p class="auth-copy">登录后同步收藏与最近使用。把值得保留的入口整理在一处。</p>
+      <a class="btn btn-ghost auth-back" href="/">← 返回首页</a>
+    </section>
+    <form class="auth-form card bg-base-100 border border-base-300 shadow-none" method="post" action="<%= safeURL(page?.Action) %>">
+      <div class="card-body gap-4">
+        <div>
+          <p class="auth-form-kicker"><% if (shown((page?.Kind === "register"))) { %>创建账号<% } else if (shown((page?.Kind === "forgot"))) { %>账号帮助<% } else if (shown((page?.Kind === "reset"))) { %>更新凭证<% } else { %>欢迎回来<% } %></p>
+          <h2 class="text-2xl font-semibold mt-1"><%= page?.Title %></h2>
+          <p class="text-sm opacity-70 mt-2"><% if (shown((page?.Kind === "register"))) { %>注册后，收藏和最近使用记在这个账号上。<% } else if (shown((page?.Kind === "forgot"))) { %>填写注册时的邮箱，我们会发送密码重置链接。<% } else if (shown((page?.Kind === "reset"))) { %>设置新密码，至少 8 位。<% } else { %>登录后继续使用你的收藏和最近使用。<% } %></p>
+        </div>
+        <input type="hidden" name="next" value="<%= page?.Next %>">
+        <% if (shown(page?.Token)) { %><input type="hidden" name="token" value="<%= page?.Token %>"><% } %>
+        <% if (shown(page?.Notice)) { %><p class="alert alert-success"><%= page?.Notice %></p><% } %>
+        <% if (shown(page?.Error)) { %><p class="alert alert-error"><%= page?.Error %></p><% } %>
+        <% if (shown((shown((page?.Kind === "login")) || shown((page?.Kind === "register"))))) { %><label class="auth-field">用户名<input class="input input-bordered w-full" name="username" required<% if (shown((page?.Kind === "register"))) { %> maxlength="20"<% } %> value="<%= page?.User %>" autocomplete="username"><% if (shown((page?.Kind === "register"))) { %><span class="text-xs opacity-60">最多 20 个字符</span><% } %></label><% } %>
+        <% if (shown((shown((page?.Kind === "register")) || shown((page?.Kind === "forgot"))))) { %><label class="auth-field">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" value="<%= page?.Email %>" autocomplete="email"><% if (shown((page?.Kind === "register"))) { %><span class="text-xs opacity-60">用于重置密码</span><% } %></label><% } %>
+        <% if (shown((shown((page?.Kind === "login")) || shown((page?.Kind === "register")) || shown((page?.Kind === "reset"))))) { %><label class="auth-field"><% if (shown((page?.Kind === "reset"))) { %>新密码<% } else { %>密码<% } %><input class="input input-bordered w-full" name="password" type="password" required<% if (shown((page?.Kind !== "login"))) { %> minlength="8"<% } %> autocomplete="<% if (shown((page?.Kind === "login"))) { %>current-password<% } else { %>new-password<% } %>"><% if (shown((page?.Kind !== "login"))) { %><span class="text-xs opacity-60">至少 8 位</span><% } %></label><% } %>
+        <% if (shown((page?.Kind === "reset"))) { %><label class="auth-field">再输入一次<input class="input input-bordered w-full" name="password2" type="password" required minlength="8" autocomplete="new-password"></label><% } %>
+        <button class="btn btn-primary w-full mt-1" type="submit"><% if (shown((page?.Kind === "forgot"))) { %>发送重置邮件<% } else if (shown((page?.Kind === "reset"))) { %>保存新密码<% } else { %><%= page?.Title %><% } %></button>
+        <% if (shown((page?.Kind === "login"))) { %><div class="auth-links"><a class="link link-hover" href="/forgot">忘记密码</a><span>没有账号？<a class="link link-hover text-primary" href="<%= safeURL(page?.SwitchTo) %>">去注册</a></span></div><% } %>
+        <% if (shown((page?.Kind === "register"))) { %><p class="auth-switch">已有账号？<a class="link link-hover text-primary" href="<%= safeURL(page?.SwitchTo) %>">去登录</a></p><% } %>
+        <% if (shown((page?.Kind === "forgot"))) { %><p class="auth-switch"><a class="link link-hover" href="/login">返回登录</a></p><% } %>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

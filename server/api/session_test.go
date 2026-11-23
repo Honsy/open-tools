@@ -40,9 +40,9 @@ func TestSharedLoginChecksAdminRoleOnEveryRequest(t *testing.T) {
 	}
 
 	router := gin.New()
-	router.GET("/login", loginPage(db))
-	router.POST("/login", loginPost(db))
-	router.POST("/logout", logout)
+	router.GET(siteAPIPrefix+"/login", loginPage(db))
+	router.POST(siteAPIPrefix+"/login", loginPost(db))
+	router.POST(siteAPIPrefix+"/logout", logout)
 	MountAdmin(router, db)
 
 	adminRequest := func(method, path string, cookie *http.Cookie, site string) int {
@@ -62,13 +62,14 @@ func TestSharedLoginChecksAdminRoleOnEveryRequest(t *testing.T) {
 		t.Fatalf("admin without cookie = %d, want 401", got)
 	}
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/login?next=/admin/links", nil))
-	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `name="next" value="/admin/links"`) {
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, siteAPIPrefix+"/login?next=/admin/links", nil))
+	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != sitePageType ||
+		!strings.Contains(response.Body.String(), `"Next":"/admin/links"`) {
 		t.Fatalf("login page = %d, missing the admin destination", response.Code)
 	}
 
 	form := url.Values{"username": {user.Username}, "password": {password}, "next": {"/admin/links"}}
-	request := httptest.NewRequest(http.MethodPost, "https://kaiwulu.example/login", strings.NewReader(form.Encode()))
+	request := httptest.NewRequest(http.MethodPost, "https://kaiwulu.example"+siteAPIPrefix+"/login", strings.NewReader(form.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response = httptest.NewRecorder()
 	router.ServeHTTP(response, request)
@@ -95,7 +96,7 @@ func TestSharedLoginChecksAdminRoleOnEveryRequest(t *testing.T) {
 		t.Fatalf("admin after role removal = %d, want 403", got)
 	}
 
-	request = httptest.NewRequest(http.MethodPost, "https://kaiwulu.example/logout", nil)
+	request = httptest.NewRequest(http.MethodPost, "https://kaiwulu.example"+siteAPIPrefix+"/logout", nil)
 	request.AddCookie(cookie)
 	response = httptest.NewRecorder()
 	router.ServeHTTP(response, request)

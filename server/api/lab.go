@@ -223,7 +223,7 @@ func sendImageJob(c *gin.Context, id string, ok bool) {
 
 func toolIndex(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		render(c, db, http.StatusOK, shell{
+		sendSitePage(c, db, http.StatusOK, shell{
 			Title: "在线工具 - 开物录", Description: "AI 图像工具、趣味测试和实用计算器。",
 			Canonical: "/tools/", Robots: "noindex,follow",
 		}, "labIndex", migratedTools)
@@ -232,7 +232,7 @@ func toolIndex(db *gorm.DB) gin.HandlerFunc {
 
 func showLabTool(c *gin.Context, db *gorm.DB, tool labTool) {
 	_, signedIn := currentUser(c, db)
-	render(c, db, http.StatusOK, shell{
+	sendSitePage(c, db, http.StatusOK, shell{
 		Title: tool.Name + " - 开物录", Description: tool.Desc,
 		Canonical: "/tools/" + tool.Slug, Robots: "noindex,follow",
 	}, "labTool", struct {

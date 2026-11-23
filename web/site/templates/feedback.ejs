@@ -1,0 +1,18 @@
+<section class="card bg-base-100 border border-base-300">
+  <div class="card-body">
+    <h1 class="text-2xl font-semibold">站点反馈</h1>
+    <% if (shown(page?.SignedIn)) { %>
+      <% if (shown(page?.Error)) { %><p class="alert alert-error"><%= page?.Error %></p><% } %>
+      <% if (shown(page?.Sent)) { %><p class="alert alert-success">反馈已提交。</p><% } %>
+      <form class="grid gap-2" method="post" action="/feedback">
+        <label class="grid gap-1">反馈内容<textarea name="body" class="textarea textarea-bordered w-full" required maxlength="1000"></textarea></label>
+        <button class="btn btn-primary justify-self-start">提交反馈</button>
+      </form>
+      <% if (shown(page?.Items)) { %><h2 class="text-lg font-semibold mt-4">我的反馈</h2><% } %>
+      <% for (const item1 of (page?.Items ?? [])) { %><article class="border-t border-base-300 py-2">
+        <p class="text-xs opacity-60"><%= date(item1?.createdAt) %> · <% if (shown((item1?.status === "done"))) { %>已处理<% } else if (shown((item1?.status === "rejected"))) { %>已拒绝<% } else { %>待处理<% } %></p>
+        <p class="whitespace-pre-wrap"><%= item1?.body %></p>
+      </article><% } %>
+    <% } else { %><p><a class="btn btn-primary" href="/login?next=/feedback">登录后反馈</a></p><% } %>
+  </div>
+</section>

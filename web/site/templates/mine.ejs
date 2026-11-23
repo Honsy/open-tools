@@ -1,0 +1,38 @@
+<header class="border-b border-base-300 pb-6">
+  <h1 class="text-4xl font-semibold tracking-tight"><%= page?.User %></h1>
+  <p class="mt-2 text-sm opacity-60"><%= page?.Date %> 注册</p>
+</header>
+<section class="mt-8 max-w-sm">
+  <h2 class="text-base font-semibold mb-3">邮箱</h2>
+  <p class="text-sm opacity-60 mb-3">忘记密码时，重置链接发到这个邮箱。</p>
+  <% if (shown(page?.MailNotice)) { %><p class="alert alert-success mb-3"><%= page?.MailNotice %></p><% } %>
+  <% if (shown(page?.MailError)) { %><p class="alert alert-error mb-3"><%= page?.MailError %></p><% } %>
+  <form class="flex flex-col gap-3" method="post" action="/mine/email">
+    <label class="flex flex-col gap-1 text-sm">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" value="<%= page?.Email %>" autocomplete="email"></label>
+    <label class="flex flex-col gap-1 text-sm">当前密码<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="current-password"></label>
+    <button class="btn btn-primary w-fit" type="submit">保存邮箱</button>
+  </form>
+</section>
+<section class="mt-8">
+  <h2 class="text-base font-semibold mb-3">收藏</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="desk-custom"><% if (shown(page?.Stars)) { %><% for (const item1 of (page?.Stars ?? [])) { %><%- partial("link", item1) %><% } %><% } else { %>点星星，把网站留在这里。<% } %></div>
+</section>
+<div class="mt-10 grid gap-8 lg:grid-cols-2">
+  <section>
+    <h2 class="text-base font-semibold mb-3">最近使用</h2>
+    <div class="grid grid-cols-2 gap-2" id="desk-recent"><% if (shown(page?.Recent)) { %><% for (const item2 of (page?.Recent ?? [])) { %><%- partial("link", item2) %><% } %><% } else { %>还没有打开过网站。<% } %></div>
+  </section>
+  <section>
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h2 class="text-base font-semibold">我的提交</h2>
+      <a class="btn btn-primary btn-sm" href="/submit">提交网站</a>
+    </div>
+    <% if (shown(page?.Items)) { %>
+    <ul class="flex flex-col gap-2">
+      <% for (const item3 of (page?.Items ?? [])) { %><li class="flex flex-wrap items-center gap-2 bg-base-200 rounded-box px-3 py-2"><span class="badge badge-ghost"><%= item3?.Status %></span><span class="font-medium"><%= item3?.Name %></span><span class="text-xs opacity-60 break-all"><%= item3?.URL %></span><span class="text-xs opacity-60 ml-auto"><%= item3?.Date %></span></li><% } %>
+    </ul>
+    <% } else { %>
+    <p class="text-sm opacity-60">还没有提交过网站。审核通过后才会出现在分类里。</p>
+    <% } %>
+  </section>
+</div>

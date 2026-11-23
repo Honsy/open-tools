@@ -1,0 +1,41 @@
+<div class="site-detail">
+  <nav class="breadcrumbs text-sm opacity-70 mb-4" aria-label="面包屑"><ul><li><a href="/">首页</a></li><% if (shown(page?.ParentSlug)) { %><li><a href="/c/<%= page?.ParentSlug %>"><%= page?.ParentName %></a></li><% } %><% if (shown(page?.CatSlug)) { %><li><a href="/c/<%= page?.CatSlug %>"><%= page?.CatName %></a></li><% } %><li><%= page?.Name %></li></ul></nav>
+  <div class="site-detail-grid">
+    <article class="card bg-base-100 border border-base-300 shadow-none">
+      <div class="card-body">
+        <header class="site-detail-head">
+          <span class="mark lg"><% if (shown(page?.IconHost)) { %><img alt="" data-src="<%= safeURL(page?.Icon) %>" decoding="async" onload="this.nextElementSibling.remove()" onerror="this.remove()"><% } %><b><%= page?.Letter %></b><% if (shown(page?.Region)) { %><i class="region"><%= page?.Region %></i><% } %></span>
+          <div class="site-detail-title">
+            <p class="text-xs font-medium text-primary"><% if (shown(page?.CatName)) { %><%= page?.CatName %><% } else { %>开物录收录<% } %></p>
+            <h1 class="text-3xl font-semibold tracking-tight"><%= page?.Name %></h1>
+            <p class="text-base opacity-70"><%= page?.Desc %></p>
+            <% if (shown(page?.Tags)) { %><p class="flex flex-wrap gap-2 mt-1"><% for (const item1 of (page?.Tags ?? [])) { %><a class="badge badge-ghost" href="/search?q=<%= query(item1) %>"><%= item1 %></a><% } %></p><% } %>
+            <div class="site-detail-actions">
+              <% if (shown(page?.External)) { %><a class="btn btn-primary" href="/go/<%= page?.ID %>" rel="nofollow noopener" target="_blank">打开网站</a><% } else { %><a class="btn btn-primary" href="<%= safeURL(page?.URL) %>">打开页面</a><% } %>
+              <button class="btn btn-outline site-save" type="button" data-star="<%= page?.FavoriteJSON %>">☆ 收藏</button>
+              <span class="text-sm opacity-60"><%= page?.Host %></span>
+              <span class="site-stat"><b><%= page?.ViewsText %></b><span>浏览</span></span>
+              <span class="site-stat"><b><%= page?.ClicksText %></b><span>打开</span></span>
+            </div>
+          </div>
+        </header>
+        <% if (shown(page?.BodyLead)) { %><section class="site-description"><h2 class="text-lg font-semibold">网站介绍</h2><div class="site-body"><p><%= page?.BodyLead %></p></div><% if (shown(page?.BodyTips)) { %><aside class="site-tips"><h3 class="text-sm font-semibold">使用提示</h3><% for (const item2 of (page?.BodyTips ?? [])) { %><p><%= item2 %></p><% } %></aside><% } %></section><% } %>
+        <% if (shown(page?.Related)) { %><section class="site-related"><h2 class="text-lg font-semibold mb-3">同类网站</h2><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3"><% for (const item3 of (page?.Related ?? [])) { %><%- partial("link", item3) %><% } %></div></section><% } %>
+      </div>
+    </article>
+    <aside class="site-facts card bg-base-200 shadow-none">
+      <div class="card-body">
+        <h2 class="text-base font-semibold">收录信息</h2>
+        <dl class="site-facts-list">
+          <dt>网址</dt><dd class="break-all" title="<%= page?.URL %>"><%= page?.Host %></dd>
+          <% if (shown(page?.Alias)) { %><dt>别名</dt><dd><%= page?.Alias %></dd><% } %>
+          <% if (shown(page?.Lang)) { %><dt>语言</dt><dd><%= page?.Lang %></dd><% } %>
+          <% if (shown(page?.Region)) { %><dt>地区</dt><dd><%= page?.Region %></dd><% } %>
+          <% if (shown(page?.Spare)) { %><dt>备用地址</dt><dd class="break-all"><%= page?.Spare %></dd><% } %>
+          <% if (shown(page?.ICP)) { %><dt>备案</dt><dd><%= page?.ICP %></dd><% } %>
+          <dt>收录时间</dt><dd><time datetime="<%= page?.ISO %>"><%= page?.Date %></time></dd>
+        </dl>
+      </div>
+    </aside>
+  </div>
+</div>

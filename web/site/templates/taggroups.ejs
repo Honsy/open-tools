@@ -1,0 +1,9 @@
+<div class="flex flex-col gap-2">
+  <% for (const item1 of (page?.Groups ?? [])) { %>
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="text-xs font-medium opacity-60 w-14 shrink-0"><%= item1?.Name %></span>
+    <% for (const item2 of (item1?.Tags ?? [])) { %><a class="badge badge-ghost" href="/search?q=<%= query(item2) %>"><%= item2 %></a><% } %>
+  </div>
+  <% } %>
+  <a class="btn btn-primary btn-sm w-fit mt-1" href="/random">随机网址</a>
+</div>

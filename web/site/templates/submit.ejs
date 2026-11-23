@@ -1,0 +1,12 @@
+<form class="card bg-base-100 border border-base-300 shadow-none max-w-xl" method="post" action="/submit">
+  <div class="card-body">
+    <h1 class="text-2xl font-semibold">提交网站</h1>
+    <p class="kicker text-xs opacity-60">以 <%= page?.User %> 的账号提交。先收进待审，不会马上出现在首页。</p>
+    <% if (shown(page?.OK)) { %><p class="alert alert-success">已收下，审核后才会出现在首页。</p><% } %>
+    <% if (shown(page?.Error)) { %><p class="alert alert-error"><%= page?.Error %></p><% } %>
+    <label class="flex flex-col gap-1 text-sm">名字<input class="input input-bordered" name="name" required maxlength="40" value="<%= page?.Name %>"></label>
+    <label class="flex flex-col gap-1 text-sm">网址<input class="input input-bordered" name="url" required placeholder="https://" value="<%= page?.URL %>"></label>
+    <label class="flex flex-col gap-1 text-sm">一句简介<textarea class="textarea textarea-bordered" name="desc" rows="3" maxlength="120"><%= page?.Desc %></textarea></label>
+    <button class="btn btn-primary w-fit" type="submit">提交</button>
+  </div>
+</form>

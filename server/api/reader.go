@@ -1,8 +1,6 @@
 package api
 
 import (
-	"bytes"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -91,13 +89,8 @@ func showAuth(c *gin.Context, db *gorm.DB, status int, view authView) {
 	if view.Next != "" && view.Next != "/" {
 		view.SwitchTo += "?next=" + url.QueryEscape(view.Next)
 	}
-	var page bytes.Buffer
-	if err := publicPages.ExecuteTemplate(&page, "authpage", view); err != nil {
-		log.Printf("auth: %v", err)
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	writeBody(c, status, "text/html; charset=utf-8", page.Bytes())
+	c.Header("Cache-Control", "no-store")
+	sitePageData(c, status, "authpage", nil, view)
 }
 
 func loginPost(db *gorm.DB) gin.HandlerFunc {
@@ -369,7 +362,7 @@ func renderMine(c *gin.Context, db *gorm.DB, user models.User, notice, mailError
 	if mailError != "" {
 		status = http.StatusBadRequest
 	}
-	render(c, db, status, shell{
+	sendSitePage(c, db, status, shell{
 		Title: user.Username + " - 开物录", Description: "这个账号在开物录的收藏、最近使用和提交。",
 		Canonical: "/mine", Robots: "noindex,follow", Account: true,
 	}, "mine", map[string]any{

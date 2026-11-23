@@ -1,0 +1,18 @@
+<header class="search-heading">
+  <p class="text-xs font-medium text-primary">开物录网址导航</p>
+  <h1 class="text-2xl font-semibold"><% if (shown(page?.Query)) { %>搜索「<%= page?.Query %>」<% } else { %>搜索<% } %></h1>
+  <% if (shown(page?.Query)) { %><p class="text-sm opacity-60">找到 <%= page?.Total %> 个匹配的网站</p><% } %>
+</header>
+<% if (shown(page?.Links)) { %>
+<div class="search-results grid sm:grid-cols-2 xl:grid-cols-3 gap-3"><% for (const item1 of (page?.Links ?? [])) { %><%- partial("link", item1) %><% } %></div>
+<% if (shown((page?.PageCount > 1))) { %>
+<nav class="pagination mt-5" aria-label="搜索结果分页">
+  <p class="pagination-summary">第 <%= page?.Page %> / <%= page?.PageCount %> 页</p>
+  <div class="join pagination-controls">
+    <% if (shown(page?.PrevURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(page?.PrevURL) %>" rel="prev">上一页</a><% } else { %><span class="btn btn-sm join-item btn-disabled" aria-disabled="true">上一页</span><% } %>
+    <% for (const item2 of (page?.Pages ?? [])) { %><% if (shown(item2?.Current)) { %><span class="btn btn-sm join-item btn-primary" aria-current="page"><%= item2?.Number %></span><% } else { %><a class="btn btn-sm join-item" href="<%= safeURL(item2?.URL) %>"><%= item2?.Number %></a><% } %><% } %>
+    <% if (shown(page?.NextURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(page?.NextURL) %>" rel="next">下一页</a><% } else { %><span class="btn btn-sm join-item btn-disabled" aria-disabled="true">下一页</span><% } %>
+  </div>
+</nav>
+<% } %>
+<% } else { %><p class="empty-state"><% if (shown(page?.Query)) { %>没有匹配的网站，换个关键词试试。<% } else { %>输入网站名称、用途或标签开始搜索。<% } %></p><% } %>

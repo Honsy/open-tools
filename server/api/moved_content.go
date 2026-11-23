@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"errors"
-	"html/template"
 	"io"
 	"net/http"
 	"net/url"
@@ -23,7 +22,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func mountMovedContent(router *gin.Engine, db *gorm.DB) {
+func mountMovedContent(router *gin.RouterGroup, db *gorm.DB) {
 	for from, to := range map[string]string{
 		"/ai": "/c/ai", "/ai/tools": "/c/ai", "/ai/sites": "/c/ai",
 		"/ai/articles": "/c/daily", "/ranking/ai": "/rank?category=ai", "/ai/lab": "/tools/",
@@ -36,7 +35,7 @@ func mountMovedContent(router *gin.Engine, db *gorm.DB) {
 		value := c.Param("legacy")
 		err := db.Select("id").Where("draft = ? AND (legacy_id = ? OR legacy_slug = ?)", false, value, value).First(&row).Error
 		if err != nil {
-			render(c, db, http.StatusNotFound, shell{Title: "没有这篇文章 - 开物录", Robots: "noindex"}, "missing",
+			sendSitePage(c, db, http.StatusNotFound, shell{Title: "没有这篇文章 - 开物录", Robots: "noindex"}, "missing",
 				map[string]string{"Heading": "没有这篇文章", "Text": "文章不存在，或仍为草稿。"})
 			return
 		}
@@ -59,14 +58,14 @@ func mountMovedContent(router *gin.Engine, db *gorm.DB) {
 var articleMarkdown = goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithRendererOptions(html.WithUnsafe()))
 var articlePolicy = bluemonday.UGCPolicy()
 
-func articleHTML(item models.Article) template.HTML {
+func articleHTML(item models.Article) string {
 	switch item.Format {
 	case "html":
-		return template.HTML(articlePolicy.Sanitize(item.Body))
+		return articlePolicy.Sanitize(item.Body)
 	case "markdown":
 		var out bytes.Buffer
 		if err := articleMarkdown.Convert([]byte(item.Body), &out); err == nil {
-			return template.HTML(articlePolicy.SanitizeBytes(out.Bytes()))
+			return string(articlePolicy.SanitizeBytes(out.Bytes()))
 		}
 	}
 	return ""
@@ -232,7 +231,7 @@ func showFeedback(c *gin.Context, db *gorm.DB, warning string, sent bool) {
 	if ok {
 		db.Where("user_id = ?", user.ID).Order("id desc").Limit(100).Find(&view.Items)
 	}
-	render(c, db, http.StatusOK, shell{Title: "站点反馈 - 开物录", Canonical: "/feedback", Robots: "noindex,follow"}, "feedback", view)
+	sendSitePage(c, db, http.StatusOK, shell{Title: "站点反馈 - 开物录", Canonical: "/feedback", Robots: "noindex,follow"}, "feedback", view)
 }
 
 func postFeedback(db *gorm.DB) gin.HandlerFunc {

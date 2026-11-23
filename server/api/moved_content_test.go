@@ -29,25 +29,30 @@ func TestMigratedPublicRoutes(t *testing.T) {
 		{"/ai/lab/mortgage-calc", "/tools/mortgage-calc"},
 	} {
 		response := httptest.NewRecorder()
-		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, test.path, nil))
+		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, siteAPIPrefix+test.path, nil))
 		if response.Code != http.StatusMovedPermanently || response.Header().Get("Location") != test.target {
 			t.Errorf("%s got status %d and location %q", test.path, response.Code, response.Header().Get("Location"))
 		}
 	}
 	for _, test := range []struct {
-		path, content string
+		path, name string
 	}{
-		{"/tools/", "AI 图片换背景"}, {"/tools/mortgage-calc", "商业贷款年利率"},
-		{"/tools/horoscope", "登录后使用"}, {"/tools/sbti", "/static/lab/sbti-page.js"},
-		{"/feedback", "登录后反馈"}, {"/static/lab/tools.js", "retirementPlan"},
+		{"/tools/", "labIndex"}, {"/tools/mortgage-calc", "labTool"},
+		{"/tools/horoscope", "labTool"}, {"/tools/sbti", "labTool"},
+		{"/feedback", "feedback"}, {"/sitemap.xml", "sitemap"},
 	} {
 		response := httptest.NewRecorder()
-		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, test.path, nil))
-		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), test.content) {
-			t.Errorf("%s got status %d, expected content %q", test.path, response.Code, test.content)
+		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, siteAPIPrefix+test.path, nil))
+		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != sitePageType ||
+			!strings.Contains(response.Body.String(), `"template":"`+test.name+`"`) {
+			t.Errorf("%s got status %d, expected page model %q", test.path, response.Code, test.name)
 		}
-		if strings.Contains(response.Body.String(), "data-ai-tool=") {
-			t.Errorf("%s renders a signed-in AI form to a guest", test.path)
+	}
+	for _, path := range []string{"/", "/tools/horoscope", "/static/site.js", "/login", "/robots.txt"} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != http.StatusNotFound {
+			t.Errorf("%s unexpectedly served by the backend: %d", path, response.Code)
 		}
 	}
 	response := httptest.NewRecorder()

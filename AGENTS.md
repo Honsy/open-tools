@@ -6,8 +6,9 @@
 
 ## 结构
 
-- `server/` — Go（Gin + GORM）。公开页是 `html/template`，改模板、CSS、JS 要重新编译。
-- `web/` — Vite 6 + Vue 3。只做 `/admin`。开发时公开 HTML 由 Vite 转到本机 `:8080`。
+- `server/` — Go API（Gin + GORM）。负责查库、登录、权限、收藏、文章、计数和 AI。`/_site/` 给公开站提供版本化页面数据，返回 `application/vnd.kaiwulu.page.v1+json`。
+- `web/site/` — Node.js + EJS，负责公开 HTML、SEO、静态资源和纯浏览器工具。通过 HTTP 访问 Go，单独启动和发布。
+- `web/admin/` — Vue + Vite，单独构建 `/admin/`。前后台使用同一域名和会话 Cookie。
 - `legacy/` — 更早的工具站（Koa + React SSR）。和现网无关，不要再部署。
 
 ## 数据
@@ -20,7 +21,7 @@
 
 ## 设计
 
-公开页样式是 Tailwind CSS 4 加 daisyUI 5，主题按仓库根目录 `DESIGN.md`（蓝白统一导航）。源文件在 `ui/public.css`，`npm run build` 写到 `server/api/static/site.css`。改颜色、圆角、间距先改 `ui/public.css` 里的 daisyUI 主题，组件用 daisyUI 的 `btn`、`card`、`menu`、`navbar`、`tabs`、`badge`，布局用 Tailwind。不要再手写一套组件样式。
+公开页样式是 Tailwind CSS 4 加 daisyUI 5，主题按仓库根目录 `DESIGN.md`（蓝白统一导航）。源文件在 `web/site/public.css`，在 `web/site/` 执行 `npm run build` 生成 `static/site.css`。改颜色、圆角、间距先改 daisyUI 主题，组件用 daisyUI 的 `btn`、`card`、`menu`、`navbar`、`tabs`、`badge`，布局用 Tailwind。不要再手写一套组件样式。
 
 - 字体 IBM Plex Sans。中文回退 PingFang SC、Microsoft YaHei。标题 600，正文 14px，标签 12px / 500。
 - 主色 `#0f62fe`，按下 `#004ccd`。页面底 `#fbf9f8`，卡片表面 `#f5f3f3` / `#ffffff`，字 `#1b1c1c`，次级字 `#424656`。成功绿 `#198038` 只用于确认，不拿来做装饰。
@@ -64,17 +65,19 @@
 
 | 项 | 值 |
 |---|---|
-| 进程 | systemd `kaiwu`，工作目录 `/data/app/kaiwu`，二进制 `/data/app/kaiwu/opentools`，听 `:8080` |
+| Go 进程 | systemd `kaiwu`，工作目录 `/data/app/kaiwu`，二进制 `/data/app/kaiwu/opentools`。拆分版默认听 `127.0.0.1:8080`，可设置 `API_ADDR` |
 | 配置 | `/data/app/kaiwu/config.yaml`（权限 600）。会话密钥用 `sessionSecret`，兼容旧的 `adminSecret`。全新初始化时用 `adminPassword` 创建首个管理员 |
 | 入口 | Nginx `:80` 根路径反代到 `127.0.0.1:8080`，带 `X-Forwarded-Host` |
-| 后台 | `/admin/`，静态在 `/data/app/kaiwu/admin`，构建用 `vite build --base /admin/` |
+| 后台 | `/admin/`，静态在 `/data/app/kaiwu/admin`，构建用 `npm --prefix web/admin run build` |
 | YouGo | 同机 `/yougo/`，反代 `127.0.0.1:8000`。不要占 80 |
 | MySQL | 本机 `127.0.0.1:13366`，库 `opentools`。YouGo 仍用库 `laoyouba` |
 
 这台机器更新靠本机交叉编译后上传，不要在机器上 `git pull`。Linux 包：`CGO_ENABLED=0 GOOS=linux GOARCH=amd64`。编完把 `GOOS` 设回 `windows`，否则下一发本机编译会变成 ELF。不要编 Windows 可执行文件来跑本地接口。
 
-公开页源码改完要换二进制。后台页面改完才要重新构建 `web/` 并上传 `/admin/`。
+拆分版上线时，增加单个 Node 进程，监听 `127.0.0.1:8081`，用 `SITE_API_ORIGIN=http://127.0.0.1:8080` 访问 Go。Nginx 把 `/api/`、`/go/`、`/ico` 和 `/health` 发给 Go，直接提供 `/admin/` 和 `/static/` 的静态文件，其他公开 URL 发给 Node。`/_site/` 只在回环地址上供 Node 调用。Nginx 覆盖 `X-Forwarded-Host` 和 `X-Forwarded-Proto`，以保留 canonical、重置链接和 HTTPS Cookie。
+
+Node 公开站可独立构建并上传。在 `web/site/` 用 Node 24 LTS 执行 `npm ci`、`npm run build`，发布运行目录后用 `npm start` 启动。正式依赖可用 `npm ci --omit=dev` 安装。模板在 Node 进程启动时编译。CSS 和 JS 在 `static/`，可以独立发布。应用代码兼容 Node.js 22 及以上。
 
 ## 本地
 
-不主动起服务。要跑时在 `server/` 里 `go run .`（`:8080`），另开 `web/` 的 `npm run dev`（`:5173`）。本机 Go 若低于 `go.mod` 的 1.24，设 `GOTOOLCHAIN=auto`，代理用 `https://goproxy.cn,direct`。
+不主动起服务。开发时分别在 `server/` 用 `go run .`（`:8080`），在 `web/site/` 用 `npm start`（`:8081`），在 `web/admin/` 用 `npm run dev`（`:5173`）。用 `:5173` 同域调试公开站和 `/admin/`，Vite 把公开路由转到 Node，Node 把 API 转到 Go。本机 Go 若低于 `go.mod` 的 1.24，设 `GOTOOLCHAIN=auto`，代理用 `https://goproxy.cn,direct`。

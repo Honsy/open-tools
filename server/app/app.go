@@ -47,9 +47,12 @@ func Run() error {
 	if err := seed.EnsureProfile(db); err != nil {
 		return err
 	}
-	addr := ":8080"
-	if p := os.Getenv("PORT"); p != "" {
-		addr = ":" + p
+	addr := os.Getenv("API_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:8080"
+		if port := os.Getenv("PORT"); port != "" {
+			addr = "127.0.0.1:" + port
+		}
 	}
 	log.Printf("open-tools api %s mysql %s/%s", addr, cfg.MySQLHost+":"+cfg.MySQLPort, cfg.MySQLDB)
 	api.Configure(cfg)

@@ -1,0 +1,16 @@
+<form class="grid gap-4 mt-3" id="mortgage-form">
+  <div class="grid gap-3 sm:grid-cols-2">
+    <label class="grid gap-1">贷款类型<select class="select select-bordered w-full" name="type"><option value="commercial">商业贷款</option><option value="fund">公积金贷款</option><option value="combined">组合贷款</option></select></label>
+    <label class="grid gap-1">还款方式<select class="select select-bordered w-full" name="repayment"><option value="installment">等额本息</option><option value="principal">等额本金</option></select></label>
+  </div>
+  <fieldset class="grid gap-3 sm:grid-cols-2" data-commercial>
+    <label class="grid gap-1">商业贷款金额（万元）<input class="input input-bordered w-full" name="commercial" type="number" min="0.01" max="10000" step="0.01" value="100" required></label>
+    <label class="grid gap-1">商业贷款年利率（%）<input class="input input-bordered w-full" name="commercialRate" type="number" min="0" max="30" step="0.0001" value="3.45" required></label>
+  </fieldset>
+  <fieldset class="grid gap-3 sm:grid-cols-2" data-fund hidden disabled>
+    <label class="grid gap-1">公积金贷款金额（万元）<input class="input input-bordered w-full" name="fund" type="number" min="0.01" max="10000" step="0.01" value="60" required></label>
+    <label class="grid gap-1">公积金贷款年利率（%）<input class="input input-bordered w-full" name="fundRate" type="number" min="0" max="30" step="0.0001" value="2.85" required></label>
+  </fieldset>
+  <label class="grid gap-1">还款期限（年）<input class="input input-bordered" name="years" type="number" min="1" max="30" value="30" required></label>
+  <button type="submit" class="btn btn-primary justify-self-start">计算</button>
+</form>

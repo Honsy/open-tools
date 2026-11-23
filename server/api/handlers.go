@@ -34,8 +34,8 @@ func Router(db *gorm.DB) *gin.Engine {
 	r.POST("/api/me/star", toggleStar(db))
 	r.POST("/api/me/recent", touchRecent(db))
 	r.GET("/go/:id", goOut(db))
-	mountPages(r, db)
-	mountSEO(r, db)
+	mountIcon(r, db)
+	mountSiteAPI(r.Group(siteAPIPrefix), db)
 	return r
 }
 

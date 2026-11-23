@@ -1,0 +1,32 @@
+<section id="comments" class="card bg-base-100 border border-base-300 mt-5">
+  <div class="card-body gap-4">
+    <h2 class="text-lg font-semibold">文章评论</h2>
+    <% if (shown(page?.CommentError)) { %><p class="alert alert-error" role="alert">请填写 1 到 1000 个字，或重新选择要回复的评论。</p><% } %>
+    <% if (shown(page?.SignedIn)) { %><form method="post" action="/a/<%= page?.ID %>/comments" class="grid gap-2">
+      <label class="grid gap-1">发表评论<textarea class="textarea textarea-bordered w-full" name="body" required maxlength="1000"></textarea></label>
+      <button class="btn btn-primary justify-self-start">发布评论</button>
+    </form><% } else { %><p><a class="link link-hover text-primary" href="/login?next=/a/<%= page?.ID %>%23comments">登录后发表评论</a></p><% } %>
+    <% const list1 = (page?.Comments ?? []); if (list1.length) { %><% for (const item1 of list1) { %>
+    <article id="comment-<%= item1?.ID %>" class="border-t border-base-300 pt-3 <% if (shown(item1?.Depth)) { %>ml-4<% } %>">
+      <div class="flex flex-wrap gap-2"><strong><%= item1?.Author %></strong><time class="text-xs opacity-60" datetime="<%= date(item1?.CreatedAt, true) %>"><%= date(item1?.CreatedAt) %></time></div>
+      <% if (shown(item1?.ParentID)) { %><a href="#comment-<%= item1?.ParentID %>" class="link link-hover text-xs opacity-70">查看被回复的评论</a><% } %>
+      <p class="whitespace-pre-wrap"><%= item1?.Body %></p>
+      <% if (shown(page?.SignedIn)) { %><div class="flex flex-wrap gap-3 mt-2">
+        <details><summary class="link link-hover cursor-pointer">回复</summary>
+          <form class="grid gap-2" method="post" action="/a/<%= page?.ID %>/comments"><input name="parent" type="hidden" value="<%= item1?.ID %>"><label>回复 <%= item1?.Author %><textarea class="textarea textarea-bordered w-full" name="body" required maxlength="1000"></textarea></label><button class="btn btn-sm justify-self-start">发布回复</button></form>
+        </details>
+        <% if (shown(item1?.CanEdit)) { %>
+        <% if (shown((item1?.UserID === page?.UserID))) { %><details><summary class="link link-hover cursor-pointer">编辑</summary>
+          <form class="grid gap-2" method="post" action="/a/<%= page?.ID %>/comments"><input name="comment" type="hidden" value="<%= item1?.ID %>"><label>修改评论<textarea class="textarea textarea-bordered w-full" name="body" required maxlength="1000"><%= item1?.Body %></textarea></label><button class="btn btn-sm justify-self-start" name="action" value="edit">保存</button></form>
+        </details><% } %>
+        <form method="post" action="/a/<%= page?.ID %>/comments"><input name="comment" type="hidden" value="<%= item1?.ID %>"><button class="link link-hover" name="action" value="delete">移除</button></form>
+        <% } %>
+      </div><% } %>
+    </article>
+    <% } } else { %><p class="text-sm opacity-70">暂时没有评论。</p><% } %>
+    <nav class="flex gap-2" aria-label="评论分页">
+      <% if (shown(page?.PreviousComments)) { %><a class="btn btn-sm" href="?comments=<%= page?.PreviousComments %>#comments">上一页</a><% } %>
+      <% if (shown(page?.MoreComments)) { %><a class="btn btn-sm" href="?comments=<%= page?.NextComments %>#comments">下一页</a><% } %>
+    </nav>
+  </div>
+</section>

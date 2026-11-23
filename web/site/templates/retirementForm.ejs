@@ -1,0 +1,10 @@
+<form class="grid gap-4 mt-3" id="retirement-form">
+  <div class="grid gap-3 sm:grid-cols-2">
+    <label class="grid gap-1">出生年<input class="input input-bordered w-full" name="year" type="number" min="1900" required></label>
+    <label class="grid gap-1">出生月<input class="input input-bordered w-full" name="month" type="number" min="1" max="12" required></label>
+    <label class="grid gap-1">原法定退休年龄<select class="select select-bordered w-full" name="category"><option value="60">男职工，60 周岁</option><option value="55">女职工，55 周岁</option><option value="50">女职工，50 周岁</option></select></label>
+    <label class="grid gap-1">已缴费年限（可选）<input class="input input-bordered w-full" name="paid" type="number" min="0" max="80" step="0.5"></label>
+  </div>
+  <button type="submit" class="btn btn-primary justify-self-start">计算</button>
+</form>
+<p><a class="link link-hover" href="https://www.gov.cn/yaowen/liebiao/202409/content_6974294.htm" target="_blank" rel="noopener">查看渐进式延迟法定退休年龄的决定和对照表</a></p>

@@ -1,0 +1,15 @@
+<article class="card bg-base-100 border border-base-300 shadow-none mb-4">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>最新收录</span></nav>
+    <h1 class="text-2xl font-semibold">最新收录</h1>
+    <p class="opacity-70"><%= page?.Intro %></p>
+  </div>
+</article>
+<section class="mt-4">
+  <h2 class="text-base font-semibold mb-3">刚收进来的</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2"><% for (const item1 of (page?.Latest ?? [])) { %><%- partial("link", item1) %><% } %></div>
+</section>
+<section class="mt-6">
+  <h2 class="text-base font-semibold mb-3">热门网址</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2"><% for (const item2 of (page?.Popular ?? [])) { %><%- partial("link", item2) %><% } %></div>
+</section>

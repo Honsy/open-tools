@@ -1,0 +1,17 @@
+<article class="card bg-base-100 border border-base-300 shadow-none mb-4">
+  <div class="card-body">
+    <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span>今日热榜</span></nav>
+    <h1 class="text-2xl font-semibold">今日热榜</h1>
+    <p class="opacity-70"><%= page?.Intro %></p>
+  </div>
+</article>
+<% for (const item1 of (page?.Boards ?? [])) { %>
+<section class="card bg-base-100 border border-base-300 shadow-none mt-4">
+  <div class="card-body">
+    <h2 class="text-base font-semibold"><%= item1?.Name %></h2>
+    <ol class="board">
+      <% for (const [v_i, v_item] of (item1?.Items ?? []).entries()) { %><li><span class="badge badge-xs font-bold <% if (shown((v_i === 0))) { %>badge-error<% } else if (shown((v_i === 1))) { %>badge-neutral<% } else if (shown((v_i === 2))) { %>badge-primary<% } else { %>badge-ghost<% } %>"><%= (v_i + 1) %></span><a href="<%= safeURL(v_item?.Href) %>"<% if (shown(v_item?.External)) { %> rel="nofollow noopener" target="_blank"<% } %>><%= v_item?.Title %></a><span class="text-xs opacity-60"><%= v_item?.Heat %></span></li><% } %>
+    </ol>
+  </div>
+</section>
+<% } %>

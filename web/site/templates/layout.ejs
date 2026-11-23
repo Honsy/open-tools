@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="kaiwu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="baidu-site-verification" content="codeva-LbSF6vH8BX">
+  <title><%= page?.Title %></title>
+  <meta name="description" content="<%= page?.Description %>">
+  <% if (shown(page?.Keywords)) { %><meta name="keywords" content="<%= page?.Keywords %>"><% } %>
+  <link rel="canonical" href="<%= safeURL(page?.Canonical) %>">
+  <meta property="og:type" content="<%= page?.OGType %>">
+  <meta property="og:site_name" content="开物录">
+  <meta property="og:title" content="<%= page?.Title %>">
+  <meta property="og:description" content="<%= page?.Description %>">
+  <meta property="og:url" content="<%= page?.Canonical %>">
+  <meta name="robots" content="<%= page?.Robots %>">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/site.css?v=37">
+  <% if (shown(page?.JSONLD)) { %><script type="application/ld+json"><%- jsonScript(page?.JSONLD) %></script><% } %>
+</head>
+<body class="font-sans bg-canvas text-base-content text-sm<% if (shown((page?.Path === "/"))) { %> is-home<% } %>" data-icon="<%= page?.IconBase %>"<% if (shown(page?.UserName)) { %> data-user="<%= page?.UserName %>"<% } %>>
+  <header class="navbar public-header sticky top-0 z-40 min-h-16 bg-base-100/95 backdrop-blur border-b border-base-300 px-3 gap-2 flex-wrap">
+    <div class="navbar-start w-auto gap-3">
+      <a class="flex items-baseline gap-2 no-underline text-base-content" href="/"><b class="text-xl font-semibold tracking-tight">开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
+    </div>
+    <form class="search join bg-base-200 rounded-full flex-1 min-w-48" action="/search" method="get">
+      <select class="select select-ghost select-sm w-24" aria-label="搜索引擎" name="engine">
+        <option value="site">站内</option>
+        <option value="baidu">百度</option>
+        <option value="so">360</option>
+        <option value="sogou">搜狗</option>
+        <option value="bing">必应</option>
+        <option value="google">Google</option>
+        <option value="bili">哔哩哔哩</option>
+        <option value="zhihu">知乎</option>
+      </select>
+      <input class="input input-ghost input-sm flex-1 min-w-0" name="q" type="search" value="<%= page?.Query %>" placeholder="搜一个网站，或换一个引擎">
+      <button class="btn btn-ghost btn-sm text-primary" type="submit">搜索</button>
+    </form>
+    <div class="navbar-end w-auto gap-1">
+      <a class="btn btn-ghost btn-sm max-lg:hidden" href="/hot">热榜</a>
+      <a class="btn btn-ghost btn-sm max-lg:hidden" href="/submit">提交</a>
+      <% if (shown(page?.Utils)) { %><div class="dropdown dropdown-end dropdown-hover">
+        <button class="btn btn-ghost btn-sm" type="button" aria-label="工具导航">工具</button>
+        <div class="dropdown-content utility-menu bg-base-100 rounded-box z-50 border border-base-300">
+          <% for (const item1 of (page?.Utils ?? [])) { %><section class="utility-group"><h2><%= item1?.Name %></h2><ul class="menu"><% for (const [v_i, v_link] of (item1?.Links ?? []).entries()) { %><% if (shown((v_i < 5))) { %><li><a href="<%= safeURL(v_link?.Href) %>" rel="nofollow noopener" target="_blank"><%= v_link?.Name %></a></li><% } %><% } %></ul><a class="utility-more" href="/c/<%= item1?.Slug %>">全部<%= item1?.Name %> →</a></section><% } %>
+        </div>
+      </div><% } %>
+      <button class="btn btn-ghost btn-sm lg:hidden" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
+      <% if (shown(page?.UserName)) { %>
+      <a class="btn btn-ghost btn-sm" href="/mine"><%= page?.UserName %></a>
+      <% if (shown(page?.IsAdmin)) { %><a class="btn btn-ghost btn-sm" href="/admin/">管理后台</a><% } %>
+      <form method="post" action="/logout"><button class="btn btn-ghost btn-sm" type="submit">退出</button></form>
+      <% } else { %>
+      <a class="btn btn-ghost btn-sm" href="/login" data-auth-open="login">登录</a>
+      <a class="btn btn-primary btn-sm" href="/register" data-auth-open="register">注册</a>
+      <% } %>
+    </div>
+    <div class="cat-pop basis-full lg:hidden" id="cat-pop" hidden>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 py-3">
+        <% for (const item3 of (page?.Launcher ?? [])) { %>
+        <% if (shown((item3?.Href === "#simple"))) { %>
+        <button class="btn btn-ghost btn-sm justify-start" type="button" data-simple><i class="swatch <%= item3?.Icon %>"></i><%= item3?.Name %></button>
+        <% } else { %>
+        <a class="btn btn-ghost btn-sm justify-start" href="<%= safeURL(item3?.Href) %>"><i class="swatch <%= item3?.Icon %>"></i><%= item3?.Name %></a>
+        <% } %>
+        <% } %>
+      </div>
+    </div>
+  </header>
+  <div class="<% if (shown(page?.Account)) { %>max-w-5xl mx-auto w-full<% } else { %>max-w-[1440px] mx-auto lg:grid lg:grid-cols-[220px_minmax(0,1fr)]<% } %> min-h-[calc(100vh-4rem)]">
+    <% if (shown(!shown(page?.Account))) { %>
+    <aside class="public-sidebar bg-base-100 border-base-300 max-lg:border-b max-lg:overflow-x-auto lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-auto lg:border-r">
+      <ul class="menu menu-horizontal lg:menu-vertical w-max lg:w-full px-2 py-2">
+        <li class="menu-title max-lg:hidden">常驻索引</li>
+        <% for (const item4 of (page?.Sidebar ?? [])) { %>
+        <li>
+          <a class="<% if (shown(item4?.Tool)) { %><%= item4?.Icon %><% } %><% if (shown((item4?.Href === page?.Path))) { %> menu-active<% } %>" href="<%= safeURL(item4?.Href) %>"><%= item4?.Name %></a>
+        </li>
+        <% } %>
+      </ul>
+    </aside>
+    <% } %>
+    <main class="public-main min-w-0">
+      <%- page?.Content ?? '' %>
+      <footer class="footer sm:footer-horizontal bg-base-100 text-base-content border-t border-base-300 rounded-box mt-8 p-6">
+        <aside><b class="text-base">开物录</b><p class="max-w-xs opacity-70">点名字先看介绍，确认后再打开。</p></aside>
+        <nav><h6 class="footer-title">快捷入口</h6><a class="link link-hover" href="/hot">今日热榜</a><a class="link link-hover" href="/latest">最新收录</a><a class="link link-hover" href="/submit">提交网站</a><a class="link link-hover" href="/notice">公告</a></nav>
+        <nav><h6 class="footer-title">本站</h6><a class="link link-hover" href="/rank">站点排行</a><a class="link link-hover" href="/cooperate">广告合作</a><a class="link link-hover" href="/feedback">站点反馈</a><a class="link link-hover" href="/admin/">管理</a></nav>
+      </footer>
+    </main>
+  </div>
+  <% if (shown(!shown(page?.UserName))) { %>
+  <dialog class="modal" id="login-dialog">
+    <div class="modal-box bg-base-100 border border-base-300 shadow-none max-w-sm p-6">
+      <form method="dialog" class="flex justify-end -mt-2 -mr-2"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
+      <p class="text-xs font-medium text-primary">开物录</p>
+      <h2 class="text-2xl font-semibold mt-1">登录</h2>
+      <p class="text-sm opacity-70 mt-2">收藏和最近使用记在这个账号上。</p>
+      <p class="alert alert-error mt-4" data-auth-error hidden></p>
+      <form class="mt-4 flex flex-col gap-3" method="post" action="/login">
+        <input type="hidden" name="next" value="<%= page?.Path %>">
+        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required autocomplete="username"></label>
+        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered w-full" name="password" type="password" required autocomplete="current-password"></label>
+        <button class="btn btn-primary w-full" type="submit">登录</button>
+        <p class="text-sm text-center"><a class="link link-hover" href="/forgot">忘记密码</a></p>
+        <p class="text-sm text-center">没有账号？<a class="link link-hover text-primary" href="/register" data-auth-open="register">去注册</a></p>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
+  </dialog>
+  <dialog class="modal" id="register-dialog">
+    <div class="modal-box bg-base-100 border border-base-300 shadow-none max-w-sm p-6">
+      <form method="dialog" class="flex justify-end -mt-2 -mr-2"><button class="btn btn-ghost btn-sm" type="submit">关闭</button></form>
+      <p class="text-xs font-medium text-primary">开物录</p>
+      <h2 class="text-2xl font-semibold mt-1">注册</h2>
+      <p class="text-sm opacity-70 mt-2">注册后，收藏和最近使用记在这个账号上。</p>
+      <p class="alert alert-error mt-4" data-auth-error hidden></p>
+      <form class="mt-4 flex flex-col gap-3" method="post" action="/register">
+        <input type="hidden" name="next" value="<%= page?.Path %>">
+        <label class="flex flex-col gap-1 text-sm">用户名<input class="input input-bordered w-full" name="username" required maxlength="20" autocomplete="username"><span class="text-xs opacity-60">20 字以内</span></label>
+        <label class="flex flex-col gap-1 text-sm">邮箱<input class="input input-bordered w-full" name="email" type="email" required maxlength="254" autocomplete="email"><span class="text-xs opacity-60">用来重置密码</span></label>
+        <label class="flex flex-col gap-1 text-sm">密码<input class="input input-bordered w-full" name="password" type="password" required minlength="8" autocomplete="new-password"><span class="text-xs opacity-60">至少 8 位</span></label>
+        <button class="btn btn-primary w-full" type="submit">注册</button>
+        <p class="text-sm text-center">已有账号？<a class="link link-hover text-primary" href="/login" data-auth-open="login">去登录</a></p>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
+  </dialog>
+  <% } %>
+  <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
+  <script src="/static/site.js?v=18"></script>
+  <script>
+  var _hmt = _hmt || [];
+  (function() {
+    var hm = document.createElement("script");
+    hm.src = "https://hm.baidu.com/hm.js?40e7c19196427b84a06b1fa7163d9aaa";
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(hm, s);
+  })();
+  </script>
+</body>
+</html>
