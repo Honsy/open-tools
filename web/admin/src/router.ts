@@ -7,6 +7,7 @@ import AdminArticles from "./pages/admin/Articles.vue";
 import AdminTags from "./pages/admin/Tags.vue";
 import AdminFeedback from "./pages/admin/Feedback.vue";
 import AdminUsers from "./pages/admin/Users.vue";
+import AdminInternetRank from "./pages/admin/InternetRank.vue";
 
 const adminChildren = [
   { path: "", component: AdminReview },
@@ -16,6 +17,7 @@ const adminChildren = [
   { path: "tags", component: AdminTags },
   { path: "feedback", component: AdminFeedback },
   { path: "users", component: AdminUsers },
+  { path: "internet-rank", component: AdminInternetRank },
 ];
 
 export const routes = [

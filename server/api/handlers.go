@@ -131,6 +131,7 @@ func sidebar(db *gorm.DB) []sideItem {
 		sideItem{Name: "最新收录", Href: "/latest"},
 		sideItem{Name: "公告", Href: "/notice", Icon: "bell", Tool: true},
 		sideItem{Name: "站点排行", Href: "/rank", Icon: "rank", Tool: true},
+		sideItem{Name: "互联网月榜", Href: "/rank/monthly", Icon: "rank", Tool: true},
 		sideItem{Name: "网址提交", Href: "/submit", Icon: "plus", Tool: true},
 		sideItem{Name: "广告合作", Href: "/cooperate", Icon: "ad", Tool: true},
 	)

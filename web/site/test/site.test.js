@@ -163,6 +163,20 @@ test("site details publish the guide and its metadata in the server-rendered HTM
   assert.ok(!short.includes('class="site-description"'));
 });
 
+test("internet ranking renders a complete month with its attribution and category filter", () => {
+  const selected = { month: "2026-10", source: "测试数据源", sourceUrl: "https://example.org/methodology" };
+  const page = renderPage({ template: "internetRank", shell, data: {
+    Title: "互联网月访问量排行榜", Months: [selected], Selected: selected, Categories: ["搜索"], Category: "搜索",
+    Entries: [{ Domain: "example.org", Name: "示例网站", Category: "搜索", Visits: 1493200 }],
+  } });
+  for (const text of ['value="2026-10" selected', 'value="搜索" selected', "1,493,200", "https://example.org/methodology", "https://example.org/", "全球桌面及移动网页"]) {
+    assert.ok(page.includes(text), text);
+  }
+  const empty = renderPage({ template: "internetRank", shell, data: { Title: "互联网月访问量排行榜" } });
+  assert.ok(empty.includes("月榜还没有发布"));
+  assert.ok(!empty.includes("1,493,200"));
+});
+
 test("public navigation and board entries render from the Go JSON field names", () => {
   const navigation = {
     ...shell,

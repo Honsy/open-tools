@@ -1,0 +1,32 @@
+<article class="card bg-base-100 border border-base-300 shadow-none">
+  <div class="card-body gap-4">
+    <nav class="breadcrumbs text-sm" aria-label="面包屑"><ul><li><a href="/">首页</a></li><li><a href="/rank">站点排行</a></li><li>互联网月榜</li></ul></nav>
+    <h1 class="text-2xl font-semibold"><%= page?.Title %></h1>
+    <% if (page?.Selected) { %>
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-base-content/70">
+      <span>统计月份 <%= page.Selected.month %></span>
+      <a class="link link-primary" href="<%= safeURL(page.Selected.sourceUrl) %>" rel="noopener noreferrer" target="_blank"><%= page.Selected.source %></a>
+      <span>全球桌面及移动网页 · 估算访问量</span>
+    </div>
+    <form class="flex flex-wrap items-end gap-3" action="/rank/monthly" method="get">
+      <label class="flex flex-col gap-1 text-sm">月份
+        <select class="select select-sm" name="month"><% for (const item of page.Months) { %><option value="<%= item.month %>"<% if (item.month === page.Selected.month) { %> selected<% } %>><%= item.month %></option><% } %></select>
+      </label>
+      <label class="flex flex-col gap-1 text-sm">分类
+        <select class="select select-sm" name="category"><option value="">全部分类</option><% for (const name of (page.Categories ?? [])) { %><option value="<%= name %>"<% if (name === page.Category) { %> selected<% } %>><%= name %></option><% } %></select>
+      </label>
+      <button class="btn btn-primary btn-sm" type="submit">查看</button>
+    </form>
+    <% if (shown(page.Entries)) { %>
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead><tr><th scope="col">名次</th><th scope="col">网站</th><th scope="col">分类</th><th scope="col" class="text-right">估算访问量</th></tr></thead>
+        <tbody><% for (const [index, item] of page.Entries.entries()) { %>
+          <tr><td class="tabular-nums"><%= index + 1 %></td><td><a class="link link-hover font-semibold" href="<%= safeURL('https://' + item.Domain + '/') %>" rel="nofollow noopener noreferrer" target="_blank"><%= item.Name %></a><% if (item.Name !== item.Domain) { %><div class="text-xs text-base-content/60"><%= item.Domain %></div><% } %></td><td><%= item.Category %></td><td class="text-right tabular-nums"><%= item.Visits.toLocaleString('zh-CN') %></td></tr>
+        <% } %></tbody>
+      </table>
+    </div>
+    <% } else { %><p>该月份暂无可展示的网站。</p><% } %>
+    <% } else { %><p>月榜还没有发布。导入已结束月份的第三方访问量数据后，这里会显示排名。</p><% } %>
+  </div>
+</article>

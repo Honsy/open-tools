@@ -159,6 +159,7 @@ func mountSiteAPI(r *gin.RouterGroup, db *gorm.DB) {
 	r.GET("/hot", hotPage(db))
 	r.GET("/notice", noticePage(db))
 	r.GET("/rank", rankPage(db))
+	r.GET("/rank/monthly", internetRankPage(db))
 	r.GET("/cooperate", cooperatePage(db))
 	r.GET("/a/:id", articlePage(db))
 	mountMovedContent(r, db)

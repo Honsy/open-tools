@@ -76,6 +76,13 @@ func headerFirst(c *gin.Context, name string) string {
 func sitemap(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		paths := []string{"/", "/hot", "/latest", "/rank", "/notice", "/rank?category=ai"}
+		var month models.InternetRankMonth
+		if db.Order("month desc").Take(&month).RowsAffected == 1 {
+			var entry models.InternetRankEntry
+			if publicInternetRank(db, month.Month).Take(&entry).RowsAffected == 1 {
+				paths = append(paths, internetRankPath)
+			}
+		}
 		var cats []models.Category
 		db.Select("slug").Order("sort asc, id asc").Find(&cats)
 		for _, cat := range cats {

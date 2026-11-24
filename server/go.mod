@@ -8,6 +8,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/yuin/goldmark v1.7.8
 	golang.org/x/crypto v0.24.0
+	golang.org/x/net v0.26.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.0
@@ -49,7 +50,6 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect

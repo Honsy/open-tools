@@ -4,8 +4,9 @@ import { adminPath } from "../../adminPath";
 
 const route = useRoute();
 const items = [
-  { to: adminPath(), name: "待审" },
+  { to: adminPath(), name: "网址审核" },
   { to: adminPath("links"), name: "网址" },
+  { to: adminPath("internet-rank"), name: "互联网月榜" },
   { to: adminPath("categories"), name: "分类" },
   { to: adminPath("articles"), name: "文章" },
   { to: adminPath("tags"), name: "标签" },
@@ -24,8 +25,8 @@ const items = [
       </div>
     </header>
     <div class="adm-body">
-      <nav class="adm-side">
-        <RouterLink v-for="item in items" :key="item.to" :to="item.to" :class="{ on: route.path === item.to }">
+      <nav class="adm-side" aria-label="管理导航">
+        <RouterLink v-for="item in items" :key="item.to" :to="item.to" :class="{ on: route.path === item.to }" :aria-current="route.path === item.to ? 'page' : undefined">
           {{ item.name }}
         </RouterLink>
       </nav>

@@ -92,7 +92,7 @@ func openDB(cfg config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	sqlDB.SetMaxOpenConns(10)
-	if err := db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.ArticleComment{}, &models.Feedback{}, &models.Tag{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}); err != nil {
+	if err := db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.ArticleComment{}, &models.Feedback{}, &models.Tag{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}, &models.InternetRankMonth{}, &models.InternetRankEntry{}, &models.InternetRankBlock{}); err != nil {
 		return nil, err
 	}
 	if err := ensureUserEmail(db); err != nil {

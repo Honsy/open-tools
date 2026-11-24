@@ -2,6 +2,7 @@
   <div class="card-body">
     <nav class="text-sm opacity-70" aria-label="面包屑"><a class="link link-hover" href="/">首页</a> / <span><%= page?.Title %></span></nav>
     <h1 class="text-2xl font-semibold"><%= page?.Title %></h1>
+    <div><a class="btn btn-sm btn-outline btn-primary" href="/rank/monthly">查看互联网月访问量排行榜</a></div>
     <div class="join"><a class="btn btn-sm join-item <% if (shown(!shown(page?.AI))) { %>btn-primary<% } %>" href="/rank">全部站点</a><a class="btn btn-sm join-item <% if (shown(page?.AI)) { %>btn-primary<% } %>" href="/rank?category=ai">AI 站点</a></div>
     <p class="opacity-70"><%= page?.Intro %></p>
     <ol class="board">

@@ -40,6 +40,27 @@ type Link struct {
 	CreatedAt    time.Time  `json:"createdAt"`
 }
 
+type InternetRankMonth struct {
+	Month     string    `gorm:"size:7;primaryKey" json:"month"`
+	Source    string    `gorm:"size:128;not null" json:"source"`
+	SourceURL string    `gorm:"size:512;not null" json:"sourceUrl"`
+	Entries   int       `json:"entries"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type InternetRankEntry struct {
+	Month    string `gorm:"size:7;primaryKey"`
+	Domain   string `gorm:"size:253;primaryKey"`
+	Category string `gorm:"size:128;not null"`
+	Name     string `gorm:"size:128;not null"`
+	Visits   uint64 `gorm:"not null"`
+	Risky    bool   `gorm:"not null;default:false"`
+}
+
+type InternetRankBlock struct {
+	Domain string `gorm:"size:253;primaryKey" json:"domain"`
+}
+
 type User struct {
 	ID           uint      `gorm:"primaryKey" json:"id"`
 	Username     string    `gorm:"uniqueIndex;size:64" json:"username"`
