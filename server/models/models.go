@@ -13,6 +13,21 @@ type Category struct {
 	ShowOnHome  bool   `json:"showOnHome"`
 }
 
+type CategoryGuide struct {
+	CategorySlug string `gorm:"primaryKey;size:64"`
+	Title        string `gorm:"size:128"`
+	Intro        string `gorm:"type:text"`
+	HomeLabel    string `gorm:"size:64"`
+}
+
+type HistoryEvent struct {
+	ID    uint   `gorm:"primaryKey"`
+	Month int    `gorm:"not null;uniqueIndex:ux_history_event"`
+	Day   int    `gorm:"not null;uniqueIndex:ux_history_event"`
+	Year  int    `gorm:"not null;uniqueIndex:ux_history_event"`
+	Text  string `gorm:"size:255;not null;uniqueIndex:ux_history_event"`
+}
+
 type Link struct {
 	ID           uint       `gorm:"primaryKey" json:"id"`
 	ImportedFrom *string    `gorm:"uniqueIndex;size:96" json:"-"`
@@ -59,6 +74,18 @@ type InternetRankEntry struct {
 
 type InternetRankBlock struct {
 	Domain string `gorm:"size:253;primaryKey" json:"domain"`
+}
+
+type SubmissionReview struct {
+	ID           uint      `gorm:"primaryKey" json:"id"`
+	LinkID       uint      `gorm:"index" json:"linkId"`
+	Name         string    `gorm:"size:128" json:"name"`
+	URL          string    `gorm:"size:512" json:"url"`
+	Decision     string    `gorm:"size:16" json:"decision"`
+	CategorySlug string    `gorm:"size:64" json:"categorySlug"`
+	Reviewer     string    `gorm:"size:32" json:"reviewer"`
+	Note         string    `gorm:"size:300" json:"note"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 type User struct {

@@ -7,7 +7,7 @@ type UserPage = { items: User[]; total: number; page: number; pageCount: number 
 
 const search = ref("");
 const result = ref<UserPage>({ items: [], total: 0, page: 1, pageCount: 1 });
-const loading = ref(false);
+const loading = ref(true);
 const error = ref("");
 let activeSearch = "";
 
@@ -29,41 +29,23 @@ onMounted(() => load(1));
 </script>
 
 <template>
-  <h1>用户</h1>
-  <form class="adm-filters" role="search" @submit.prevent="load(1, search.trim())">
-    <input v-model="search" type="search" maxlength="254" aria-label="用户名或邮箱" placeholder="用户名或邮箱" />
-    <button class="btn primary" type="submit" :disabled="loading">搜索</button>
-  </form>
-  <p v-if="error" class="err" role="alert">{{ error }}</p>
-  <p v-else-if="loading" role="status">正在读取用户…</p>
-  <p v-else-if="!result.items.length">没有找到用户</p>
-  <template v-else>
-    <div class="users-table">
-      <table>
-        <thead><tr><th>ID</th><th>用户名</th><th>邮箱</th><th>角色</th><th>注册日期</th></tr></thead>
-        <tbody>
-          <tr v-for="user in result.items" :key="user.id">
-            <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email || "未绑定" }}</td>
-            <td>{{ user.isAdmin ? "管理员" : "普通用户" }}</td>
-            <td>{{ formatDate(user.createdAt) }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <nav class="adm-filters users-pagination" aria-label="用户分页">
-      <span>共 {{ result.total }} 人 · 第 {{ result.page }} / {{ result.pageCount }} 页</span>
-      <button class="btn" type="button" :disabled="result.page === 1" @click="load(result.page - 1)">上一页</button>
-      <button class="btn" type="button" :disabled="result.page >= result.pageCount" @click="load(result.page + 1)">下一页</button>
-    </nav>
-  </template>
+  <header class="admin-page-header"><div><h1>用户管理</h1><p>按用户名或邮箱查询注册账号。</p></div></header>
+  <PMessage v-if="error" severity="error" class="admin-alert">{{ error }}</PMessage>
+  <PCard class="admin-panel admin-table-panel">
+    <template #content>
+      <form class="admin-toolbar" role="search" @submit.prevent="load(1, search.trim())">
+        <PInputText v-model="search" type="search" maxlength="254" aria-label="用户名或邮箱" placeholder="搜索用户名或邮箱" />
+        <PButton type="submit" label="搜索" icon="pi pi-search" severity="secondary" outlined :disabled="loading" />
+      </form>
+      <PDataTable :value="result.items" :loading="loading" data-key="id" class="admin-table" scrollable table-style="min-width: 620px">
+        <template #empty>没有找到用户。</template>
+        <PColumn field="id" header="ID" style="width: 80px" />
+        <PColumn field="username" header="用户名"><template #body="{ data }"><strong class="admin-primary">{{ data.username }}</strong></template></PColumn>
+        <PColumn field="email" header="邮箱"><template #body="{ data }">{{ data.email || "未绑定" }}</template></PColumn>
+        <PColumn header="角色"><template #body="{ data }"><PTag :value="data.isAdmin ? '管理员' : '普通用户'" :severity="data.isAdmin ? 'info' : 'secondary'" /></template></PColumn>
+        <PColumn header="注册日期"><template #body="{ data }">{{ formatDate(data.createdAt) }}</template></PColumn>
+      </PDataTable>
+      <div class="admin-pagination"><span class="admin-muted">共 {{ result.total }} 人</span><PPaginator :first="(result.page - 1) * 50" :rows="50" :total-records="result.total" :page-link-size="3" @page="load($event.page + 1)" /></div>
+    </template>
+  </PCard>
 </template>
-
-<style scoped>
-.users-table { overflow-x: auto; }
-.users-table table { min-width: 32rem; }
-.adm-filters input { min-width: 0; }
-.adm-filters button:disabled { opacity: 0.55; cursor: default; }
-.users-pagination { align-items: center; flex-wrap: wrap; margin-top: 0.75rem; }
-</style>

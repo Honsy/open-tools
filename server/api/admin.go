@@ -22,6 +22,8 @@ func MountAdmin(r *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"username": c.GetString("adminUser")})
 	})
 	g.GET("/stats", adminStats(db))
+	g.GET("/submissions", adminSubmissions(db))
+	g.GET("/submission-reviews", adminSubmissionReviews(db))
 	g.PATCH("/submissions/:id", reviewSubmission(db))
 	mountAdminInternetRank(g, db)
 	g.GET("/users", adminUsers(db))
@@ -96,19 +98,45 @@ func adminStats(db *gorm.DB) gin.HandlerFunc {
 }
 
 func adminLinks(db *gorm.DB) gin.HandlerFunc {
+	escapeLike := strings.NewReplacer("!", "!!", "%", "!%", "_", "!_")
 	return func(c *gin.Context) {
-		q := db.Model(&models.Link{}).Order("id desc")
+		q := db.WithContext(c.Request.Context()).Model(&models.Link{})
 		if status := c.Query("status"); status != "" {
 			q = q.Where("status = ?", status)
 		}
-		if text := strings.TrimSpace(c.Query("q")); text != "" {
-			like := "%" + strings.NewReplacer("%", "", "_", "").Replace(text) + "%"
-			q = q.Where("name LIKE ? OR url LIKE ?", like, like)
+		if category := c.Query("category"); category != "" {
+			q = q.Where("category_slug = ?", category)
 		}
-		var rows []models.Link
-		q.Limit(200).Find(&rows)
-		c.JSON(http.StatusOK, rows)
+		if text := strings.TrimSpace(c.Query("q")); text != "" {
+			like := "%" + escapeLike.Replace(clip(text, 254)) + "%"
+			q = q.Where("name LIKE ? ESCAPE '!' OR url LIKE ? ESCAPE '!'", like, like)
+		}
+		rows := make([]models.Link, 0)
+		if _, paginated := c.GetQuery("page"); !paginated {
+			if err := q.Order("id desc").Limit(200).Find(&rows).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "读取网址列表失败"})
+				return
+			}
+			c.JSON(http.StatusOK, rows)
+			return
+		}
+		loadAdminPage(c, q.Order("id desc"), &rows, "读取网址列表失败")
 	}
+}
+
+func loadAdminPage(c *gin.Context, query *gorm.DB, rows any, errorMessage string) {
+	const pageSize = 25
+	var total int64
+	if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errorMessage})
+		return
+	}
+	page := min(positivePage(c.Query("page")), max(1, int((total+pageSize-1)/pageSize)))
+	if err := query.Limit(pageSize).Offset((page - 1) * pageSize).Find(rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errorMessage})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"items": rows, "page": page, "pageSize": pageSize, "total": total})
 }
 
 func adminSaveLink(db *gorm.DB, update bool) gin.HandlerFunc {

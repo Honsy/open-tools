@@ -1,23 +1,31 @@
-<section class="home-overview">
-<h1>开物录 · 网站与在线工具导航</h1><p><%= page?.Intro %></p>
-<nav class="home-intents" aria-label="按用途找网站"><% for (const task of (page?.Tasks ?? [])) { %><a href="<%= safeURL(task.href) %>"><%= task.name %></a><% } %></nav>
+<section aria-labelledby="home-title">
+  <h1 class="text-xl font-semibold sm:text-2xl" id="home-title">网站与在线工具</h1>
+  <% if (shown(page?.Tasks)) { %>
+  <nav class="mt-3 grid grid-cols-3 gap-2 xl:grid-cols-6" aria-label="按用途找网站">
+    <% for (const task of page.Tasks) { %><a class="btn btn-sm min-h-10 min-w-0 h-auto px-1.5 py-1.5 text-center font-medium whitespace-normal <% if (task.href === "/c/ai") { %>border-primary/25 bg-primary/10 text-primary<% } else { %>border-base-300 bg-base-100<% } %> hover:border-primary hover:text-primary" href="<%= safeURL(task.href) %>"><%= task.name %></a><% } %>
+  </nav>
+  <% } %>
 </section>
-<section class="home-shortcuts" id="sec-shortcuts" data-tabs aria-label="你的常用网站">
+<section class="home-shortcuts scroll-mt-36 lg:scroll-mt-20" id="sec-shortcuts" data-tabs aria-label="你的常用网站">
   <div class="home-section-heading">
-    <div><p class="home-eyebrow">YOUR WEB, IN ONE PLACE</p><h2>常用入口</h2></div>
-    <div class="home-shortcut-switch" role="tablist" aria-label="常用入口内容">
-      <button class="active" type="button" data-tab="hot" aria-selected="true">精选</button>
-      <button type="button" data-tab="recent" aria-selected="false">最近</button>
-      <button type="button" data-tab="edit" aria-selected="false">收藏</button>
+    <h2>常用网站</h2>
+    <div class="tabs tabs-box" role="group" aria-label="常用网站筛选">
+      <button class="tab tab-active" type="button" data-tab="hot" aria-pressed="true">精选</button>
+      <button class="tab" type="button" data-tab="recent" aria-pressed="false">最近</button>
+      <button class="tab" type="button" data-tab="edit" aria-pressed="false">收藏</button>
     </div>
   </div>
   <div class="tab-panel home-shortcut-panel" data-panel="hot"><div class="home-pinned-grid"><% for (const item2 of (page?.Pinned ?? [])) { %><%- partial("link", item2) %><% } %></div></div>
   <div class="tab-panel home-shortcut-panel" data-panel="recent" hidden><div class="home-pinned-grid" id="desk-recent">还没有打开过网站。</div></div>
-  <div class="tab-panel home-shortcut-panel" data-panel="edit" hidden><div class="home-pinned-grid" id="desk-custom">点星星，把网站留在这里。</div></div>
+  <div class="tab-panel home-shortcut-panel" data-panel="edit" hidden>
+    <div class="home-pinned-grid" id="desk-custom">点星标收藏网站。</div>
+    <% if (!signedIn) { %><p class="mt-2 text-xs text-neutral">游客收藏保存在当前浏览器。</p><% } %>
+  </div>
 </section>
+<div class="home-browse" id="home-browse"><% for (const item7 of (page?.Sections ?? [])) { %><%- partial("section", { ...item7, Preview: true }) %><% } %></div>
 <section class="home-live" id="sec-boards" data-tabs>
   <div class="home-section-heading">
-    <div><p class="home-eyebrow">WHAT PEOPLE ARE READING</p><h2><a href="/hot">正在发生 <span aria-hidden="true">↗</span></a></h2></div>
+    <h2><a href="/hot">今日热榜</a></h2>
     <div class="home-shortcut-switch" role="tablist" aria-label="热榜来源"><% for (const item3 of (page?.Boards ?? [])) { %><button class="<% if (shown(item3?.On)) { %>active<% } %>" type="button" data-tab="<%= item3?.Key %>" aria-selected="<% if (shown(item3?.On)) { %>true<% } else { %>false<% } %>"><%= item3?.Name %></button><% } %></div>
   </div>
   <div class="home-live-columns">
@@ -32,9 +40,8 @@
   </div>
 </section>
 <% if (shown(page?.Today)) { %><section class="today-bar home-today" id="sec-today"><p class="home-eyebrow">ON THIS DAY · <%= page?.TodayLabel %></p><ul class="today"><% for (const event of page.Today) { %><li><% if (event.year) { %><b><%= event.year %></b> <% } %><%= event.text %></li><% } %></ul></section><% } %>
-<div class="home-browse" id="home-browse"><% for (const item7 of (page?.Sections ?? [])) { %><%- partial("section", item7) %><% } %></div>
 <section class="home-latest" id="sec-latest" data-tabs>
-  <div class="home-section-heading"><div><p class="home-eyebrow">FRESHLY ADDED</p><h2><a href="/latest">新鲜收录 <span aria-hidden="true">↗</span></a></h2></div><div class="home-shortcut-switch" role="tablist" aria-label="新鲜收录内容"><button class="active" type="button" data-tab="latest" aria-selected="true">最新</button><button type="button" data-tab="popular" aria-selected="false">热门</button></div></div>
+  <div class="home-section-heading"><h2><a href="/latest">新鲜收录</a></h2><div class="home-shortcut-switch" role="tablist" aria-label="新鲜收录内容"><button class="active" type="button" data-tab="latest" aria-selected="true">最新</button><button type="button" data-tab="popular" aria-selected="false">热门</button></div></div>
   <div class="tab-panel" data-panel="latest"><div class="home-latest-grid"><% for (const item8 of (page?.Latest ?? [])) { %><%- partial("link", item8) %><% } %></div></div>
   <div class="tab-panel" data-panel="popular" hidden><div class="home-latest-grid"><% for (const item9 of (page?.Popular ?? [])) { %><%- partial("link", item9) %><% } %></div></div>
 </section>

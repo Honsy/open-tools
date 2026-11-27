@@ -1,10 +1,19 @@
-<header class="search-heading">
-  <p class="text-xs font-medium text-primary">开物录网址导航</p>
-  <h1 class="text-2xl font-semibold"><% if (shown(page?.Query)) { %>搜索「<%= page?.Query %>」<% } else { %>搜索<% } %></h1>
-  <% if (shown(page?.Query)) { %><p class="text-sm opacity-60">找到 <%= page?.Total %> 个匹配的网站</p><% } %>
+<div class="max-w-4xl">
+<header class="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+  <h1 class="min-w-0 break-words text-xl font-semibold sm:text-2xl"><% if (shown(page?.Query)) { %>搜索「<%= page?.Query %>」<% } else { %>搜索网站<% } %></h1>
+  <% if (shown(page?.Query) && !page?.Error) { %><p class="shrink-0 text-sm tabular-nums text-neutral"><%= page.Total %> 个网站</p><% } %>
 </header>
+<% if ((page?.Scopes?.length ?? 0) > 1) { %>
+<nav class="mb-4 flex gap-1 overflow-x-auto p-1" aria-label="搜索结果分类" data-search-filters>
+  <% for (const scope of page.Scopes) { %>
+  <a class="btn btn-sm min-h-9 shrink-0 gap-1.5 <% if (scope.Active) { %>btn-primary<% } else { %>border-base-300 bg-base-100<% } %>" href="<%= safeURL(scope.URL) %>"<% if (scope.Active) { %> aria-current="true"<% } %>>
+    <span><%= scope.Name %></span><span class="text-xs tabular-nums opacity-80"><%= scope.Count %></span>
+  </a>
+  <% } %>
+</nav>
+<% } %>
 <% if (shown(page?.Links)) { %>
-<div class="search-results grid sm:grid-cols-2 xl:grid-cols-3 gap-3"><% for (const item1 of (page?.Links ?? [])) { %><%- partial("link", item1) %><% } %></div>
+<div class="divide-y divide-base-300 rounded-box border border-base-300 bg-base-100"><% for (const item1 of page.Links) { %><%- partial("link", item1) %><% } %></div>
 <% if (shown((page?.PageCount > 1))) { %>
 <nav class="pagination mt-5" aria-label="搜索结果分页">
   <p class="pagination-summary">第 <%= page?.Page %> / <%= page?.PageCount %> 页</p>
@@ -15,4 +24,20 @@
   </div>
 </nav>
 <% } %>
-<% } else { %><p class="empty-state"><% if (shown(page?.Query)) { %>没有匹配的网站，换个关键词试试。<% } else { %>输入网站名称、用途或标签开始搜索。<% } %></p><% } %>
+<% } else { %>
+<div class="card border border-base-300 bg-base-100">
+  <div class="card-body">
+    <% if (page?.Error) { %><p class="text-neutral"><%= page.Error %></p>
+    <% } else if (shown(page?.Query)) { %>
+    <p class="font-semibold"><% if (page.ScopeName) { %><%= page.ScopeName %>里暂无匹配的网站<% } else { %>暂无匹配的网站<% } %></p>
+    <p class="text-neutral">试试更短的关键词，或按分类浏览。</p>
+    <div class="flex flex-wrap gap-2">
+      <% for (const word of (page?.Suggestions ?? [])) { %><a class="btn btn-outline btn-sm" href="/search?q=<%= query(word) %>">搜「<%= word %>」</a><% } %>
+      <a class="btn btn-ghost btn-sm text-primary" href="/c/ai">浏览 AI 工具</a>
+      <a class="btn btn-ghost btn-sm text-primary" href="/c/webtool">浏览网页工具</a>
+    </div>
+    <% } else { %><p class="text-neutral">输入网站名称或用途，开始搜索。</p><% } %>
+  </div>
+</div>
+<% } %>
+</div>

@@ -1,0 +1,28 @@
+<% const tab = page.Tab; const layout = page.Layout ?? "row"; %>
+<div data-catalog-content>
+  <% if (tab.Kind === "articles") { %>
+  <% if (shown(tab.Topics)) { %><nav class="flex flex-wrap gap-2 mb-3" aria-label="文章分类"><a class="btn btn-sm <% if (!tab.Topic) { %>btn-primary<% } %>" href="/c/<%= tab.Slug %>">全部</a><% for (const topic of tab.Topics) { %><a class="btn btn-sm <% if (topic === tab.Topic) { %>btn-primary<% } %>" href="/c/<%= tab.Slug %>?topic=<%= query(topic) %>"><%= topic %></a><% } %></nav><% } %>
+  <% if (shown(tab.Posts)) { %>
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <% for (const post of tab.Posts) { %><a class="card bg-base-100 border border-base-300 no-underline text-base-content" href="/a/<%= post.ID %>"><div class="card-body"><time class="text-xs opacity-60" datetime="<%= post.ISO %>"><%= post.Date %></time><strong><%= post.Title %></strong><p class="text-sm opacity-70"><%= post.Summary %></p><span class="text-xs opacity-60"><%= post.Views %> 次阅读</span></div></a><% } %>
+  </div>
+  <% } else { %><p class="empty-state">这个分类暂未收录文章。</p><% } %>
+  <% if (shown(tab.PrevURL) || shown(tab.NextURL)) { %><nav class="pagination mt-5" aria-label="文章分页"><p class="pagination-summary">共 <%= tab.Total %> 篇 · 第 <%= tab.Page %> / <%= tab.PageCount %> 页</p><div class="join pagination-controls"><% if (shown(tab.PrevURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(tab.PrevURL) %>" rel="prev">上一页</a><% } %><% if (shown(tab.NextURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(tab.NextURL) %>" rel="next">下一页</a><% } %></div></nav><% } %>
+  <% } else { %>
+  <% if (shown(tab.Links)) { %>
+  <div class="link-grid <%= layout %> grid gap-2 <%= layout === "tile" || layout === "mini" ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4" : "sm:grid-cols-2 xl:grid-cols-3" %>">
+    <% for (const link of tab.Links) { %><%- partial("link", link) %><% } %>
+  </div>
+  <% } else { %><p class="empty-state">这个分类暂未收录网站。</p><% } %>
+  <% if (!page.Preview && tab.PageCount > 1) { %>
+  <nav class="pagination mt-5" aria-label="分类分页">
+    <p class="pagination-summary">共 <%= tab.Total %> 个网站 · 第 <%= tab.Page %> / <%= tab.PageCount %> 页</p>
+    <div class="join pagination-controls">
+      <% if (shown(tab.PrevURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(tab.PrevURL) %>" rel="prev">上一页</a><% } else { %><span class="btn btn-sm join-item btn-disabled" aria-disabled="true">上一页</span><% } %>
+      <% for (const item of (tab.Pages ?? [])) { %><% if (item.Current) { %><span class="btn btn-sm join-item btn-primary" aria-current="page"><%= item.Number %></span><% } else { %><a class="btn btn-sm join-item" href="<%= safeURL(item.URL) %>"><%= item.Number %></a><% } %><% } %>
+      <% if (shown(tab.NextURL)) { %><a class="btn btn-sm join-item" href="<%= safeURL(tab.NextURL) %>" rel="next">下一页</a><% } else { %><span class="btn btn-sm join-item btn-disabled" aria-disabled="true">下一页</span><% } %>
+    </div>
+  </nav>
+  <% } %>
+  <% } %>
+</div>

@@ -5,12 +5,45 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+	"time"
 
 	"opentools/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+type adminSubmission struct {
+	ID           uint      `json:"id"`
+	Name         string    `json:"name"`
+	URL          string    `json:"url"`
+	Desc         string    `json:"desc"`
+	CategorySlug string    `json:"categorySlug"`
+	UserID       uint      `json:"userId"`
+	Submitter    string    `json:"submitter"`
+	CreatedAt    time.Time `json:"createdAt"`
+	Duplicate    bool      `json:"duplicate"`
+}
+
+func adminSubmissions(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		rows := make([]adminSubmission, 0)
+		query := db.WithContext(c.Request.Context()).Model(&models.Link{}).
+			Select("links.id, links.name, links.url, links.`desc`, links.category_slug, links.user_id, links.created_at, COALESCE(u.username, '') AS submitter, "+
+				"EXISTS (SELECT 1 FROM links AS existing WHERE existing.status = 'online' AND existing.url = links.url) AS `duplicate`").
+			Joins("LEFT JOIN users AS u ON u.id = links.user_id").Where("links.status = ?", "pending").Order("links.id desc")
+		loadAdminPage(c, query, &rows, "读取待审网址失败")
+	}
+}
+
+func adminSubmissionReviews(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		rows := make([]models.SubmissionReview, 0)
+		query := db.WithContext(c.Request.Context()).Model(&models.SubmissionReview{}).Order("id desc")
+		loadAdminPage(c, query, &rows, "读取审核记录失败")
+	}
+}
 
 func reviewSubmission(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -22,9 +55,15 @@ func reviewSubmission(db *gorm.DB) gin.HandlerFunc {
 		var req struct {
 			Decision     string `json:"decision"`
 			CategorySlug string `json:"categorySlug"`
+			Note         string `json:"note"`
 		}
 		if c.ShouldBindJSON(&req) != nil || (req.Decision != "approve" && req.Decision != "reject" && req.Decision != "block") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "审核操作无效"})
+			return
+		}
+		req.Note = strings.TrimSpace(req.Note)
+		if utf8Count(req.Note) > 300 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "审核备注不能超过 300 字"})
 			return
 		}
 		query := db.WithContext(c.Request.Context())
@@ -75,9 +114,15 @@ func reviewSubmission(db *gorm.DB) gin.HandlerFunc {
 				return gorm.ErrRecordNotFound
 			}
 			if blocked != "" {
-				return blockRankDomain(tx, blocked)
+				if err := blockRankDomain(tx, blocked); err != nil {
+					return err
+				}
 			}
-			return nil
+			category, _ := updates["category_slug"].(string)
+			return tx.Create(&models.SubmissionReview{
+				LinkID: link.ID, Name: link.Name, URL: link.URL, Decision: req.Decision,
+				CategorySlug: category, Reviewer: c.GetString("adminUser"), Note: req.Note,
+			}).Error
 		})
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusConflict, gin.H{"error": "这条网址已变更，请刷新列表"})

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -138,8 +139,26 @@ func sidebar(db *gorm.DB) []sideItem {
 	return items
 }
 
+type todayEvent struct {
+	Year int    `json:"year"`
+	Text string `json:"text"`
+}
+
+func todayEvents(db *gorm.DB, now time.Time) (string, []todayEvent) {
+	weeks := [...]string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}
+	label := fmt.Sprintf("%d月%d日 %s", int(now.Month()), now.Day(), weeks[now.Weekday()])
+	var events []todayEvent
+	db.Model(&models.HistoryEvent{}).Select("year", "text").
+		Where("month = ? AND day = ?", int(now.Month()), now.Day()).
+		Order("year desc, id asc").Find(&events)
+	if len(events) == 0 {
+		events = []todayEvent{{Text: "这一天还没有收录事件。"}}
+	}
+	return label, events
+}
+
 func home(db *gorm.DB) gin.H {
-	label, today := seed.Today(time.Now())
+	label, today := todayEvents(db, time.Now())
 	var sections []models.Category
 	db.Where("kind = ? AND show_on_home = ?", "section", true).Order("sort").Find(&sections)
 	out := make([]sectionDTO, 0, len(sections))
@@ -235,15 +254,12 @@ func search(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "关键词太长"})
 			return
 		}
-		q = strings.NewReplacer("%", "", "_", "").Replace(q)
 		if q == "" {
 			c.JSON(http.StatusOK, gin.H{"q": "", "links": []linkDTO{}})
 			return
 		}
-		like := "%" + q + "%"
 		var links []models.Link
-		db.Where("status = ? AND (name LIKE ? OR `desc` LIKE ? OR tags LIKE ? OR alias LIKE ?)", "online", like, like, like, like).
-			Order("clicks desc").Limit(50).Find(&links)
+		orderLinkMatches(matchingLinks(db, q), q).Limit(50).Find(&links)
 		c.JSON(http.StatusOK, gin.H{"q": q, "links": toLinks(links)})
 	}
 }
@@ -386,7 +402,7 @@ func pinnedLinks(db *gorm.DB) []models.Link {
 
 func recentLinks(db *gorm.DB, n int) []models.Link {
 	var links []models.Link
-	db.Where("status = ?", "online").Order("created_at desc").Limit(n).Find(&links)
+	db.Where("status = ?", "online").Order("created_at desc, id desc").Limit(n).Find(&links)
 	return links
 }
 
@@ -398,7 +414,7 @@ func popularLinks(db *gorm.DB, n int) []models.Link {
 
 func articleCards(db *gorm.DB) []articleCard {
 	var rows []models.Article
-	db.Select("id", "title", "summary", "views", "created_at").Where("draft = ?", false).Order("created_at desc").Limit(24).Find(&rows)
+	db.Select("id", "title", "summary", "views", "created_at").Where("draft = ?", false).Order("created_at desc, id desc").Limit(24).Find(&rows)
 	out := make([]articleCard, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, articleCard{

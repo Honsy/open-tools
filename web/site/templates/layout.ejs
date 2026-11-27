@@ -19,12 +19,13 @@
   <% if (shown(page?.JSONLD)) { %><script type="application/ld+json"><%- jsonScript(page?.JSONLD) %></script><% } %>
 </head>
 <body class="font-sans bg-canvas text-base-content text-sm<% if (shown((page?.Path === "/"))) { %> is-home<% } %>" data-icon="<%= page?.IconBase %>"<% if (shown(page?.UserName)) { %> data-user="<%= page?.UserName %>"<% } %>>
-  <header class="navbar public-header sticky top-0 z-40 min-h-16 bg-base-100/95 backdrop-blur border-b border-base-300 px-3 gap-2 flex-wrap">
+  <header class="navbar public-header sticky top-0 z-40 min-h-16 bg-base-100 border-b border-base-300 px-3 gap-2">
     <div class="navbar-start w-auto gap-3">
-      <a class="flex items-baseline gap-2 no-underline text-base-content" href="/"><b class="text-xl font-semibold tracking-tight">开物录</b><span class="badge badge-sm badge-ghost text-primary">KAIWULU.COM</span></a>
+      <a class="text-xl font-semibold tracking-tight text-base-content" href="/">开物录</a>
     </div>
-    <form class="search join bg-base-200 rounded-full flex-1 min-w-48" action="/search" method="get">
-      <select class="select select-ghost select-sm w-24" aria-label="搜索引擎" name="engine">
+    <form class="search flex h-9 min-w-0 items-center gap-1 rounded-box border border-base-300 bg-base-200 px-1 max-lg:h-11" action="/search" method="get" role="search">
+      <% if (shown(page?.SearchScope)) { %><input type="hidden" name="scope" value="<%= page.SearchScope %>"><% } %>
+      <select class="select select-ghost select-sm h-full w-[4.5rem] shrink-0 rounded-field border-0 pl-2 pr-5 text-xs text-neutral shadow-none" aria-label="搜索范围">
         <option value="site">站内</option>
         <option value="baidu">百度</option>
         <option value="so">360</option>
@@ -34,8 +35,9 @@
         <option value="bili">哔哩哔哩</option>
         <option value="zhihu">知乎</option>
       </select>
-      <input class="input input-ghost input-sm flex-1 min-w-0" name="q" type="search" value="<%= page?.Query %>" placeholder="搜一个网站，或换一个引擎">
-      <button class="btn btn-ghost btn-sm text-primary" type="submit">搜索</button>
+      <span class="h-4 w-px shrink-0 bg-base-300" aria-hidden="true"></span>
+      <input class="h-full min-w-0 flex-1 bg-transparent px-2 text-base lg:text-sm" id="home-query" name="q" type="search" value="<%= page?.Query %>" aria-label="搜索网站或用途" placeholder="搜网站、工具或用途">
+      <button class="btn btn-primary btn-sm h-7 min-h-0 px-3 max-lg:h-9" type="submit">搜索</button>
     </form>
     <div class="navbar-end w-auto gap-1">
       <a class="btn btn-ghost btn-sm max-lg:hidden" href="/hot">热榜</a>
@@ -46,36 +48,38 @@
           <% for (const item1 of (page?.Utils ?? [])) { %><section class="utility-group"><h2><%= item1?.Name %></h2><ul class="menu"><% for (const [v_i, v_link] of (item1?.Links ?? []).entries()) { %><% if (shown((v_i < 5))) { %><li><a href="<%= safeURL(v_link?.Href) %>" rel="nofollow noopener" target="_blank"><%= v_link?.Name %></a></li><% } %><% } %></ul><a class="utility-more" href="/c/<%= item1?.Slug %>">全部<%= item1?.Name %> →</a></section><% } %>
         </div>
       </div><% } %>
-      <button class="btn btn-ghost btn-sm lg:hidden" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">分类</button>
+      <a class="btn btn-ghost btn-sm" href="/#desk-custom">收藏</a>
+      <button class="btn btn-ghost btn-sm lg:hidden" type="button" id="cat-open" aria-expanded="false" aria-controls="cat-pop">目录</button>
       <% if (shown(page?.UserName)) { %>
-      <a class="btn btn-ghost btn-sm" href="/mine"><%= page?.UserName %></a>
-      <% if (shown(page?.IsAdmin)) { %><a class="btn btn-ghost btn-sm" href="/admin/">管理后台</a><% } %>
+      <a class="btn btn-ghost btn-sm" href="/mine"><span class="max-w-16 truncate sm:max-w-32"><%= page?.UserName %></span></a>
+      <% if (shown(page?.IsAdmin)) { %><a class="btn btn-ghost btn-sm max-lg:hidden" href="/admin/">管理后台</a><% } %>
       <form method="post" action="/logout"><button class="btn btn-ghost btn-sm" type="submit">退出</button></form>
       <% } else { %>
       <a class="btn btn-ghost btn-sm" href="/login" data-auth-open="login">登录</a>
-      <a class="btn btn-primary btn-sm" href="/register" data-auth-open="register">注册</a>
+      <a class="btn btn-ghost btn-sm max-sm:hidden" href="/register" data-auth-open="register">注册</a>
       <% } %>
     </div>
-    <div class="cat-pop basis-full lg:hidden" id="cat-pop" hidden>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 py-3">
-        <% for (const item of (page?.Launcher ?? [])) { %>
-        <% if (item.href === "#simple") { %>
-        <button class="btn btn-ghost btn-sm justify-start" type="button" data-simple><i class="swatch <%= item.icon %>"></i><%= item.name %></button>
-        <% } else { %>
-        <a class="btn btn-ghost btn-sm justify-start" href="<%= safeURL(item.href) %>"><i class="swatch <%= item.icon %>"></i><%= item.name %></a>
+    <nav class="absolute inset-x-0 top-full max-h-[70vh] overflow-auto border-b border-base-300 bg-base-100 p-3 lg:hidden" id="cat-pop" aria-label="站点目录" hidden>
+      <ul class="menu grid w-full grid-cols-2 gap-1 sm:grid-cols-3">
+        <% for (const item of (page?.Sidebar ?? [])) { %>
+        <li><a class="min-h-10 <% if (item.href === page.Path) { %>menu-active<% } %>" href="<%= safeURL(item.href) %>"<% if (item.href === page.Path) { %> aria-current="page"<% } %>><%= item.href === "/" ? "首页" : item.name %></a></li>
         <% } %>
-        <% } %>
-      </div>
-    </div>
+        <li><a class="min-h-10" href="/hot">今日热榜</a></li>
+        <% if (shown(page?.IsAdmin)) { %><li><a class="min-h-10" href="/admin/">管理后台</a></li><% } %>
+        <% if (!shown(page?.UserName)) { %><li class="sm:hidden"><a class="min-h-10" href="/register" data-auth-open="register">注册</a></li><% } %>
+        <% for (const group of (page?.Utils ?? [])) { %><li><a class="min-h-10" href="/c/<%= group.Slug %>"><%= group.Name %></a></li><% } %>
+        <% if ((page?.Launcher ?? []).some(item => item.href === "#simple")) { %><li><button class="min-h-10" type="button" data-simple>简约模式</button></li><% } %>
+      </ul>
+    </nav>
   </header>
-  <div class="<% if (shown(page?.Account)) { %>max-w-5xl mx-auto w-full<% } else { %>max-w-[1440px] mx-auto lg:grid lg:grid-cols-[220px_minmax(0,1fr)]<% } %> min-h-[calc(100vh-4rem)]">
+  <div class="<% if (shown(page?.Account)) { %>max-w-5xl mx-auto w-full<% } else { %>max-w-[1440px] mx-auto lg:grid lg:grid-cols-[176px_minmax(0,1fr)]<% } %> min-h-[calc(100vh-4rem)]">
     <% if (shown(!shown(page?.Account))) { %>
-    <aside class="public-sidebar bg-base-100 border-base-300 max-lg:border-b max-lg:overflow-x-auto lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-auto lg:border-r">
-      <ul class="menu menu-horizontal lg:menu-vertical w-max lg:w-full px-2 py-2">
-        <li class="menu-title max-lg:hidden">常驻索引</li>
+    <aside class="public-sidebar hidden bg-base-100 border-base-300 lg:sticky lg:top-16 lg:block lg:h-[calc(100vh-4rem)] lg:overflow-auto lg:border-r">
+      <ul class="menu menu-vertical w-full">
+        <li class="menu-title">网站目录</li>
         <% for (const item of (page?.Sidebar ?? [])) { %>
         <li>
-          <a class="<% if (item.tool) { %><%= item.icon %><% } %><% if (item.href === page.Path) { %> menu-active<% } %>" href="<%= safeURL(item.href) %>"><%= item.name %></a>
+          <a class="<% if (item.tool) { %><%= item.icon %><% } %><% if (item.href === page.Path) { %> menu-active<% } %>" href="<%= safeURL(item.href) %>"<% if (item.href === page.Path) { %> aria-current="page"<% } %>><%= item.href === "/" ? "首页" : item.name %></a>
         </li>
         <% } %>
       </ul>
@@ -83,8 +87,8 @@
     <% } %>
     <main class="public-main min-w-0">
       <%- page?.Content ?? '' %>
-      <footer class="footer sm:footer-horizontal bg-base-100 text-base-content border-t border-base-300 rounded-box mt-8 p-6">
-        <aside><b class="text-base">开物录</b><p class="max-w-xs opacity-70">点名字先看介绍，确认后再打开。</p></aside>
+      <footer class="footer mt-8 grid-cols-2 gap-x-3 gap-y-4 rounded-box border border-base-300 bg-base-100 p-4 text-base-content sm:grid-cols-3 sm:p-6">
+        <aside class="col-span-2 sm:col-span-1"><a class="text-base font-semibold" href="/">开物录</a></aside>
         <nav><h6 class="footer-title">快捷入口</h6><a class="link link-hover" href="/hot">今日热榜</a><a class="link link-hover" href="/latest">最新收录</a><a class="link link-hover" href="/submit">提交网站</a><a class="link link-hover" href="/notice">公告</a></nav>
         <nav><h6 class="footer-title">本站</h6><a class="link link-hover" href="/rank">站点排行</a><a class="link link-hover" href="/cooperate">广告合作</a><a class="link link-hover" href="/feedback">站点反馈</a><a class="link link-hover" href="/admin/">管理</a></nav>
       </footer>
@@ -128,7 +132,7 @@
     <form method="dialog" class="modal-backdrop"><button type="submit">关闭</button></form>
   </dialog>
   <% } %>
-  <noscript><style>.tab-panel[hidden]{display:block !important}</style></noscript>
+  <noscript><style>.tab-panel[hidden]:not([data-catalog-panel]){display:block !important}</style></noscript>
   <script src="<%= assets.js ?? '/static/site.js?v=18' %>"></script>
   <script>
   var _hmt = _hmt || [];

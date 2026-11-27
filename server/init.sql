@@ -1,0 +1,1012 @@
+-- 开物录初始数据。请先选择目标数据库，再导入此文件。
+
+SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `categories` (
+  `id` bigint unsigned AUTO_INCREMENT,
+  `slug` varchar(64),
+  `name` varchar(64),
+  `parent_slug` varchar(64),
+  `kind` varchar(16),
+  `content_kind` varchar(16),
+  `sort` bigint,
+  `show_on_home` boolean,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `idx_categories_slug` (`slug`),
+  INDEX `idx_categories_parent_slug` (`parent_slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `links` (
+  `id` bigint unsigned AUTO_INCREMENT,
+  `imported_from` varchar(96),
+  `slug` varchar(80),
+  `category_slug` varchar(64),
+  `name` varchar(128),
+  `url` varchar(512),
+  `desc` varchar(256),
+  `tags` varchar(160),
+  `alias` varchar(64),
+  `lang` varchar(32),
+  `region` varchar(32),
+  `spare` varchar(512),
+  `icp` varchar(64),
+  `body` text,
+  `pinned` boolean,
+  `pin_sort` bigint,
+  `sort` bigint,
+  `clicks` bigint,
+  `views` bigint,
+  `checked_at` datetime(3) NULL,
+  `check_fails` bigint,
+  `status` varchar(16),
+  `user_id` bigint unsigned,
+  `created_at` datetime(3) NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `idx_links_imported_from` (`imported_from`),
+  INDEX `idx_links_slug` (`slug`),
+  INDEX `idx_links_category_slug` (`category_slug`),
+  INDEX `idx_links_status` (`status`),
+  INDEX `idx_links_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `articles` (
+  `id` bigint unsigned AUTO_INCREMENT,
+  `legacy_id` varchar(64),
+  `legacy_slug` varchar(255),
+  `title` varchar(255),
+  `summary` text,
+  `body` longtext,
+  `format` varchar(16),
+  `cover_url` varchar(512),
+  `video_url` varchar(512),
+  `category` varchar(64),
+  `featured` boolean,
+  `sort` bigint,
+  `draft` boolean NOT NULL DEFAULT false,
+  `views` bigint,
+  `created_at` datetime(3) NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `idx_articles_legacy_id` (`legacy_id`),
+  INDEX `idx_articles_legacy_slug` (`legacy_slug`),
+  INDEX `idx_articles_category` (`category`),
+  INDEX `idx_articles_draft` (`draft`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tags` (
+  `id` bigint unsigned AUTO_INCREMENT,
+  `group` varchar(32),
+  `name` varchar(64),
+  `sort` bigint,
+  PRIMARY KEY (`id`),
+  INDEX `idx_tags_group` (`group`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `category_guides` (
+  `category_slug` varchar(64),
+  `title` varchar(128),
+  `intro` text,
+  `home_label` varchar(64),
+  PRIMARY KEY (`category_slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `history_events` (
+  `id` bigint unsigned AUTO_INCREMENT,
+  `month` bigint NOT NULL,
+  `day` bigint NOT NULL,
+  `year` bigint NOT NULL,
+  `text` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `ux_history_event` (`month`,`day`,`year`,`text`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET @kaiwulu_init_lock_name = CONCAT('kaiwulu-init-', MD5(DATABASE()));
+SELECT GET_LOCK(@kaiwulu_init_lock_name, 30) INTO @kaiwulu_init_lock;
+
+START TRANSACTION;
+SET @kaiwulu_init_at = CURRENT_TIMESTAMP(3);
+
+-- 已经有内容的库整批跳过，重复导入也不会重新填回手工删除的内容。
+SET @kaiwulu_initialize = COALESCE(@kaiwulu_init_lock, 0) = 1
+  AND NOT EXISTS (SELECT 1 FROM `categories`)
+  AND NOT EXISTS (SELECT 1 FROM `links`)
+  AND NOT EXISTS (SELECT 1 FROM `articles`)
+  AND NOT EXISTS (SELECT 1 FROM `tags`)
+  AND NOT EXISTS (SELECT 1 FROM `category_guides`)
+  AND NOT EXISTS (SELECT 1 FROM `history_events`);
+
+INSERT INTO `categories` (`id`, `slug`, `name`, `parent_slug`, `kind`, `content_kind`, `sort`, `show_on_home`)
+SELECT seed.`id`, seed.`slug`, seed.`name`, seed.`parent_slug`, seed.`kind`, seed.`content_kind`, seed.`sort`, seed.`show_on_home` FROM (
+  SELECT 1 AS `id`, 'fun' AS `slug`, '休闲娱乐' AS `name`, '' AS `parent_slug`, 'section' AS `kind`, 'links' AS `content_kind`, 1 AS `sort`, 1 AS `show_on_home`
+  UNION ALL SELECT 2, 'video', '在线影视', 'fun', 'tab', 'links', 1, 0
+  UNION ALL SELECT 3, 'anime', '动漫', 'fun', 'tab', 'links', 2, 0
+  UNION ALL SELECT 4, 'comic', '漫画', 'fun', 'tab', 'links', 3, 0
+  UNION ALL SELECT 5, 'music', '音乐', 'fun', 'tab', 'links', 4, 0
+  UNION ALL SELECT 6, 'novel', '小说', 'fun', 'tab', 'links', 5, 0
+  UNION ALL SELECT 7, 'live', '直播', 'fun', 'tab', 'links', 6, 0
+  UNION ALL SELECT 8, 'wallpaper', '壁纸', 'fun', 'tab', 'links', 7, 0
+  UNION ALL SELECT 9, 'game', '小游戏', 'fun', 'tab', 'links', 8, 0
+  UNION ALL SELECT 10, 'discover', '探索发现', '', 'section', 'mixed', 2, 1
+  UNION ALL SELECT 11, 'daily', '每日一篇', 'discover', 'tab', 'articles', 1, 0
+  UNION ALL SELECT 12, 'learn', '学习网站', 'discover', 'tab', 'links', 2, 0
+  UNION ALL SELECT 13, 'cool', '趣味酷站', 'discover', 'tab', 'links', 3, 0
+  UNION ALL SELECT 14, 'design', '素材创意', 'discover', 'tab', 'links', 4, 0
+  UNION ALL SELECT 15, 'resource', '资源工具', '', 'section', 'links', 3, 1
+  UNION ALL SELECT 16, 'software', '软件', 'resource', 'tab', 'links', 1, 0
+  UNION ALL SELECT 17, 'disk', '网盘', 'resource', 'tab', 'links', 2, 0
+  UNION ALL SELECT 18, 'webtool', '网页工具', 'resource', 'tab', 'links', 3, 0
+  UNION ALL SELECT 19, 'query', '实用查询', 'resource', 'tab', 'links', 4, 0
+  UNION ALL SELECT 20, 'res', '资源', 'resource', 'tab', 'links', 5, 0
+  UNION ALL SELECT 21, 'collection', '网址集', '', 'section', 'tags', 4, 1
+  UNION ALL SELECT 22, 'ai', 'AI 工具', '', 'section', 'links', 0, 1
+  UNION ALL SELECT 23, 'chat', '通用助手', 'ai', 'tab', 'links', 1, 0
+  UNION ALL SELECT 24, 'draw', '视频与短剧', 'ai', 'tab', 'links', 4, 0
+  UNION ALL SELECT 25, 'life', '生活常用', '', 'section', 'links', 6, 1
+  UNION ALL SELECT 26, 'shop', '购物', 'life', 'tab', 'links', 1, 0
+  UNION ALL SELECT 27, 'job', '招聘', 'life', 'tab', 'links', 2, 0
+  UNION ALL SELECT 28, 'finance', '财经', 'life', 'tab', 'links', 3, 0
+  UNION ALL SELECT 29, 'news', '资讯', 'life', 'tab', 'links', 4, 0
+  UNION ALL SELECT 30, 'community', '社区', 'life', 'tab', 'links', 5, 0
+  UNION ALL SELECT 31, 'mail', '邮箱', 'life', 'tab', 'links', 6, 0
+  UNION ALL SELECT 32, 'translate', '翻译', 'life', 'tab', 'links', 7, 0
+  UNION ALL SELECT 33, 'map', '地图', 'life', 'tab', 'links', 8, 0
+  UNION ALL SELECT 34, 'ai-search', '搜索与研究', 'ai', 'tab', 'links', 2, 0
+  UNION ALL SELECT 35, 'ai-ae0faa3203a9', '图像与设计', 'ai', 'tab', 'links', 3, 0
+  UNION ALL SELECT 36, 'ai-audio', '音乐与语音', 'ai', 'tab', 'links', 5, 0
+  UNION ALL SELECT 37, 'ai-code', '编程与应用', 'ai', 'tab', 'links', 6, 0
+  UNION ALL SELECT 38, 'ai-office', '写作与办公', 'ai', 'tab', 'links', 7, 0
+  UNION ALL SELECT 39, 'ai-6bf6d3f3d626', '智能体与流程', 'ai', 'tab', 'links', 8, 0
+) AS seed
+WHERE @kaiwulu_initialize = 1;
+
+INSERT INTO `links` (`id`, `slug`, `category_slug`, `name`, `url`, `desc`, `tags`, `alias`, `lang`, `region`, `spare`, `icp`, `body`, `pinned`, `pin_sort`, `sort`, `clicks`, `views`, `check_fails`, `status`, `user_id`, `created_at`)
+SELECT seed.`id`, seed.`slug`, seed.`category_slug`, seed.`name`, seed.`url`, seed.`desc`, seed.`tags`, seed.`alias`, seed.`lang`, seed.`region`, seed.`spare`, seed.`icp`, seed.`body`, seed.`pinned`, seed.`pin_sort`, seed.`sort`, seed.`clicks`, seed.`views`, seed.`check_fails`, seed.`status`, seed.`user_id`, seed.`created_at` FROM (
+  SELECT 1 AS `id`, 'bilibili' AS `slug`, 'video' AS `category_slug`, '哔哩哔哩' AS `name`, 'https://www.bilibili.com' AS `url`, '弹幕视频、番剧和直播' AS `desc`, '弹幕,视频,番剧' AS `tags`, 'B站' AS `alias`, '中文' AS `lang`, '中国' AS `region`, '' AS `spare`, '' AS `icp`, '哔哩哔哩以弹幕视频为主，分区覆盖番剧、纪录片、知识区和直播。首页的推荐流很密，找一部确定的片子时，用搜索或分区比顺着推荐往下翻快。
+
+投稿和番剧是两套片库。想看连载新番，直接进番剧区，不要在普通视频搜索里碰运气。' AS `body`, 1 AS `pinned`, 1 AS `pin_sort`, 1 AS `sort`, 0 AS `clicks`, 0 AS `views`, 0 AS `check_fails`, 'online' AS `status`, 0 AS `user_id`, @kaiwulu_init_at AS `created_at`
+  UNION ALL SELECT 2, 'iqiyi', 'video', '爱奇艺', 'https://www.iqiyi.com', '正版电影和剧集', '电影,剧集', '', '中文', '中国', '', '', '爱奇艺是正版长视频站，电影、电视剧和综艺是主要内容。会员才能看的集数会在播放页标出来，免费集通常只是开头几集。
+
+找片先看年份和演员，平台的推荐位经常把旧剧重新包装成新上线。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 3, 'v-qq', 'video', '腾讯视频', 'https://v.qq.com', '电视剧和综艺', '电视剧,综艺', '', '中文', '中国', '', '', '腾讯视频的剧集和综艺更新比较密，播放页会标明会员、超前点播和预告。一部剧如果只更新到某一集，标题旁边一般有更新说明。
+
+动漫频道和电视剧频道是分开的，搜名字时注意结果来自哪一个频道。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 4, 'youku', 'video', '优酷', 'https://www.youku.com', '电影和剧集', '电影,剧集', '', '中文', '中国', '', '', '优酷以电影和剧集为主，也有不少自制综艺。播放前先看清晰度和会员标记，有些老片只有标清。
+
+片库检索可以用类型和地区缩小范围，比只看首页推荐位容易找到确定的片子。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 5, 'mgtv', 'video', '芒果TV', 'https://www.mgtv.com', '综艺和电视剧', '综艺,电视剧', '', '中文', '中国', '', '', '芒果TV的综艺和湖南台剧集最多，更新通常跟着电视台的播出节奏。会员剧会把最新一两集锁住。
+
+想补一档已经完结的综艺，进节目主页看正片列表，比在首页推荐里翻更完整。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 6, 'movie-douban', 'video', '豆瓣电影', 'https://movie.douban.com', '影片资料和评分', '评分,影片资料', '', '中文', '中国', '', '', '豆瓣电影是影片资料和评分，不是播放站。条目里能看到年份、导演、演员、短评和相关影片。
+
+评分样本少的新片波动大。决定要不要看，可以先读几条不同星级的短评，而不是只看总分。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 7, 'bilibili-2', 'anime', '哔哩哔哩番剧', 'https://www.bilibili.com/anime', '连载番剧和新番表', '番剧,新番', 'B站番剧', '中文', '中国', '', '', '这是哔哩哔哩的番剧区，连载、完结和新番表都在这里。追更时看每部番的更新星期，比在动态里等推送稳。
+
+正版番剧和用户投稿的切片不是一回事。要看整集，从番剧页进播放器。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 8, 'acfun', 'anime', 'AcFun', 'https://www.acfun.cn', '弹幕视频社区', '弹幕,动画', 'A站', '中文', '中国', '', '', 'AcFun 也是弹幕视频站，动画和游戏区相对集中，体量比哔哩哔哩小。找片子时直接搜标题，首页推荐覆盖不全。
+
+有些系列只有部分分集，打开前先看播放列表是否连续。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 9, 'v-qq-2', 'anime', '腾讯视频动漫', 'https://v.qq.com/channel/cartoon', '正版动画', '动画,正版', '', '中文', '中国', '', '', '腾讯视频的动漫频道放正版动画，国产番和部分日本动画都有。会员和抢先看会标在集数上。
+
+和腾讯视频的电视剧是同一个账号体系，但片库入口不同，搜的时候选动漫频道。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 10, 'manga-bilibili', 'comic', '哔哩哔哩漫画', 'https://manga.bilibili.com', '正版漫画', '漫画,正版', '', '中文', '中国', '', '', '哔哩哔哩漫画是正版条漫和页漫，更新在作品页的章节列表里。有的章节要等时限或开通会员。
+
+追连载时把作品放进书架，比每天在推荐流里找封面可靠。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 11, 'kuaikanmanhua', 'comic', '快看漫画', 'https://www.kuaikanmanhua.com', '条漫和连载', '条漫,连载', '', '中文', '中国', '', '', '快看以竖屏条漫为主，适合手机上往下拉着看。免费章节和付费章节会在目录里分开标。
+
+作品介绍页能看到作者和更新频率，停更的会写在公告里。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 12, 'ac-qq', 'comic', '腾讯动漫', 'https://ac.qq.com', '正版漫画', '漫画,正版', '', '中文', '中国', '', '', '腾讯动漫收录正版漫画，页漫和条漫都有。目录会标出免费、会员和单话购买。
+
+从作品页进阅读，不要只靠信息流，信息流里广告和正片封面容易混在一起。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 13, 'music-163', 'music', '网易云音乐', 'https://music.163.com', '歌单和播客', '歌单,音乐', '网易云', '中文', '中国', '', '', '网易云音乐用来听歌单、专辑和播客。红心歌单会跟账号走，换设备登录后还在。
+
+版权不全的歌会显示灰色。遇到灰色歌曲，换一个平台搜同名，比在评论区找替代链接干净。', 1, 5, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 14, 'y-qq', 'music', 'QQ音乐', 'https://y.qq.com', '正版曲库', '曲库,音乐', '', '中文', '中国', '', '', 'QQ音乐是正版曲库，歌单、专辑和排行都有。会员曲和免费曲在播放按钮上能看出来。
+
+下载到本地的歌曲通常仍要登录原账号才能播，不要当成可以拷走的文件。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 15, 'kugou', 'music', '酷狗音乐', 'https://www.kugou.com', '音乐播放', '音乐,播放', '', '中文', '中国', '', '', '酷狗用来在线播放和搜歌，曲库和网易云、QQ音乐并不完全重叠。同一首歌三个平台可能只有一个能播。
+
+播放页先看是不是直播或铃声广告位，正片播放器在歌曲标题下面。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 16, 'qidian', 'novel', '起点中文网', 'https://www.qidian.com', '网络小说', '小说,网文', '起点', '中文', '中国', '', '', '起点以网络小说连载为主，分玄幻、都市、科幻等频道。书页上有字数、更新时间和最新章节。
+
+免费章节看完会遇到订阅。想先判断值不值得追，看前三十章和书评区的差评就够。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 17, 'jjwxc', 'novel', '晋江文学城', 'https://www.jjwxc.net', '原创文学', '小说,原创', '晋江', '中文', '中国', '', '', '晋江以原创小说为主，言情和纯爱占很大一部分。作品页能看到字数、评分和完结状态。
+
+未完结的书更新不稳定，收藏前先看作者最近的更新时间。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 18, 'read-douban', 'novel', '豆瓣阅读', 'https://read.douban.com', '电子书', '电子书,阅读', '', '中文', '中国', '', '', '豆瓣阅读卖电子书和原创作品，按本购买的多，不是传统的按章订阅。试读一般只开放开头。
+
+买之前看试读和短评。下架的书已经买过的，通常仍在自己的书架里。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 19, 'live-bilibili', 'live', '哔哩哔哩直播', 'https://live.bilibili.com', '游戏和生活直播', '直播,游戏', '', '中文', '中国', '', '', '这是哔哩哔哩的直播分区，游戏、聊天和虚拟主播都有。直播结束后回放不一定保留。
+
+想看固定主播，关注后从关注列表进，比在推荐里刷稳定。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 20, 'douyu', 'live', '斗鱼', 'https://www.douyu.com', '游戏直播', '直播,游戏', '', '中文', '中国', '', '', '斗鱼以游戏直播为主，分区按游戏拆开。热门房间在分区首页，小号房间要用搜索。
+
+直播标题经常写活动口令，进房前看一眼标题，避免误进抽奖广告房。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 21, 'huya', 'live', '虎牙直播', 'https://www.huya.com', '游戏直播', '直播,游戏', '', '中文', '中国', '', '', '虎牙同样以游戏直播为主，也有户外和赛事。赛事会单独开分区，比普通直播间的画质和赛程更清楚。
+
+回放保留时间不长，想看完整比赛优先找官方赛事页，而不是主播切片。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 22, 'yangshipin', 'video', '央视频', 'https://www.yangshipin.cn', '央视正版直播和回看', '直播,央视', '', '中文', '中国', '', '', '央视频是中央广播电视总台的正版直播和回看，新闻、综艺和体育赛事从这里进。直播有时会按版权只在特定时段开放。
+
+回看列表按栏目分。找某一期时用节目名搜索，比在首页推荐里翻更准。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 23, 'miguvideo', 'video', '咪咕视频', 'https://www.miguvideo.com', '体育和影视', '体育,影视', '', '中文', '中国', '', '', '咪咕视频以体育赛事和影视为主，是中国移动的正版视频站。比赛直播经常需要登录，部分场次另有会员限制。
+
+看比赛先确认是直播还是集锦。集锦的标题里通常会写「回放」或「集锦」。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 24, 'douyin', 'video', '抖音', 'https://www.douyin.com', '短视频', '短视频', '', '中文', '中国', '', '', '抖音是短视频。网页版可以看公开作品和直播，完整体验仍在客户端。
+
+搜一个明确的账号或话题，比顺着推荐往下刷更容易找到要看的内容。', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 25, 'kuwo', 'music', '酷我音乐', 'https://www.kuwo.cn', '正版曲库', '音乐,曲库', '', '中文', '中国', '', '', '酷我音乐是正版曲库，可以按歌名、歌手和歌单找歌。会员曲会在播放页标出来。
+
+下载到本地的歌曲和在线播放不是同一套权限。只能在线听的歌，离线列表里不会出现。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 26, 'ximalaya', 'music', '喜马拉雅', 'https://www.ximalaya.com', '有声书和播客', '有声书,播客', '', '中文', '中国', '', '', '喜马拉雅以有声书、播客和课程为主。一部书的免费集数在节目页写明，后面的集数可能要单本或会员。
+
+追更时看更新时间和总集数。已完结和连载中的节目不要看混。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 27, 'weread-qq', 'novel', '微信读书', 'https://weread.qq.com', '电子书', '电子书,阅读', '', '中文', '中国', '', '', '微信读书用来读电子书，书库里有出版书和一部分网文。阅读进度跟微信账号走。
+
+一本书能不能读全文，打开目录就能看见。只买了部分章节时，后面的章节会锁住。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 28, 'zongheng', 'novel', '纵横中文网', 'https://www.zongheng.com', '网络小说', '小说,网文', '纵横', '中文', '中国', '', '', '纵横中文网是正版网络小说站。作品页有章节列表、更新时间和收费起始章。
+
+从中间一章点进去之前，先看它是不是 VIP。免费章和收费章在目录里是分开标的。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 29, 'fanqienovel', 'novel', '番茄小说', 'https://fanqienovel.com', '免费网文', '小说,网文', '番茄', '中文', '中国', '', '', '番茄小说是番茄的正版网文，大量作品可以免费读，中间会有广告。更新在作品页的章节列表里。
+
+网页和客户端是同一套书库。一本书在网页上找不到时，先核对是不是名字只差一两个字。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 30, 'kuaishou', 'live', '快手', 'https://www.kuaishou.com', '短视频和直播', '短视频,直播', '', '中文', '中国', '', '', '快手有短视频和直播，网页版可以看公开作品。直播和连麦的完整体验在客户端。
+
+找一个人时用快手号或昵称搜索。推荐流里的同名账号很多，先对一下头像和简介。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 31, 'huaban', 'wallpaper', '花瓣', 'https://huaban.com', '图片采集和灵感', '图片,灵感', '', '中文', '中国', '', '', '花瓣用来收集图片灵感，可以按主题看采集和画板。图来自用户采集，默认不能拿去商用。
+
+要能用的素材，看清原图所在的页面有没有写明授权。花瓣上的采集本身不是授权证明。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 32, 'tuchong', 'wallpaper', '图虫', 'https://tuchong.com', '摄影师社区', '摄影,图片', '', '中文', '中国', '', '', '图虫是摄影师社区，作品页能看到作者和拍摄信息。照片默认归作者，不能直接存下来当素材。
+
+需要可授权的图时，走它标明的授权或联系作者，不要从预览图上截。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 33, 'wallhaven', 'wallpaper', 'Wallhaven', 'https://wallhaven.cc', '壁纸收藏', '壁纸', '', '英文', '', '', '', 'Wallhaven 是壁纸图库，可以按分辨率、比例和颜色筛。很多图分辨率很高，适合当桌面。
+
+筛选里有内容分级。不想看到成人图，把分级固定在普通，再开始搜。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 34, 'store-steampowered', 'game', 'Steam', 'https://store.steampowered.com', '电脑游戏商店', '游戏,商店', '', '英文', '美国', '', '', 'Steam 是电脑游戏商店，也能管理已购买的游戏和创意工坊模组。商店页的评价数量比百分比更值得看。
+
+地区价格和锁区不同。购买前看语言、系统要求和是否支持退款期限内的游玩时长。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 35, 'taptap', 'game', 'TapTap', 'https://www.taptap.cn', '手机游戏社区', '手游,社区', '', '中文', '中国', '', '', 'TapTap 是手机游戏的介绍和社区，能看到评分、更新日志和玩家评价。下载按钮有的会跳到官方包，有的跳到应用商店。
+
+评分可以被刷。看差评里是否反复提到同一种问题，比看总分有用。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 36, '4399', 'game', '4399', 'https://www.4399.com', '小游戏', '小游戏', '', '中文', '中国', '', '', '4399 是网页小游戏集合，打开就能玩，多数不需要安装。游戏页经常嵌着广告，开始按钮要认标题旁边的那个。
+
+想保存进度的游戏并不多，当成分钟级的打发时间更合适。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 37, '7k7k', 'game', '7k7k', 'https://www.7k7k.com', '小游戏', '小游戏', '', '中文', '中国', '', '', '7k7k 是小游戏站，打开即玩，不需要安装客户端。游戏页先看分类，再点具体的一个。
+
+部分游戏要登录或开会员。页面如果一直转圈，换一个不依赖额外插件的游戏。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 38, 'game-qq', 'game', '腾讯游戏', 'https://game.qq.com', '腾讯游戏官网', '游戏,官网', '', '中文', '中国', '', '', '这是腾讯游戏的官网，用来看游戏介绍、公告和官方下载。安装包从这里下，不要用搜索结果里的第三方打包。
+
+每款游戏的区服和客户端不同。下载前对一下游戏名字和系统。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 39, 'developer-mozilla', 'learn', 'MDN', 'https://developer.mozilla.org', 'Web 开发文档', '文档,Web', '', '英文', '美国', '', '', 'MDN 是 Web 开发文档，HTML、CSS 和 JavaScript 的接口说明以这里为准。每页有语法、参数和浏览器兼容表。
+
+查一个 API 时先看兼容表里的版本，再抄示例。示例能跑，不表示旧浏览器也能跑。', 1, 9, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 40, 'runoob', 'learn', '菜鸟教程', 'https://www.runoob.com', '入门示例', '教程,入门', '', '中文', '中国', '', '', '菜鸟教程用很短的例子讲编程入门，适合第一次接触某个语法。页面结构固定：说明、例子、运行结果。
+
+它不是规范。语法细节和版本差异，还是要回到对应语言的官方文档核对。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 41, 'icourse163', 'learn', '中国大学MOOC', 'https://www.icourse163.org', '大学公开课', '公开课,大学', '慕课', '中文', '中国', '', '', '中国大学 MOOC 上是高校开的公开课，有开课时间和结课时间。正在进行的课可以跟着周历看，已结束的课往往仍能看回放。
+
+证书和纯观看不是一回事。只想看内容，选「随到随学」或已结束但仍开放视频的课。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 42, 'xuetangx', 'learn', '学堂在线', 'https://www.xuetangx.com', '大学公开课', '公开课,大学', '', '中文', '中国', '', '', '学堂在线放大学公开课，课程页有大纲、开课时间和证书说明。和中国大学 MOOC 是同一类课程，账号不一定通用。
+
+选课先看开课状态。已结课的班次通常还能看回放，作业和证书按那一期的说明。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 43, 'study-163', 'learn', '网易云课堂', 'https://study.163.com', '职业课程', '课程,职业', '', '中文', '中国', '', '', '网易云课堂以职业和技能课为主，课程页写明价格、课时和是否完结。试看通常只有开头几节。
+
+买之前看更新时间和评价里提到的软件版本。软件课过一两年，界面可能已经对不上。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 44, 'khanacademy', 'learn', '可汗学院', 'https://www.khanacademy.org', '基础学科课程', '课程,基础学科', '', '英文', '美国', '', '', '可汗学院按学科拆成练习和短视频，数学和基础科学最完整。站点以英文为主，部分内容有字幕。
+
+它适合补某一块具体知识点，不适合当成一门有学分的课。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 45, 'open-163', 'learn', '网易公开课', 'https://open.163.com', '公开课程', '公开课', '', '中文', '中国', '', '', '网易公开课收集国内外的课程视频，很多是已经录完的整门课。课程页能看到集数和来源。
+
+年份早的课内容可能过时，尤其是计算机和商业。看之前先看录制时间。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 46, 'juejin', 'learn', '掘金', 'https://juejin.cn', '技术文章', '技术,文章', '', '中文', '中国', '', '', '掘金是技术文章社区，按前端、后端和移动端分栏目。文章质量差别大，先看作者和发布日期。
+
+代码示例先在本地跑。文章里的版本号和你手头的框架不一致时，以官方文档为准。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 47, 'liaoxuefeng', 'learn', '廖雪峰', 'https://www.liaoxuefeng.com', '编程教程', '教程,编程', '', '中文', '中国', '', '', '廖雪峰的官网教程按语言分成一条条教程，适合顺着目录往下看，例如 Python、JavaScript 和 Git。
+
+教程更新没有固定节奏。某一章的截图和现在的软件不一致时，以软件当前的界面为准。', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 48, 'zhihu', 'cool', '知乎', 'https://www.zhihu.com', '问答社区', '问答,社区', '', '中文', '中国', '', '', '知乎是问答社区。一个问题下会有多条回答，高赞不等于最新，也不等于最准确。
+
+查事实时看回答里的出处和时间。个人经历类的回答，当故事看，不要当成结论。', 1, 2, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 49, 'sspai', 'cool', '少数派', 'https://sspai.com', '效率和工作方法', '效率,方法', '', '中文', '中国', '', '', '少数派写效率工具、工作方法和数码用法，文章比新闻站长，通常会把设置步骤写出来。
+
+工具推荐会过时。文章里的版本号和现在的软件对不上时，以软件自己的说明为准。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 50, 'appinn', 'cool', '小众软件', 'https://www.appinn.com', '软件和工具介绍', '软件,工具', '', '中文', '中国', '', '', '小众软件介绍可以下载或在线用的小工具，每篇通常说明它解决什么问题、在哪个系统上跑。
+
+评论区常有替代品。软件如果已经停更，正文或评论里一般会有人指出。', 1, 10, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 51, 'smzdm', 'cool', '什么值得买', 'https://www.smzdm.com', '商品价格和评测', '价格,评测', '', '中文', '中国', '', '', '什么值得买汇总商品价格、优惠和用户晒单。价格会变，页面上的到手价要再点进商家确认。
+
+优惠有时间限制。看到「历史低价」先看它统计的时间范围，再决定要不要下单。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 52, 'v2ex', 'cool', 'V2EX', 'https://www.v2ex.com', '技术社区', '社区,技术', '', '中文', '中国', '', '', 'V2EX 是技术社区，节点按工作、分享和问与答分开。帖子按时间排，热门不一定是最新的结论。
+
+问问题之前先搜标题。同类问题下面往往已经有人给出过可用的做法。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 53, 'producthunt', 'cool', 'Product Hunt', 'https://www.producthunt.com', '新产品发布', '新产品', '', '英文', '美国', '', '', 'Product Hunt 每天列出新发布的产品和工具，按天归档。适合看最近出现了什么，不适合当成熟软件的评测。
+
+刚上线的产品经常改名或关掉。点进去之前看发布日期。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 54, 'news-ycombinator', 'cool', 'Hacker News', 'https://news.ycombinator.com', '技术讨论', '技术,讨论', '', '英文', '美国', '', '', 'Hacker News 是技术讨论，条目来自投稿，评论在标题下面。热门不表示正确，争议帖的评论通常比标题有信息。
+
+站点是英文。想找某一类内容，用搜索限定网站，比刷新首页可靠。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 55, 'iconfont', 'design', 'iconfont', 'https://www.iconfont.cn', '图标', '图标,设计', '', '中文', '中国', '', '', 'iconfont 是阿里的图标库，可以按关键词搜图标，也能自己建项目再下载。图标有填充和线性两种，同一个词会搜出很多风格。
+
+商用前看这个图标项目的授权说明。平台能下载，不表示每一枚都能用在商业产品上。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 56, 'zcool-com', 'design', '站酷', 'https://www.zcool.com.cn', '设计作品', '设计,作品', '', '中文', '中国', '', '', '站酷是设计师放作品的社区，平面、插画和界面都有。作品页能看到作者和使用的工具。
+
+这里的图默认不能直接拿去商用。要素材，去明确写了可免费使用的图库。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 57, 'js', 'design', '即时设计', 'https://js.design', '在线界面设计', '设计,原型', '', '中文', '中国', '', '', '即时设计可以在浏览器里画界面和做简单原型，文件存在账号里。邀请链接决定别人能看还是能改。
+
+导出切图前看倍率。给开发的图和演示用的图不是同一套导出设置。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 58, 'gaoding', 'design', '稿定设计', 'https://www.gaoding.com', '模板和图片编辑', '模板,设计', '', '中文', '中国', '', '', '稿定设计提供海报、模板和图片编辑，适合改一张现成的版式。模板里的字体和图片是否能商用，以模板页的说明为准。
+
+免费模板和付费素材经常混在一个文件里。下载前看每一项旁边的标记。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 59, 'dribbble', 'design', 'Dribbble', 'https://dribbble.com', '界面设计', '界面,设计', '', '英文', '美国', '', '', 'Dribbble 以界面和品牌设计稿为主，用来找视觉参考。作品多是效果图，不是能直接套用的组件。
+
+搜索用英文关键词。想看完整项目，点进作品看作者有没有附过程或源文件。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 60, 'github', 'software', 'GitHub', 'https://github.com', '代码托管', '代码,托管', '', '英文', '美国', '', '', 'GitHub 用来放代码仓库、看问题和发布版本。README 是一个仓库的入口，许可证在仓库根目录。
+
+没有许可证的代码默认不能随意用在自己的项目里。克隆之前先看 License 文件。', 1, 3, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 61, 'gitee', 'software', 'Gitee', 'https://gitee.com', '代码托管', '代码,托管', '', '中文', '中国', '', '', 'Gitee 是代码托管，国内访问通常比 GitHub 快，有些镜像仓库会放在这里。使用方式和 GitHub 类似：仓库、发行版、说明文件。
+
+镜像不一定跟上游同步。用之前对一下最后提交时间。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 62, 'docs-qq', 'software', '腾讯文档', 'https://docs.qq.com', '在线文档和表格', '文档,表格', '', '中文', '中国', '', '', '腾讯文档可以在线写文档、表格和幻灯片，链接分享给别人一起改。权限分可编辑和仅查看。
+
+重要文件不要只留在分享链接里。链接一关，别人就进不去，自己的账号里也要留一份。', 1, 6, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 63, 'feishu', 'software', '飞书', 'https://www.feishu.cn', '文档、表格和会议', '文档,会议', '', '中文', '中国', '', '', '飞书把文档、表格、会议和消息放在一起。文档可以按链接分享，权限分可编辑和仅查看。
+
+会议录制和文档不是同一个入口。会后要找录制，进会议历史，而不是在文档列表里翻。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 64, 'yuque', 'software', '语雀', 'https://www.yuque.com', '知识库和文档', '文档,知识库', '', '中文', '中国', '', '', '语雀用来写文档和知识库，适合把一组说明收成一本书。知识库可以公开，也可以只给成员。
+
+公开链接任何人都能看。内部流程不要放到公开知识库里。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 65, 'wps', 'software', 'WPS', 'https://www.wps.cn', '文字、表格和演示', '办公,文档', '', '中文', '中国', '', '', 'WPS 官网提供文字、表格和演示的官方下载，也有网页版。安装包从 wps.cn 下，不要用来源不明的绿色版。
+
+打开别人发来的文档时，先看是不是宏或外链。不认识的宏不要启用。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 66, 'meeting-tencent', 'software', '腾讯会议', 'https://meeting.tencent.com', '视频会议', '会议', '', '中文', '中国', '', '', '腾讯会议用来预约和加入视频会议。会议号在邀请里，入会前看清是不是要求密码。
+
+录制文件在会议结束后才出现，有时要等几分钟。找录制进历史会议，而不是在聊天记录里翻链接。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 67, 'microsoft', 'software', 'Microsoft', 'https://www.microsoft.com/zh-cn', '系统和官方软件', '系统,软件', '微软', '中文', '美国', '', '', '这是微软的中文官网，Windows、Office 和开发者工具从这里进官方下载。安装包优先在这个域名下，不要用搜索结果里的第三方打包站。
+
+系统版本和电脑架构要选对。64 位和 ARM 的安装包不能混。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 68, 'alipan', 'disk', '阿里云盘', 'https://www.alipan.com', '网盘', '网盘', '', '中文', '中国', '', '', '阿里云盘用来存文件，容量和上传速度按账号策略变化。文件在网页、客户端之间是同一份。
+
+适合放不常改的备份。正在多人一起改的文档，用在线文档或同步盘更合适。', 1, 7, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 69, 'pan-baidu', 'disk', '百度网盘', 'https://pan.baidu.com', '网盘', '网盘', '', '中文', '中国', '', '', '百度网盘用来存较大的文件，分享链接可以设提取码和有效期。非会员的下载速度会限。
+
+别人发来的链接先看大小和有效期。过期链接无法恢复，重要文件收到后另存到自己的网盘。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 70, 'pan-quark', 'disk', '夸克网盘', 'https://pan.quark.cn', '网盘', '网盘', '', '中文', '中国', '', '', '夸克网盘和夸克浏览器是一套账号，用来存文件和转存分享。界面比传统网盘简单。
+
+转存前看剩余容量。容量满了，转存会失败，但页面不一定把原因写在第一眼能看到的地方。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 71, 'jianguoyun', 'disk', '坚果云', 'https://www.jianguoyun.com', '同步盘', '同步盘,网盘', '', '中文', '中国', '', '', '坚果云是同步盘，改动会同步到登录了同一账号的电脑。适合正在写的文档和表格。
+
+安装包、视频和压缩包不要放进同步目录，它们几乎不改，却会占掉同步流量。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 72, 'cloud-189', 'disk', '天翼云盘', 'https://cloud.189.cn', '网盘', '网盘', '', '中文', '中国', '', '', '天翼云盘是中国电信的网盘，用来存文件和转存分享。容量和速度跟账号、本地网络有关。
+
+别人的分享先看有效期和提取码。过期后文件不在你的网盘里，需要对方重新分享。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 73, 'json', 'webtool', '格式化', 'https://www.json.cn', '在线 JSON 格式化', '代码,格式化', '', '中文', '中国', '', '', 'JSON.cn 把 JSON 整理成带缩进的样子，用来检查括号和逗号。打开后把内容贴进输入框即可。
+
+格式化不会改正语法错误。整理完如果仍报错，是内容本身有问题。不要把密钥和用户数据贴进去。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 74, 'tool-oschina', 'webtool', '加密解密', 'https://tool.oschina.net/encrypt', 'MD5 和 Base64', '摘要,加解密', '', '中文', '中国', '', '', '开源中国的在线工具可以做 MD5、SHA 和 Base64，用来核对一段文本的摘要或做编码转换。
+
+这里的摘要不是加密。要保密的内容不要只靠网页工具，也不要把密码贴进页面。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 75, 'tool-oschina-2', 'webtool', '进制转换', 'https://tool.oschina.net/hexconvert', '二、八、十、十六进制', '进制', '', '中文', '中国', '', '', '在二、八、十、十六进制之间换算，写代码和看颜色值时用得上。
+
+输入先确认没有多余的空格和 0x 前缀。前缀没去掉时，结果会对不上。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 76, 'matools', 'webtool', '时间戳', 'https://www.matools.com/timestamp', '时间和时间戳互转', '时间', '', '中文', '中国', '', '', '把 Unix 时间戳和可读时间互转。注意时间戳是秒还是毫秒，差一千倍就会差出几十年。
+
+和服务器对时间时，先确认两边用的是不是同一个时区。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 77, 'zhongguose', 'webtool', '颜色', 'https://zhongguose.com', '中国传统色对照', '颜色', '中国色', '中文', '中国', '', '', '中国色列出传统色名和对应的色值，对设计稿、取色时可以按名字找到 HEX。
+
+这是色名对照，不是把一种颜色写法换成另一种的计算器。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 78, 'zxgj', 'webtool', '计算器', 'https://www.zxgj.cn/g/jisuanqi', '在线计算器', '计算', '', '中文', '中国', '', '', '在线计算器做加减乘除。连续运算时看清上一次的结果有没有被清掉。
+
+它适合临时算一笔数，复杂公式用表格更不容易算错。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 79, 'c-runoob', 'webtool', '正则', 'https://c.runoob.com/front-end/854', '在线测试正则表达式', '正则,工具', '', '中文', '中国', '', '', '菜鸟教程的正则测试页用来试一条表达式能不能匹配样本。左边写表达式，右边贴要测的文本。
+
+先用一小段样本试，不要一上来贴整份日志。匹配结果和你在代码里用的语言可能有细微差别。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 80, 'zxgj-2', 'webtool', '人民币大写', 'https://www.zxgj.cn/g/rmbdaxie', '金额转中文大写', '金额', '', '中文', '中国', '', '', '把金额换成财务用的中文大写，例如发票和收据上的写法。
+
+转换前看小数位。一分和一元差在「角」「分」上，多一位小数结果就不同。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 81, 'baidu', 'query', '百度', 'https://www.baidu.com', '网页搜索', '搜索', '', '中文', '中国', '', '', '百度是网页搜索。结果里广告和自然结果混在前面，看标题旁有没有广告标记。
+
+查一个明确的网站时，搜索词里加上官网或域名，比只搜名字少碰到名字相近的站。', 1, 4, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 82, 'weather-com', 'query', '中国天气', 'https://www.weather.com.cn', '天气预报查询', '天气,查询', '', '中文', '中国', '', '', '中国天气网按城市给预报，能看到今天、七天和预警。城市要选到区，只选到省会会不准。
+
+出门看预警和风力，不要只看一个温度数字。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 83, '12306', 'query', '12306', 'https://www.12306.cn', '火车票查询', '火车票,查询', '', '中文', '中国', '', '', '12306 是火车票的官方查询和购票。车次、余票和车站以这里为准。
+
+购票需要登录。代抢和第三方客户端的余票可能延迟，对时间敏感的车次回到这个官网确认。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 84, 'kuaidi100', 'query', '快递100', 'https://www.kuaidi100.com', '快递物流查询', '快递,物流', '', '中文', '中国', '', '', '快递100 用来查物流，输入单号后会匹配快递公司。一个单号对应多家公司时，要手动选对那一家。
+
+物流停在某个网点超过两天，页面通常不会解释原因，需要用单号去快递公司自己的客服。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 85, 'amap', 'map', '高德地图', 'https://www.amap.com', '地图和路线', '地图,路线', '', '中文', '中国', '', '', '高德地图查地点、路线和实时路况。导航前看清是驾车、公交还是步行，三种路线差很多。
+
+地点重名时先对区县。只搜店名，经常会落到另一个城市的同名店。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 86, 'fanyi-baidu', 'translate', '百度翻译', 'https://fanyi.baidu.com', '在线翻译', '翻译', '', '中文', '中国', '', '', '百度翻译做中英和其他语言的互译，也可以翻译一段网页文本。专有名词和口语它经常译得很硬。
+
+合同、医疗和金额不要只靠这一版译文。关键句子用另一种译法再对一次。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 87, 'ctrip', 'query', '携程', 'https://www.ctrip.com', '机票和酒店', '机票,酒店', '', '中文', '中国', '', '', '携程查机票、火车票和酒店。价格和余票会变，下单前看退改规则和是否含税。
+
+火车票的官方余票以 12306 为准。两边不一致时，以 12306 的结果为准。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 88, 'umetrip', 'query', '航旅纵横', 'https://www.umetrip.com', '航班动态', '航班,查询', '', '中文', '中国', '', '', '航旅纵横查航班动态、登机口和延误。航班号比只搜城市更准。
+
+起飞前数据会改。登机口以机场当天的显示为准，前一天查到的口可能已经变了。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 89, 'finance-sina-com', 'query', '新浪外汇', 'https://finance.sina.com.cn/forex/', '汇率行情', '汇率', '', '中文', '中国', '', '', '新浪外汇看主要货币的参考行情，用来判断汇率的数量级。页面上的数字不是银行的成交价。
+
+换汇和跨境汇款以银行或支付工具给出的价格为准，这里只作对照。', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 90, 'tianyancha', 'query', '天眼查', 'https://www.tianyancha.com', '企业信息查询', '企业,查询', '', '中文', '中国', '', '', '天眼查查企业的工商信息、股东和风险提示。公开信息有滞后，刚办完的变更不一定已经显示。
+
+合作前对一下统一社会信用代码，不要只对名字。同名公司很多。', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 91, 'xe', 'query', 'XE 汇率', 'https://www.xe.com', '汇率换算', '汇率', 'XE', '英文', '加拿大', '', '', 'XE 用来看货币之间的参考汇率，适合出差和核对报价的数量级。页面上的数字不是银行的成交价。
+
+实际换汇会有点差。要转账时，以银行或支付工具给出的汇率为准。', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 92, 'kimi-moonshot', 'chat', 'Kimi', 'https://kimi.moonshot.cn', '长文对话', '对话,AI', '', '中文', '中国', '', '', 'Kimi 是月之暗面的对话产品，适合把一篇长文或一组材料交进去再提问。回答里的数字和出处需要自己点开核对。
+
+不要把密码、密钥和未公开的客户资料贴进对话框。', 1, 8, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 93, 'chat-deepseek', 'chat', 'DeepSeek', 'https://chat.deepseek.com', '对话和代码', '对话,AI', '', '中文', '中国', '', '', 'DeepSeek 是深度求索的对话产品，写代码和解释代码比较直接。模型版本在界面上能看到。
+
+它会把不确定的事说得很确定。引用事实、接口和命令时要另找来源，再在本地验证。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 94, 'yiyan-baidu', 'chat', '文心一言', 'https://yiyan.baidu.com', '对话', '对话,AI', '', '中文', '中国', '', '', '文心一言是百度的对话产品，中文问答和国内网站的上下文相对好接。回答里的链接点开再看，不要只看摘要。
+
+生成的步骤先小范围试。账号和百度的其他产品可能是一套登录。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 95, 'tongyi-aliyun', 'chat', '通义千问', 'https://tongyi.aliyun.com', '对话', '对话,AI', '千问', '中文', '中国', '', '', '通义千问是阿里的对话产品，中文材料和国内网站的上下文相对好接。界面里可以切换不同模型。
+
+生成的代码和步骤先在本地跑一遍，再决定要不要用。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 96, 'doubao', 'chat', '豆包', 'https://www.doubao.com', '对话', '对话,AI', '', '中文', '中国', '', '', '豆包是字节的对话产品，也可以做简单的图片和语音。日常问答够用，专业结论仍要核对。
+
+账号和抖音等产品可能打通。不想同步记录时，先看设置里的授权。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 97, 'yuanbao-tencent', 'chat', '腾讯元宝', 'https://yuanbao.tencent.com', '对话', '对话,AI', '', '中文', '中国', '', '', '腾讯元宝是腾讯的对话产品，可以基于上传的材料提问。材料越大，越要自己核对它引用的是哪一段。
+
+不要把密码、密钥和未公开的客户资料传上去。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 98, 'chatglm', 'chat', '智谱清言', 'https://chatglm.cn', '对话', '对话,AI', '', '中文', '中国', '', '', '智谱清言是智谱的对话产品，适合问答、改写和写一段代码草稿。界面里可以切换模型。
+
+代码先在本地跑通，再决定要不要留。它给出的库版本可能已经旧了。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 99, 'metaso', 'ai-search', '秘塔', 'https://metaso.cn', '带来源的搜索', '搜索,AI', '秘塔搜索', '中文', '中国', '', '', '秘塔搜索会给出带来源的摘要，适合先定位一篇文章或一个数据出自哪里。摘要不等于原文。
+
+引用之前点开来源。来源打不开或对不上时，不要把摘要当成已经核实的事实。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 100, 'jimeng-jianying', 'draw', '即梦', 'https://jimeng.jianying.com', 'AI 图片、视频与短剧画布，支持图生视频和首尾帧', '图像,视频', '', '中文', '中国', '', '', '即梦适合在一个项目里做图、试镜头，再把素材串成短片。已有角色图、产品图或分镜图，可以直接用作视频参考。做多镜头故事时，短剧画布能把剧本、图片、分镜视频和声音放在一起。
+
+### 即梦怎么让一张角色图动起来？
+
+在短剧画布放入角色图，用视频节点的图生视频功能。提示词先写主体动作，再写镜头变化。例如「红伞少女从画面右侧回头，镜头缓慢推近」。已有开场和结束两张图时，可用首尾帧，把两张图之间要发生的动作写清楚。一次先检查一个动作，方便判断是参考图还是动作描述需要调整。[即梦短剧画布手册](https://jimeng.jianying.com/tutorials/drama-studio/canvas)
+
+### 做多镜头短片，角色和分镜怎么管理？
+
+把角色、道具和场景图集中放在画布，后续镜头引用对应素材。计划在其他项目继续使用的角色或产品，可存进即梦资产库。剧本可以放在文本节点，画面满意后还能把片段送到多轨编辑器或剪映整理。[即梦官方画布与资产说明](https://jimeng.jianying.com/tutorials/drama-studio/canvas)', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 101, 'klingai', 'draw', '可灵', 'https://klingai.com', '快手 AI 视频与图片工具，支持图生视频、首尾帧和多镜头', '图像,视频', '', '中文', '中国', '', '', '可灵适合把一张图片变成短镜头，或从文字开始试动作和运镜。已有广告产品图、角色设定图或插画时，可以从图生视频开始。能否使用首尾帧、多镜头和参考元素，取决于选中的模型与模式。
+
+### 可灵图生视频什么时候用首尾帧？
+
+只有一张产品图时，用它设定起始画面，在提示词里写产品怎么动、镜头怎么走。需要明确结束画面时，例如从包装全景切到瓶身特写，可为支持该模式的模型补一张尾帧。两张图尽量保留同一个产品和可接续的角度，并写明缓慢推进还是快速转场。[快手官方首尾帧说明与界面示例](https://ir.kuaishou.com/system/files-encrypted/nasdaq_kms/assets/2025/05/08/22-27-07/%E5%8F%AF%E7%81%B5AI%E5%85%A8%E7%B3%BB%E6%A8%A1%E5%9E%8B%E8%BF%9B%E5%85%A52.0%E6%97%B6%E4%BB%A3%20%E8%AE%A9%E6%AF%8F%E4%B8%AA%E4%BA%BA%E9%83%BD%E8%83%BD%E7%94%A8AI%E8%AE%B2%E5%87%BA%E5%A5%BD%E6%95%85%E4%BA%8B%20v2.pdf)
+
+### 一段生成里能安排多个镜头吗？
+
+可灵的部分模型支持多镜头叙事，也可绑定参考元素来辅助保持主体一致。写多镜头时把动作分段，例如「全景：走进店里」「近景：把信放在柜台上」「特写：打开信封」。先在界面确认选中的模型有对应选项，再决定拆成几段生成。[快手官方多镜头与元素绑定说明](https://ir.kuaishou.com/zh-hant/node/11216/pdf)', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 102, 'yige-baidu', 'ai-ae0faa3203a9', '文心一格', 'https://yige.baidu.com', '图像', '图像,AI', '', '中文', '中国', '', '', '文心一格是百度的图像生成。输入画面内容、风格和比例，先出几张小图再决定要哪一张。
+
+生成图不能直接当成已经授权的素材。要商用时看清这一张的使用说明。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 103, '52pojie', 'software', '吾爱破解', 'https://www.52pojie.cn', '软件与安全社区', '软件,社区', '52pojie', '中文', '中国', '', '', '吾爱破解是软件和安全讨论社区，版面里有原创发布、软件交流和求助。下载附件前先看发布日期和下面的回复，来源不明的压缩包不要直接运行。
+
+找一个具体软件时用站内搜索。首页推荐盖不全，规则也会改。', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 104, 'iplaysoft', 'software', '异次元软件', 'https://www.iplaysoft.com', '软件介绍', '软件', '', '中文', '中国', '', '', '异次元软件介绍可以下载或在线用的软件，每篇通常写它解决什么问题、支持哪个系统。
+
+文章会过时。下载前对一下软件自己的官网和版本号，不要只凭旧文章里的链接。', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 105, 'apple-com', 'software', '苹果', 'https://www.apple.com.cn', '设备和官方软件', '软件,官网', 'Apple', '中文', '美国', '', '', '', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 106, 'bbs-pcbeta', 'software', '远景论坛', 'https://bbs.pcbeta.com', '电脑讨论', '论坛,电脑', 'PCBeta', '中文', '中国', '', '', '', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 107, 'notion', 'software', 'Notion', 'https://www.notion.so', '笔记和文档', '笔记,文档', '', '英文', '美国', '', '', '', 0, 0, 13, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 108, 'figma', 'software', 'Figma', 'https://www.figma.com', '界面设计', '设计', '', '英文', '美国', '', '', '', 0, 0, 14, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 109, 'linear', 'software', 'Linear', 'https://linear.app', '问题和项目', '项目,工具', '', '英文', '美国', '', '', '', 0, 0, 15, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 110, 'hellofont', 'res', '字由', 'https://www.hellofont.cn', '字体', '字体', '', '中文', '中国', '', '', '', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 111, 'maoken', 'res', '猫啃网', 'https://www.maoken.com', '可免费使用的字体', '字体', '', '中文', '中国', '', '', '', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 112, '1ppt', 'res', '第一PPT', 'https://www.1ppt.com', 'PPT 模板', '模板,PPT', '', '中文', '中国', '', '', '', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 113, 'ypppt', 'res', '优品PPT', 'https://www.ypppt.com', 'PPT 模板', '模板,PPT', '', '中文', '中国', '', '', '', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 114, 'officeplus', 'res', 'OfficePLUS', 'https://www.officeplus.cn', '微软官方模板', '模板', '', '中文', '中国', '', '', '', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 115, 'unsplash', 'res', 'Unsplash', 'https://unsplash.com', '可免费使用的照片', '图片', '', '英文', '美国', '', '', 'Unsplash 上的照片可以免费使用，作者在页面上。下载原图前看一眼尺寸，首页缩略图不代表原图分辨率。
+
+商用时仍要看这张图有没有商标、人脸和需要额外授权的元素。协议允许使用，不表示画面里的内容都没有权利人。', 0, 0, 6, 0, 0, 0, 'off', 0, @kaiwulu_init_at
+  UNION ALL SELECT 116, 'pexels', 'res', 'Pexels', 'https://www.pexels.com', '免费图片和视频', '图片', '', '英文', '美国', '', '', 'Pexels 提供免费图片和短视频，检索可以用英文关键词。中文搜得到的结果少。
+
+和 Unsplash 一样，先确认画面里的人物和商标能不能用在你的场景里。', 0, 0, 7, 0, 0, 0, 'off', 0, @kaiwulu_init_at
+  UNION ALL SELECT 117, '699pic', 'res', '摄图网', 'https://699pic.com', '图片素材', '素材', '', '中文', '中国', '', '', '', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 118, '588ku', 'res', '千库网', 'https://588ku.com', '设计素材', '素材', '', '中文', '中国', '', '', '', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 119, 'assrt', 'res', '伪射手', 'https://assrt.net', '字幕', '字幕', '', '中文', '中国', '', '', '', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 120, 'zimuku', 'res', '字幕库', 'https://zimuku.org', '字幕', '字幕', '', '中文', '中国', '', '', '', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 121, 'wegame-com', 'game', 'WeGame', 'https://www.wegame.com.cn', '腾讯游戏平台', '游戏,平台', '', '中文', '中国', '', '', '', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 122, 'store-epicgames', 'game', 'Epic', 'https://store.epicgames.com', '电脑游戏商店', '游戏,商店', '', '英文', '美国', '', '', '', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 123, 'xiaoheihe', 'game', '小黑盒', 'https://www.xiaoheihe.cn', '游戏社区', '游戏,社区', '', '中文', '中国', '', '', '', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 124, 'gamersky', 'game', '游民星空', 'https://www.gamersky.com', '游戏资讯', '游戏,资讯', '', '中文', '中国', '', '', '', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 125, '3dmgame', 'game', '3DM', 'https://www.3dmgame.com', '游戏资讯', '游戏,资讯', '', '中文', '中国', '', '', '', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 126, 'gcores', 'game', '机核', 'https://www.gcores.com', '游戏文化', '游戏', '', '中文', '中国', '', '', '', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 127, 'mihoyo', 'game', '米哈游', 'https://www.mihoyo.com', '游戏官网', '游戏', '', '中文', '中国', '', '', '', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 128, 'game-163', 'game', '网易游戏', 'https://game.163.com', '游戏官网', '游戏', '', '中文', '中国', '', '', '', 0, 0, 13, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 129, 'gog', 'game', 'GOG', 'https://www.gog.com', '无 DRM 游戏商店', '游戏,商店', '', '英文', '波兰', '', '', '', 0, 0, 14, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 130, 'itch', 'game', 'itch.io', 'https://itch.io', '独立游戏', '独立游戏', '', '英文', '美国', '', '', '', 0, 0, 15, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 131, 'battlenet-com', 'game', '暴雪战网', 'https://www.battlenet.com.cn', '暴雪游戏', '游戏', '战网', '中文', '美国', '', '', '', 0, 0, 16, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 132, 'bbs-nga', 'game', 'NGA', 'https://bbs.nga.cn', '游戏论坛', '论坛,游戏', '', '中文', '中国', '', '', '', 0, 0, 17, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 133, 'kurogames', 'game', '库洛游戏', 'https://www.kurogames.com', '游戏官网', '游戏', '', '中文', '中国', '', '', '', 0, 0, 18, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 134, 'ak-hypergryph', 'game', '鹰角网络', 'https://ak.hypergryph.com', '明日方舟官网', '游戏', '鹰角', '中文', '中国', '', '', '', 0, 0, 19, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 135, '8bitgo', 'game', '8BitGo', 'https://8bitgo.com', '老游戏在线玩', '老游戏在线玩,红白机', '', '中文', '中国', '', '', '8BitGo 在浏览器里玩红白机、GBA、Game Boy 和一部分 Flash、老手机游戏，不用先装模拟器。打开一款游戏再点开始。
+
+存档默认在这台浏览器里。换电脑或清掉站点数据，进度就没了。要换设备接着玩，先注册再看有没有云同步。', 0, 0, 20, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 136, 'laowanke', 'game', '老玩客', 'https://laowanke.com', '怀旧游戏在线玩', '老游戏在线玩,怀旧', '', '中文', '中国', '', '', '老玩客收的是 FC、超级任天堂、GBA、Game Boy、世嘉 MD 和街机，在网页里直接开。先选平台，再点具体的游戏。
+
+页面是繁体。按键说明在游戏页里，电脑用键盘，手机用屏幕上的键。', 0, 0, 21, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 137, 'classicemu', 'game', 'ClassicEmu', 'https://www.classicemu.com/zh_CN/', '红白机和 GBA 在线玩', '老游戏在线玩,FC,GBA', '', '中文', '', '', '', 'ClassicEmu 按平台放 NES、SNES、GBA、N64 这些老游戏，浏览器里打开就能玩，不用下载 ROM。先选平台或直接搜名字。
+
+有的游戏要等模拟器加载完才出画面。一直灰屏时刷新一次，或换 Chrome、Edge。', 0, 0, 22, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 138, 'dowhat', 'game', '飞雪实验室', 'https://dowhat.net/zh-CN/service/nes', 'FC 游戏在线玩', '老游戏在线玩,FC', 'DoWhat', '中文', '中国', '', '', '飞雪实验室这一页是 FC 在线模拟器，游戏列表可以直接搜。键盘、手柄和手机都能操作。
+
+ROM 来自网上整理，不是官方渠道。存档可以下到电脑，或记在浏览器里；游戏改名之后，旧存档对不上。', 0, 0, 23, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 139, 'photopea', 'webtool', 'Photopea', 'https://www.photopea.com', '在线修图', '修图,工具', '', '英文', '', '', '', '', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 140, 'tinypng', 'webtool', 'TinyPNG', 'https://tinypng.com', '压缩图片', '图片,工具', '', '英文', '', '', '', '', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 141, 'squoosh', 'webtool', 'Squoosh', 'https://squoosh.app', '压缩图片', '图片,工具', '', '英文', '美国', '', '', '', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 142, 'remove', 'webtool', 'remove.bg', 'https://www.remove.bg', '去掉图片背景', '图片,工具', '', '英文', '', '', '', '', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 143, 'cli', 'webtool', '草料二维码', 'https://cli.im', '生成二维码', '二维码', '', '中文', '中国', '', '', '', 0, 0, 13, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 144, 'app-diagrams', 'webtool', 'draw.io', 'https://app.diagrams.net', '流程图', '流程图', '', '英文', '', '', '', '', 0, 0, 14, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 145, 'excalidraw', 'webtool', 'Excalidraw', 'https://excalidraw.com', '手绘白板', '白板', '', '英文', '', '', '', '', 0, 0, 15, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 146, 'crontab', 'webtool', 'Cron表达式', 'https://crontab.guru', '定时表达式', '定时', 'crontab', '英文', '', '', '', '', 0, 0, 16, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 147, 'hoppscotch', 'webtool', 'Hoppscotch', 'https://hoppscotch.io', '调试接口', '接口', '', '英文', '', '', '', '', 0, 0, 17, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 148, 'carbon-now', 'webtool', 'Carbon', 'https://carbon.now.sh', '把代码做成图片', '代码', '', '英文', '', '', '', '', 0, 0, 18, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 149, 'ip138', 'query', 'IP查询', 'https://www.ip138.com', 'IP 和手机归属', 'IP,查询', 'ip138', '中文', '中国', '', '', '', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 150, 'beian-miit-gov', 'query', '备案查询', 'https://beian.miit.gov.cn', '网站备案', '备案', '工信部', '中文', '中国', '', '', '', 0, 0, 13, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 151, 'chsi-com', 'query', '学信网', 'https://www.chsi.com.cn', '学历查询', '学历', '', '中文', '中国', '', '', '', 0, 0, 14, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 152, 'gsxt-gov', 'query', '国家企业信用', 'https://www.gsxt.gov.cn', '企业信用公示', '企业', '', '中文', '中国', '', '', '', 0, 0, 15, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 153, 'wenshu-court-gov', 'query', '裁判文书网', 'https://wenshu.court.gov.cn', '判决文书', '文书', '', '中文', '中国', '', '', '', 0, 0, 16, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 154, 'etax-chinatax-gov', 'query', '个人所得税', 'https://etax.chinatax.gov.cn', '个税申报', '税务', '', '中文', '中国', '', '', '', 0, 0, 17, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 155, 'cainiao', 'query', '菜鸟', 'https://www.cainiao.com', '快递查询', '快递', '', '中文', '中国', '', '', '', 0, 0, 18, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 156, 'boc', 'query', '中国银行汇率', 'https://www.boc.cn/sourcedb/whpj/', '银行牌价', '汇率', '', '中文', '中国', '', '', '', 0, 0, 19, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 157, 'youbianku', 'query', '邮编库', 'https://www.youbianku.com', '邮政编码', '邮编', '', '中文', '中国', '', '', '', 0, 0, 20, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 158, 'lookup-icann', 'query', 'ICANN查询', 'https://lookup.icann.org', '域名注册信息', '域名', 'WHOIS', '英文', '美国', '', '', '', 0, 0, 21, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 159, 'chatgpt', 'chat', 'ChatGPT', 'https://chatgpt.com', '对话', '对话,AI', '', '英文', '美国', '', '', 'ChatGPT 是 OpenAI 的对话产品，能写草稿、改写和解释代码。国内网络有时打不开，打不开就换国内的对话产品。
+
+它会把不确定的事说得很确定。引用事实时另找来源。', 0, 0, 9, 0, 0, 0, 'off', 0, @kaiwulu_init_at
+  UNION ALL SELECT 160, 'claude', 'chat', 'Claude', 'https://claude.ai', '对话', '对话,AI', '', '英文', '美国', '', '', 'Claude 是 Anthropic 的对话产品，长文本的阅读和改写比较稳。国内网络有时打不开。
+
+输出要核对，不能直接当成已经查证的结论。', 0, 0, 10, 0, 0, 0, 'off', 0, @kaiwulu_init_at
+  UNION ALL SELECT 161, 'gemini-google', 'chat', 'Gemini', 'https://gemini.google.com', 'Google AI 助手，支持对话与文件分析', '对话,AI', '', '英文', '美国', '', '', 'Gemini 是 Google 的 AI 助手，可在网页上起草文字、改写、分析文件。比如把两份公开的 PDF 放在同一轮对话里，先让它分别概括，再按关注的几个问题比较差异。
+
+### Gemini 怎么读 PDF 和表格？
+
+在对话框旁添加文件，再说明要查什么。读报告时，可以要求按「结论、原文依据、页码」输出。看表格时，先请它写清用了哪些列、单位和筛选条件，再把关键数字回到原表复核。支持的文件和上传限额见 [Gemini 文件分析帮助](https://support.google.com/gemini/answer/14903178)。
+
+### Gemini 和 NotebookLM 怎么选？
+
+临时改一段文字或问一份附件，可以先用 Gemini 对话。若要围绕一组论文或课件反复提问、核对出处，适合把这些资料放进 [Gemini Notebook（原 NotebookLM）](/site/notebooklm-google)，日后继续在同一个笔记本里查。', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 162, 'xinghuo-xfyun', 'chat', '讯飞星火', 'https://xinghuo.xfyun.cn', '对话', '对话,AI', '星火', '中文', '中国', '', '', '', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 163, 'stepfun', 'chat', '阶跃', 'https://www.stepfun.com', '对话', '对话,AI', '阶跃星辰', '中文', '中国', '', '', '', 0, 0, 13, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 164, 'perplexity', 'ai-search', 'Perplexity', 'https://www.perplexity.ai', '带来源的搜索', '搜索,AI', '', '英文', '美国', '', '', '', 0, 0, 14, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 165, 'copilot-microsoft', 'chat', 'Copilot', 'https://copilot.microsoft.com', '微软个人版 AI 助手，支持网页问答与文件分析', '对话,AI', '', '英文', '美国', '', '', 'Microsoft Copilot 的个人网页入口是 copilot.microsoft.com，可以用来提问、起草内容，也可以上传支持的文件或图片让它分析。短任务可以直接在网页上开始，登录个人 Microsoft 账号后还能使用聊天记录等功能。
+
+### 网页版 Copilot 可以怎么用？
+
+拿一份公开的活动介绍试试，让它按「时间、地点、报名截止、费用」提取，缺失的项目标为未说明。看网页总结时，可以在 Edge 中用 Copilot 整理当前页面，再回原文核对数字和关键条款。功能入口和文件支持见 [Microsoft Copilot 功能说明](https://www.microsoft.com/en/microsoft-copilot/for-individuals/features)。
+
+### Copilot 和 Microsoft 365 Copilot 有什么区别？
+
+个人网页版适合日常问答和写作。想在 Word 或 Excel 里直接用 Copilot，要看 Microsoft 365 订阅及账号权限。工作或学校账号由组织管理，能否使用及能访问哪些资料取决于组织配置。可参照 [微软的版本说明](https://support.microsoft.com/en-us/microsoft-365-copilot/what-s-the-difference-between-microsoft-copilot-free-and-copilot-in-microsoft-365)。', 0, 0, 15, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 166, 'poe', 'chat', 'Poe', 'https://poe.com', '多模型 AI 聊天平台，可选 GPT、Claude 和 Gemini', '对话,AI', '', '英文', '美国', '', '', 'Poe 是 Quora 提供的多模型 AI 聊天平台，同一个账号可以体验 GPT、Claude、Gemini 等模型，也可以使用官方或用户创建的机器人。它适合用同一份任务对比几个模型的回答，或试用专门做图片、视频和写作的机器人。
+
+### Poe 怎么选模型？
+
+打开 [Poe 机器人目录](https://poe.com/explore)，搜索模型名，点进机器人就能看它适合做什么。想比较 GPT 和 Claude 的中文改写效果，可以分别新建对话，把同一段文字和同样的要求发过去，再对照事实有没有被改动、语气是否自然。新开对话可以避免之前的聊天内容影响比较。
+
+### Poe 免费吗？积分怎么扣？
+
+免费账号会收到每日积分，未使用的每日积分不会累积。各机器人扣分规则不同，有的按一次生成扣分，有的会随输入和输出长度变化。做长文总结或生成视频前，先点机器人的名称看具体规则，再决定用哪个模型。订阅提供更多积分和部分模型的使用权限。具体额度可查 [Poe 官方积分与机器人说明](https://help.poe.com/hc/en-us/articles/19944206309524-Poe-FAQs)。
+
+### 怎么创建自己的机器人？
+
+从 [创建机器人](https://poe.com/create_bot) 选择基础模型，写下它该怎么回答。例如，建一个中英文邮件修改助手，要求每次先列出容易误解的句子，再给出正式和简短两版。试用阶段可以先设为私有。更多创建方式见 [Poe 创作者文档](https://creator.poe.com/docs)。', 0, 0, 16, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 167, 'iflow', 'ai-office', '心流', 'https://iflow.cn', '知识问答', '问答', '', '中文', '中国', '', '', '心流是阿里的问答助手，适合查一个概念或把一篇材料问清楚。先把问题写具体，再看它给出的出处能不能点开。
+
+专业结论不要只留这一版。数字和条款另找原始页面核对。', 0, 0, 17, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 168, 'cp-baidu', 'ai-office', '橙篇', 'https://cp.baidu.com', '图文写作', '写作', '百度橙篇', '中文', '中国', '', '', '橙篇是百度的图文写作，适合起一篇稿子的提纲和配图。生成之后先改标题和事实，再考虑发出去。
+
+它会把不确定的背景写得很顺。引用之前自己核对来源。', 0, 0, 18, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 169, 'ima-qq', 'ai-office', 'ima', 'https://ima.qq.com', '个人知识库', '知识库', '', '中文', '中国', '', '', 'ima 是腾讯的个人知识库，把文章、文件丢进去再提问。适合反复查同一批材料，而不是当普通聊天用。
+
+回答只覆盖你放进去的内容。库是空的时候，它答不出你手头那份文件。', 0, 0, 19, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 170, 'notebooklm-google', 'ai-office', 'NotebookLM', 'https://notebooklm.google.com', 'Gemini Notebook，按来源做文档问答与音频概览', '知识库', '', '英文', '美国', '', '', 'NotebookLM 已更名为 Gemini Notebook，是 Google 的资料研究工具。把 PDF、网页或支持的 Google Drive 文件放进同一个笔记本，就可以围绕这组资料问问题、查看回答引用的原文，还可以生成音频概览和复习材料。
+
+### NotebookLM 怎么用来读论文？
+
+在 [Gemini Notebook](https://notebook.google.com/) 新建笔记本，把同一主题的几篇论文分别添加为来源。可以问「请按论文列出样本量、研究对象和结论，并给出原文引用」。随后点引用回到对应资料。只想核对其中一篇时，在来源面板只选那篇。操作可查 [Google 的来源管理说明](https://support.google.com/gemininotebook/answer/16215270) 和 [对话与引用帮助](https://support.google.com/gemininotebook/answer/16179559)。
+
+### 音频概览能做什么？
+
+音频概览可以把选中的资料整理成方便听的内容，适合通勤时回顾研究报告或课程。可以先生成一版听主要脉络，再回文档查专业名词、数字和原文限制。产品改名及功能变化见 [Google 的公告](https://blog.google/innovation-and-ai/products/gemini-notebook/notebooklm-gemini-notebook/)。', 0, 0, 20, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 171, 'coze', 'ai-6bf6d3f3d626', '扣子', 'https://www.coze.cn', '搭一个智能体', '智能体', 'Coze', '中文', '中国', '', '', '扣子用来搭一个能对话的小应用，选模型、写人设，再加插件。做好之后可以自己用，也可以发给别人。
+
+插件会访问外部数据。上线前用几个真实问题试一遍，看它会不会答非所问。', 0, 0, 21, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 172, 'feixianglaoshi', 'ai-office', '飞象老师', 'https://www.feixianglaoshi.com', '生成教学小应用', '教育', '', '中文', '中国', '', '', '飞象老师用一句话生成课堂里能打开的小应用，比如练习和互动页。先写清年级和要练的内容。
+
+生成页先自己点一遍。题目和答案对不上时，改提示再生成，不要直接发给学生。', 0, 0, 22, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 173, 'kukuai', 'ai-office', '库库AI', 'https://kukuai.cn', '问自己的文档', '文档', '库库', '中文', '中国', '', '', '库库AI用来问自己的文档、做摘要。先把文件放进去，再针对这一份提问。
+
+先确认问的是哪一份。同名文件很多时，打开错一份会得到另一份的答案。', 0, 0, 23, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 174, 'turbodesk-xfyun', 'ai-office', '讯飞绘文', 'https://turbodesk.xfyun.cn', '选题、配图和排版', '写作', '绘文', '中文', '中国', '', '', '讯飞绘文把选题、写稿、配图和排版放在一起，适合公众号这种图文。先定题目，再让它出提纲。
+
+配图和事实要自己看。发出去之前读一遍，专有名词经常会错。', 0, 0, 24, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 175, 'fellou', 'ai-6bf6d3f3d626', 'fellou', 'https://fellou.ai', '带任务的浏览器', '浏览器', '', '英文', '', '', '', 'fellou 是带任务的浏览器，可以让它按步骤打开网页、摘信息。国内网络有时打不开。
+
+它会替你点页面。涉及登录、付款的步骤不要交给它自动做完。', 0, 0, 25, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 176, 'tabbit', 'ai-6bf6d3f3d626', 'Tabbit', 'https://www.tabbit.com', '带问答的浏览器', '浏览器', '', '中文', '中国', '', '', 'Tabbit 是带问答的浏览器，可以按当前页面追问，也可以让它按步骤办事。电脑端要下载客户端。
+
+问答跟着你打开的页面走。换了一个标签，先看它是不是还在答上一页。', 0, 0, 26, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 177, 'codeflying', 'ai-code', '码上飞', 'https://www.codeflying.net', '用中文生成小程序', '小程序', '', '中文', '中国', '', '', '码上飞用中文描述生成微信小程序、网页这类应用。先把要有的页面和按钮说清楚。
+
+生成结果是初稿。支付、登录和数据能不能用，要在预览里自己点一遍。', 0, 0, 27, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 178, 'miaoda', 'ai-code', '秒哒', 'https://www.miaoda.cn', '用中文生成应用', '应用', '', '中文', '中国', '', '', '秒哒用中文描述生成一个能打开的小应用。适合先看一个想法长什么样，不是直接上线。
+
+预览通过再考虑发布。账号、支付这些部分通常还要自己补。', 0, 0, 28, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 179, 'xyq-jianying', 'draw', '小云雀', 'https://xyq.jianying.com', 'AI 视频与图片创作，支持文生视频、图生视频和短剧分镜', '视频,AI', '', '中文', '中国', '', '', '小云雀是抖音旗下的网页端 AI 创作工具。可以输入文字描述或上传参考图片生成视频，也能生成图片。已有剧本的创作者可以用短剧功能整理角色、场景和分镜。
+
+### 小云雀怎么开始做视频？
+
+做一条短片，可以先描述画面和动作，或上传图片作为参考。做短剧或漫剧时，可以粘贴剧本，也可以导入 TXT 或 DOCX 文件，再按场景和分镜继续制作。
+
+参考资料：[小云雀官网](https://xyq.jianying.com/) · [小云雀 Web 官方产品手册](https://xyq.jianying.com/tutorials/web-manual)。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 180, 'capcut', 'draw', '剪映', 'https://www.capcut.cn', '视频剪辑', '视频', 'CapCut', '中文', '中国', '', '', '', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 181, 'hailuoai', 'draw', '海螺AI', 'https://hailuoai.com', '视频', '视频,AI', '海螺', '中文', '中国', '', '', '', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 182, 'suno', 'ai-audio', 'Suno', 'https://suno.com', '音乐', '音乐,AI', '', '英文', '美国', '', '', '', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 183, 'midjourney', 'draw', 'Midjourney', 'https://www.midjourney.com', '图像', '图像,AI', 'MJ', '英文', '美国', '', '', '', 0, 0, 8, 0, 0, 0, 'off', 0, @kaiwulu_init_at
+  UNION ALL SELECT 184, 'runwayml', 'draw', 'Runway', 'https://runwayml.com', '视频', '视频,AI', '', '英文', '美国', '', '', '', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 185, 'leonardo', 'ai-ae0faa3203a9', 'Leonardo', 'https://leonardo.ai', '图像', '图像,AI', '', '英文', '', '', '', '', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 186, 'tongyi-aliyun-2', 'ai-ae0faa3203a9', '通义万相', 'https://tongyi.aliyun.com/wanxiang', '图像和视频', '图像,AI', '万相', '中文', '中国', '', '', '', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 187, 'xiaomengai', 'ai-office', '彩云小梦', 'https://www.xiaomengai.com', 'AI小说', 'AI小说', '', '中文', '中国', '', '', '彩云小梦用来写 AI小说，你起一个开头，它按言情、玄幻这些风格往下续。也可以先设人物和世界观，再让它接着写。
+
+续写只是草稿。人名、前后情节对不上时，自己改一版再往下接。', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 188, 'moyin', 'ai-audio', '魔音工坊', 'https://www.moyin.com', 'AI配音', 'AI配音', '', '中文', '中国', '', '', '魔音工坊做 AI配音，把文案读成不同的声音，可以调多音字、停顿和语速。适合给短视频和有声稿试听。
+
+先听完一整段再导出。专有名词读错时，在那一句上改读音，不要整段重来。', 0, 0, 13, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 189, 'zhuque', 'ai-office', '朱雀', 'https://matrix.tencent.com/ai-detect/', 'AIGC检测', 'AIGC检测', '朱雀AI检测', '中文', '中国', '', '', '朱雀做 AIGC检测，判断一段文字或一张图是不是模型生成的。打开后选文本或图像，贴进去等结果。
+
+结果是参考，不是结论。论文和稿件要不要用，还是按学校或单位自己的规定。', 0, 0, 14, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 190, 'tusi', 'ai-ae0faa3203a9', '吐司', 'https://tusi.cn', 'AI绘画', 'AI绘画', 'tusi', '中文', '中国', '', '', '吐司是 AI绘画的模型社区，可以在网页里选模型生图，也能看别人分享的模型和示例。先看示例图，再决定用哪一个模型。
+
+同一句描述换模型，画面差很多。不满意先换模型，不要只反复点生成。', 0, 0, 15, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 191, 'oiioii', 'draw', 'OiiOii', 'https://www.oiioii.ai', 'AI 动画制作工具，支持剧本、角色设计、分镜和多镜头成片', '动画', '', '英文', '', '', '', 'OiiOii 可以从文字构思、已有剧本或角色图开始制作动画。它的 Story Video 工作流适合做有多个镜头的故事，例如同一角色在不同场景里连续出场。只想让一张插画动起来，可以直接用图生视频。
+
+### OiiOii 怎么做一段故事动画？
+
+进入官网的 Story Video，输入故事梗概，或上传已有剧本。先确认剧本和画风，再检查角色与场景。在分镜阶段，可以在同一段对话里要求调整动作、构图或镜头顺序，确认后再生成片段并合成。第一次试用可以先做三个镜头，例如「猫走进雨巷、发现湿透的纸船、把纸船推回水沟」。先看三个镜头能否讲清楚故事，再生成视频。[官方动画制作指南](https://www.oiioii.ai/en/ai-animation-generator)
+
+### 同一个角色怎么在多个镜头里出现？
+
+把满意的角色设定保存为素材。做后续故事时，在创作对话里用「@」引用该素材，也可以用同样的方法复用场景。这个功能让后续生成有同一份角色和场景参考，结果仍会随模型和镜头变化。生成前可以先在分镜里核对服装、道具和场景是否接得上。[角色与场景复用说明](https://www.oiioii.ai/en/ai-animation-generator)
+
+### 可以免费试用吗？
+
+官方说明分镜和视频生成都会消耗积分，免费积分足够时可以用来试做。不同模型的积分消耗不同，做多镜头动画前，先看所选模型的消耗和当前余额。[官方积分说明](https://app.oiioii.art/features/video-generation) · [会员与积分价格](https://www.oiioii.ai/price)', 0, 0, 16, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 192, 'laper', 'draw', 'Laper', 'https://laper.ai', '剧本格式', '剧本', '', '英文', '', '', '', 'Laper 把故事整理成剧本格式，适合先把对白和场景分开。写完可以导出，再进别的工具做分镜。
+
+格式对了不等于能拍。场次、时间和人物表自己再对一遍。', 0, 0, 17, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 193, 'miaoyaai', 'ai-ae0faa3203a9', '妙呀', 'https://www.miaoyaai.cn', '潮玩设计', '设计', '', '中文', '中国', '', '', '妙呀用来设计潮玩和形象，从描述或草图出一版造型。适合先看几个方向，再决定做哪一个。
+
+导出前看清授权。要拿去生产时，以平台当前的使用说明为准。', 0, 0, 18, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 194, 'ihuiwa', 'ai-ae0faa3203a9', '绘蛙', 'https://www.ihuiwa.com', '商品图和模特', '电商', '', '中文', '中国', '', '', '绘蛙做商品图和虚拟模特，把衣服或商品套到画面上。先上传清楚的产品图。
+
+模特和背景是生成的。细节、Logo 和颜色跟实物不一致时，换一张原图重来。', 0, 0, 19, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 195, 'wuli', 'draw', '呜哩', 'https://wuli.art', '图像和视频', '图像', '', '中文', '', '', '', '呜哩可以按文字出图或出视频。先写主体和画面，再看这一次是图还是视频。
+
+次数和清晰度以页面上的说明为准。不满意先改描述，不要只反复点生成。', 0, 0, 20, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 196, 'vidu', 'draw', 'Vidu', 'https://www.vidu.cn', 'AI 视频生成工具，支持多主体参考、图生视频和首尾帧', '视频', '', '中文', '中国', '', '', 'Vidu 由生数科技推出。手里只有文字，可以从文生视频开始。有一张现成画面，可以用图生视频。需要把已有的角色、道具或场景作为参考，则适合先看参考生视频。不同模型支持的输入和模式有所不同。
+
+### Vidu 的参考生视频和首尾帧怎么选？
+
+参考生视频适合指定镜头里要保留的主体。比如手里有小猫设定图和红色行李箱图，可以把两张素材分别作为参考，描述小猫如何推着行李箱穿过站台。首尾帧适合已经确定起止构图的镜头，例如开场是关着的门，结束是打开的门，并补充镜头是否跟随人物进入房间。[Vidu 官方功能清单](https://platform.vidu.cn/docs/function-list) · [首尾帧官方说明](https://platform.vidu.cn/docs/start-end-to-video)
+
+### 连做几段镜头，先核对什么？
+
+选支持参考生视频的模型，给同一角色沿用同一份主体素材，每段只改动作或构图。先做一个短镜头，核对角色辨识度和动作，再继续生成下一段。参考、多主体和首尾帧的可用组合可以查官方模型表，网页编辑器的实际选项以界面为准。[Vidu 官方模型表](https://platform.vidu.cn/docs/model-map)', 0, 0, 21, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 197, 'chanjing', 'draw', '蝉镜', 'https://www.chanjing.cc', '数字人出镜', '数字人', '', '中文', '中国', '', '', '蝉镜用数字人出镜，把文案读成一段口播视频。先写稿，再选形象和声音。
+
+口型和专有名词要听完。错了改那一句，不要整段重录才发现。', 0, 0, 22, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 198, 'haimian', 'ai-audio', '海绵音乐', 'https://www.haimian.com', '写一首歌', '音乐', '', '中文', '中国', '', '', '海绵音乐用来写歌和改编，用一句话生成一首，也可以改词。打开就能试。
+
+生成的旋律和歌词都要再听一遍。要发布时看清这首能不能商用。', 0, 0, 23, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 199, 'tianyin-music-163', 'ai-audio', '网易天音', 'https://tianyin.music.163.com', '写歌和编曲', '音乐', '天音', '中文', '中国', '', '', '网易天音用来写歌和编曲，可以按风格出一版旋律。登录用网易账号。
+
+先听完整段再导出。某一句词不对时，只改那一句。', 0, 0, 24, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 200, 'y-qq-2', 'ai-audio', '未音', 'https://y.qq.com/vemus', '写歌和发行', '音乐', 'Vemus', '中文', '中国', '', '', '未音是腾讯的写歌和发行页面，可以生成歌曲再看发行流程。登录用 QQ 音乐相关账号。
+
+生成和发行是两步。没看清权利说明之前，不要点发布。', 0, 0, 25, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 201, 'audioeditor-ximalaya', 'ai-audio', '音剪', 'https://audioeditor.ximalaya.com', '音频剪辑', '音频', '', '中文', '中国', '', '', '音剪是喜马拉雅的音频剪辑，用来剪口播、去口气和加背景。打开工程前先看支持的格式。
+
+导出前从头听一遍。剪掉的气口太多，句子会接不上。', 0, 0, 26, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 202, 'voicepica-aliyun', 'ai-audio', '伶鹊', 'https://voicepica.aliyun.com', '语音合成', '配音', '', '中文', '中国', '', '', '伶鹊是阿里云的语音合成，把文字读成不同的声音。先选音色，再贴文案。
+
+多音字和数字要听一下。读错的词在那一句上改，不要整篇重来。', 0, 0, 27, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 203, 'yizhi-iflyrec', 'ai-audio', '讯飞译制', 'https://yizhi.iflyrec.com', '视频翻译和配音', '字幕', '译制', '中文', '中国', '', '', '讯飞译制给视频加字幕、翻译和配音。先上传成片，再选语言。
+
+字幕时间轴对一下画面。专有名词的译法自己改，不要直接交出去。', 0, 0, 28, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 204, 'seede', 'ai-ae0faa3203a9', 'Seede', 'https://seede.ai', '排版成海报', '设计', '', '中文', '', '', '', 'Seede 把一段文字排成海报或长图，不用先写绘画提示词。适合已经有文案、缺一个版式的时候。
+
+排出来先看有没有字被裁掉。字太多就先删文案，再重新排。', 0, 0, 29, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 205, 'd', 'ai-ae0faa3203a9', '堆友', 'https://d.design', '绘画和三维素材', '绘画', '', '中文', '中国', '', '', '堆友可以在网页里按不同风格生图，也有三维素材可以看。先看示例，再决定用哪一种风格。
+
+同一句描述换风格，结果差很多。不满意先换风格，不要只重复生成。', 0, 0, 30, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 206, 'studio-tripo3d', 'ai-ae0faa3203a9', 'Tripo', 'https://studio.tripo3d.com', '图片生成三维', '三维', '', '英文', '', '', '', 'Tripo 用文字或一张图生成三维模型，适合先看一个物体的体积。国内网络有时较慢。
+
+模型只是初稿。要拿去打印或放进游戏，先看面数和破面。', 0, 0, 31, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 207, 'miaohua-sensetime', 'ai-ae0faa3203a9', '秒画', 'https://miaohua.sensetime.com', '中文绘画', '绘画', '商汤秒画', '中文', '中国', '', '', '秒画用中文描述出图，不用先把提示词写成英文。先选风格，再写画面里有什么。
+
+文字和手经常会错。画面里需要准确文字时，后期自己加上。', 0, 0, 32, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 208, 'admuse-qq', 'ai-ae0faa3203a9', '妙思', 'https://admuse.qq.com', '营销海报', '海报', '腾讯妙思', '中文', '中国', '', '', '妙思用来做营销海报和广告画面。先写清产品和要放的一句话。
+
+海报上的价格、日期和 Logo 必须自己核对。生成图里的小字经常是错的。', 0, 0, 33, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 209, 'designkit', 'ai-ae0faa3203a9', '美图设计室', 'https://www.designkit.cn', '商品图和海报', '设计', '设计室', '中文', '中国', '', '', '美图设计室做商品图、海报和抠图，模板比较多。先选一个接近的模板，再换上自己的图。
+
+抠图边缘看一下头发和透明物体。导出前对一下尺寸是不是店铺要的那一档。', 0, 0, 34, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 210, 'lovart', 'ai-ae0faa3203a9', 'Lovart', 'https://www.lovart.ai/zh', '设计稿', '设计', '', '中文', '', '', '', 'Lovart 用对话改设计稿，适合把一张海报来回调整。中文页面在 /zh。
+
+每一版都先看文字有没有被改掉。满意的那一版及时下载。', 0, 0, 35, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 211, 'medeo', 'draw', 'Medeo', 'https://www.medeo.app', '把想法剪成视频', '视频', '', '英文', '', '', '', 'Medeo 把一段想法或素材剪成视频。先给它文案或画面，再看它排出来的镜头。
+
+成片只是草稿。字幕、节奏和用到的素材权利要自己再看一遍。', 0, 0, 36, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 212, 'aippt', 'ai-office', 'AiPPT', 'https://www.aippt.cn', '生成演示文稿', 'PPT', '', '中文', '中国', '', '', 'AiPPT 用一个题目生成一套演示文稿。先把大纲改对，再让它铺页面。
+
+生成页里的数据和引用经常是凑的。对外使用前换成你自己的数字。', 0, 0, 37, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 213, 'liblib', 'draw', 'LibTV', 'https://www.liblib.tv', '剧本到成片', '视频,分镜', '哩布视频', '中文', '中国', '', '', 'LibTV 是哩布的视频工作台，把剧本、分镜、出图和出视频放在一张画布上。先写一段剧情，再往下拆镜头。
+
+画布上的每一步都能单独重做。人物前后对不上时，先固定角色，再生成下一镜。', 0, 0, 38, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 214, 'seko-sensetime', 'draw', 'Seko', 'https://seko.sensetime.com', '短剧成片', '短剧', '', '中文', '中国', '', '', 'Seko 是商汤的短片工具，从想法做到成片，也可以按剧集往下做。先把角色和故事说清楚。
+
+成片先看角色是不是同一个人。变了就回到那一镜重做，不要整集重来。', 0, 0, 39, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 215, 'ai-jurilu', 'draw', '巨日禄', 'https://ai.jurilu.com', '漫剧和推文', '漫剧', '', '中文', '中国', '', '', '巨日禄用来把小说或长文拆成漫剧，分镜、画面和配音在一个流程里。先贴一段原文。
+
+导出前对一下人名和情节。原文很长时，先截一段试，再决定要不要整篇做。', 0, 0, 40, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 216, 'aibrm', 'draw', '白日梦', 'https://aibrm.com', '故事生成视频', '视频', '白日梦AI', '中文', '中国', '', '', '白日梦用一段故事生成视频。先写故事，再定出镜的角色，然后看它排出的镜头。
+
+先看前几秒角色有没有变。变了就换回同一个角色，再生成后面的镜头。', 0, 0, 41, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 217, 'tapnow', 'draw', 'TapNow', 'https://www.tapnow.ai', '画布上编排视频', '视频', '', '英文', '', '', '', 'TapNow 在一张画布上把文字、图片和视频串起来。适合先摆素材，再决定哪一步生成。
+
+节点多了会乱。先把一条故事线跑通，再加别的分支。', 0, 0, 42, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 218, 'flova', 'draw', 'Flova', 'https://www.flova.ai/zh-CN', '动画和短片', '动画', '', '中文', '', '', '', 'Flova 用对话把动画和短片从剧本做到成片。中文页面在 /zh-CN。先说要什么样的片子。
+
+中间某一步不对，就只改那一步。不要整段推倒重来。', 0, 0, 43, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 219, 'anishort', 'draw', 'AniShort', 'https://anishort.ai', '短剧协作', '短剧', '', '英文', '中国', '', '', 'AniShort 给短剧项目一起改剧本和画面。先建一个项目，再把人物和镜头放进去。
+
+两个人同时改同一个镜头时，后保存的会盖住前一份。改之前先说好谁动哪一段。', 0, 0, 44, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 220, 'namistory', 'draw', '纳米大片', 'https://www.namistory.com', '漫剧流水线', '漫剧', '', '中文', '中国', '', '', '纳米大片把小说或剧本走成漫剧视频，分镜和成片在一条流水线里。先贴文本。
+
+生成结果先看画风是否统一。不统一就先定风格，再继续后面的内容。', 0, 0, 45, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 221, 'chatglm-2', 'draw', '智谱清影', 'https://chatglm.cn/video', '文字或图片出视频', '视频', '清影', '中文', '中国', '', '', '智谱清影在智谱清言里，用文字或一张图出一段短视频。打开视频页，写画面或上传首帧。
+
+它出的是单个镜头。要连成一部片子，得自己把几段接到剪辑软件里。', 0, 0, 46, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 222, 'taobao', 'shop', '淘宝', 'https://www.taobao.com', '购物', '购物', '', '中文', '中国', '', '', '', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 223, 'tmall', 'shop', '天猫', 'https://www.tmall.com', '品牌购物', '购物', '', '中文', '中国', '', '', '', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 224, 'jd', 'shop', '京东', 'https://www.jd.com', '购物', '购物', '', '中文', '中国', '', '', '', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 225, 'pinduoduo', 'shop', '拼多多', 'https://www.pinduoduo.com', '购物', '购物', '', '中文', '中国', '', '', '', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 226, 'goofish', 'shop', '闲鱼', 'https://www.goofish.com', '二手', '二手', '', '中文', '中国', '', '', '', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 227, 'vip', 'shop', '唯品会', 'https://www.vip.com', '品牌特卖', '购物', '', '中文', '中国', '', '', '', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 228, 'zhipin', 'job', 'BOSS直聘', 'https://www.zhipin.com', '招聘', '招聘', 'BOSS', '中文', '中国', '', '', '', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 229, 'zhaopin', 'job', '智联招聘', 'https://www.zhaopin.com', '招聘', '招聘', '智联', '中文', '中国', '', '', '', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 230, '51job', 'job', '前程无忧', 'https://www.51job.com', '招聘', '招聘', '51job', '中文', '中国', '', '', '', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 231, 'lagou', 'job', '拉勾', 'https://www.lagou.com', '互联网招聘', '招聘', '', '中文', '中国', '', '', '', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 232, 'liepin', 'job', '猎聘', 'https://www.liepin.com', '招聘', '招聘', '', '中文', '中国', '', '', '', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 233, 'eastmoney', 'finance', '东方财富', 'https://www.eastmoney.com', '股票行情', '股票', '', '中文', '中国', '', '', '', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 234, '10jqka-com', 'finance', '同花顺', 'https://www.10jqka.com.cn', '股票行情', '股票', '', '中文', '中国', '', '', '', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 235, 'xueqiu', 'finance', '雪球', 'https://xueqiu.com', '投资社区', '投资', '', '中文', '中国', '', '', '', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 236, 'finance-sina-com-2', 'finance', '新浪财经', 'https://finance.sina.com.cn', '财经新闻', '财经', '', '中文', '中国', '', '', '', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 237, 'cn-investing', 'finance', '英为财情', 'https://cn.investing.com', '全球行情', '行情', 'Investing', '中文', '', '', '', '', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 238, 'thepaper', 'news', '澎湃新闻', 'https://www.thepaper.cn', '新闻', '新闻', '澎湃', '中文', '中国', '', '', '', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 239, 'news', 'news', '新华网', 'https://www.news.cn', '新闻', '新闻', '', '中文', '中国', '', '', '', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 240, 'cctv', 'news', '央视网', 'https://www.cctv.com', '新闻和直播', '新闻', '央视', '中文', '中国', '', '', '', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 241, 'zaobao', 'news', '联合早报', 'https://www.zaobao.com', '新闻', '新闻', '', '中文', '新加坡', '', '', '', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 242, 'bbc', 'news', 'BBC', 'https://www.bbc.com', '新闻', '新闻', '', '英文', '英国', '', '', '', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 243, 'weibo', 'community', '微博', 'https://weibo.com', '社交媒体', '社区', '', '中文', '中国', '', '', '', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 244, 'douban', 'community', '豆瓣', 'https://www.douban.com', '书影音和小组', '社区', '', '中文', '中国', '', '', '', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 245, 'tieba-baidu', 'community', '百度贴吧', 'https://tieba.baidu.com', '论坛', '论坛', '贴吧', '中文', '中国', '', '', '', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 246, 'xiaohongshu', 'community', '小红书', 'https://www.xiaohongshu.com', '笔记', '社区', '', '中文', '中国', '', '', '', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 247, 'okjk', 'community', '即刻', 'https://okjk.co', '兴趣社区', '社区', '', '中文', '中国', '', '', '', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 248, 'reddit', 'community', 'Reddit', 'https://www.reddit.com', '论坛', '论坛', '', '英文', '美国', '', '', '', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 249, 'discord', 'community', 'Discord', 'https://discord.com', '群组', '群组', '', '英文', '美国', '', '', '', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 250, 'x', 'community', 'X', 'https://x.com', '社交媒体', '社区', '推特', '英文', '美国', '', '', '', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 251, 'mail-qq', 'mail', 'QQ邮箱', 'https://mail.qq.com', '邮箱', '邮箱', '', '中文', '中国', '', '', '', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 252, 'mail-163', 'mail', '网易邮箱', 'https://mail.163.com', '邮箱', '邮箱', '163邮箱', '中文', '中国', '', '', '', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 253, 'outlook-live', 'mail', 'Outlook', 'https://outlook.live.com', '邮箱', '邮箱', '', '英文', '美国', '', '', '', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 254, 'mail-google', 'mail', 'Gmail', 'https://mail.google.com', '邮箱', '邮箱', '', '英文', '美国', '', '', '', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 255, 'sou-yun', 'learn', '搜韵', 'https://sou-yun.cn', '古诗词在线查询', '古诗词在线查询', '', '中文', '中国', '', '', '搜韵做古诗词在线查询，可以按诗题、作者、词牌和韵部找句子。先搜原句，再看它收在哪一首里。
+
+注释和赏析不是每一首都有。对不准的字，换一种写法再搜一次。', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 256, 'shufazidian', 'learn', '书法字典', 'https://www.shufazidian.com', '在线书法篆刻字典', '在线书法篆刻字典', '', '中文', '中国', '', '', '书法字典收在线书法篆刻字典，楷书、行书、草书、隶书和篆书按书体分。点开单字图片可以放大。
+
+同一个字在不同碑帖里写法不一样。集字之前先看清是哪一种书体。', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 257, 'shuge', 'learn', '书格', 'https://www.shuge.org', '古籍在线阅读', '古籍在线阅读', '', '中文', '中国', '', '', '书格做古籍在线阅读，收的是可以公开浏览的刻本、抄本和扫描件。先搜书名，再打开某一册。
+
+扫描件很大，翻页会慢。要引用时记下书名、卷数和页。', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 258, 'xyzrank', 'music', '中文播客榜', 'https://xyzrank.com', '小众播客推荐', '小众播客推荐', '播客榜', '中文', '中国', '', '', '中文播客榜按订阅和热度列小众播客推荐，节目页能看到平台和订阅数。榜单会变，先看它统计的是哪一周。
+
+排名高不等于适合你。点进节目听一集，再决定要不要订阅。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 259, 'streetvoice', 'music', '街声', 'https://streetvoice.com', '独立音乐', '独立音乐', 'StreetVoice', '中文', '中国', '', '', '街声放独立音乐，音乐人自己上传歌曲。可以按曲风和音乐人找，也可以听别人列的歌单。
+
+有的歌只在这个站上。换到曲库更大的平台搜同名，经常找不到同一首。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 260, 'onlinepianist', 'music', 'OnlinePianist', 'https://www.onlinepianist.com/virtual-piano', '在线钢琴', '在线钢琴', '', '英文', '', '', '', 'OnlinePianist 是在线钢琴，用键盘或点屏幕上的键就能弹，不用安装。电脑键盘和钢琴键的对应写在页面上。
+
+浏览器要允许声音。没声音时先点一下页面，再看是不是静音。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 261, 'bishun', 'query', '笔顺网', 'https://bishun.net', '汉字笔顺', '汉字笔顺', '', '中文', '中国', '', '', '笔顺网查汉字笔顺。输入一个字，看笔画顺序和动画。规则按《现代汉语通用字笔顺规范》。
+
+生僻字如果没有动画，先确认是不是简体。繁体和异体要分开查。', 0, 0, 22, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 262, 'nongli', 'query', '农历网', 'https://www.nongli.com', '黄历查询', '黄历查询', '', '中文', '中国', '', '', '农历网做黄历查询，公历和农历可以互查，也能看某一天的节气。先选年份和日期。
+
+宜忌是历书上的旧注。安排事情以你自己的时间为准。', 0, 0, 23, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 263, 'xiangyinge', 'webtool', '乡音阁', 'https://xiangyinge.com/zh', '方言转换', '方言转换', '', '中文', '中国', '', '', '乡音阁做方言转换，把一段文字读成粤语、四川话、东北话这类方言，也可以把方言语音转成文字。不登录能试几次。
+
+听完再发出去。方言和音色对不上时，换一个音色。', 0, 0, 19, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 264, 'morsekit', 'webtool', 'MorseKit', 'https://morsekit.com/zh', '摩斯电码翻译器', '摩斯电码翻译器', '摩斯电码', '英文', '', '', '', 'MorseKit 是摩斯电码翻译器，文字和点划可以互转，也能听声音。速度可以调。
+
+中文不能直接编码。先写成拼音或英文，再转成电码。', 0, 0, 20, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 265, 'hi8', 'webtool', '五笔练习', 'https://hi8.com/g/wubi', '在线五笔打字', '在线五笔打字', '86版五笔', '中文', '中国', '', '', '五笔练习做在线五笔打字，按 86 版字根出题，有字根、口诀、一级简码和单字。打开就能练。
+
+98 版和 86 版键位不一样。这个页面是 86 版。', 0, 0, 21, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 266, 'huemint', 'design', 'Huemint', 'https://huemint.com', '在线配色生成器', '在线配色生成器', '', '英文', '', '', '', 'Huemint 是在线配色生成器。输入一个颜色或一段描述，它给出一组能一起用的色值，色值可以复制。
+
+生成结果只是建议。放到真实页面上看对比，再决定用不用。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 267, 'roll20', 'game', 'Roll20', 'https://roll20.net', '在线跑团', '在线跑团', '', '英文', '美国', '', '', 'Roll20 用来在线跑团，房间里有地图、骰子和角色卡。房主先建房间，再把链接发给一起玩的人。
+
+免费房间有数量限制。规则书不在站里，要自己准备。', 0, 0, 24, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 268, 'mail-10086', 'mail', '139邮箱', 'https://mail.10086.cn', '邮箱', '邮箱', '移动邮箱', '中文', '中国', '', '', '139邮箱是中国移动的邮箱，手机号就能登录。收件箱和短信提醒在同一个账号下。
+
+附件大小有限制。大文件先传到网盘，再把链接贴进邮件。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 269, 'mail-sina-com', 'mail', '新浪邮箱', 'https://mail.sina.com.cn', '邮箱', '邮箱', '', '中文', '中国', '', '', '新浪邮箱用来收发邮件。登录页认清是 mail.sina.com.cn，不要从搜索广告进。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 270, 'mail-aliyun', 'mail', '阿里邮箱', 'https://mail.aliyun.com', '邮箱', '邮箱', '', '中文', '中国', '', '', '阿里邮箱有个人免费版和企业版。个人邮箱打开 mail.aliyun.com，企业邮箱用公司给的登录地址。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 271, 'mail-sohu', 'mail', '搜狐邮箱', 'https://mail.sohu.com', '邮箱', '邮箱', '', '中文', '中国', '', '', '搜狐邮箱是早期的免费邮箱。旧邮件还在的话从这里进，新邮件同时看一眼垃圾箱。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 272, 'icloud', 'mail', 'iCloud邮箱', 'https://www.icloud.com/mail', '邮箱', '邮箱', 'iCloud', '英文', '美国', '', '', 'iCloud 邮箱跟着 Apple 账号走，网页版在 icloud.com/mail，要先登录 Apple ID。', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 273, 'proton', 'mail', 'Proton', 'https://proton.me/mail', '邮箱', '邮箱', '', '英文', '瑞士', '', '', 'Proton 是加密邮箱，邮件在服务器上加密存放。免费档有容量限制。国内网络有时打不开。', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 274, 'mail-yahoo', 'mail', 'Yahoo邮箱', 'https://mail.yahoo.com', '邮箱', '邮箱', 'Yahoo', '英文', '美国', '', '', 'Yahoo 邮箱是雅虎的免费邮箱，网页版在 mail.yahoo.com。国内网络有时不稳定。', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 275, 'pan-xunlei', 'disk', '迅雷云盘', 'https://pan.xunlei.com', '网盘', '网盘', '迅雷', '中文', '中国', '', '', '迅雷云盘用来存和分享较大的文件。分享前看一下提取码和有效期。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 276, '123pan', 'disk', '123云盘', 'https://www.123pan.com', '网盘', '网盘', '123盘', '中文', '中国', '', '', '123云盘提供网页上传和分享链接。免费空间和单文件大小以页面上的说明为准。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 277, 'yun-139', 'disk', '中国移动云盘', 'https://yun.139.com', '网盘', '网盘', '和彩云', '中文', '中国', '', '', '中国移动云盘原来叫和彩云，用移动号码登录，手机和电脑可以互传照片和文件。', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 278, '115', 'disk', '115网盘', 'https://115.com', '网盘', '网盘', '115', '中文', '中国', '', '', '115 网盘用来存文件，也可以在线看自己上传的视频。会员和免费账号的速度不一样。', 0, 0, 9, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 279, 'lanzou', 'disk', '蓝奏云', 'https://www.lanzou.com', '网盘', '网盘', '', '中文', '中国', '', '', '蓝奏云适合分享小文件，链接打开就能下。单文件大小有限制，大包先拆开或换别的网盘。', 0, 0, 10, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 280, 'onedrive-live', 'disk', 'OneDrive', 'https://onedrive.live.com', '网盘', '网盘', '', '英文', '美国', '', '', 'OneDrive 是微软的网盘，和 Windows、Office 登录同一个账号。国内网络有时较慢。', 0, 0, 11, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 281, 'drive-google', 'disk', 'Google Drive', 'https://drive.google.com', '网盘', '网盘', '谷歌网盘', '英文', '美国', '', '', 'Google Drive 是谷歌的网盘，可以存文件和共享文档。国内网络经常打不开。', 0, 0, 12, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 282, 'dropbox', 'disk', 'Dropbox', 'https://www.dropbox.com', '网盘', '网盘', '', '英文', '美国', '', '', 'Dropbox 用来在几台电脑之间同步文件夹。国内网络经常打不开，打不开就换国内网盘。', 0, 0, 13, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 283, 'fanyi-youdao', 'translate', '有道翻译', 'https://fanyi.youdao.com', '在线翻译', '在线翻译', '有道', '中文', '中国', '', '', '有道翻译做在线翻译，中英互译用得最多。专有名词先对一下原文。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 284, 'fanyi-qq', 'translate', '腾讯翻译君', 'https://fanyi.qq.com', '在线翻译', '在线翻译', '翻译君', '中文', '中国', '', '', '腾讯翻译君支持多语种互译，也可以拍照翻译。合同和金额不要只留这一版译文。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 285, 'deepl', 'translate', 'DeepL', 'https://www.deepl.com/translator', '在线翻译', '在线翻译', '', '英文', '德国', '', '', 'DeepL 偏书面语翻译，英译中和中译英都比较顺。国内网络有时打不开。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 286, 'bing', 'translate', '必应翻译', 'https://www.bing.com/translator', '在线翻译', '在线翻译', 'Bing翻译', '中文', '美国', '', '', '必应翻译是微软的在线翻译，中英和其他语种都能用。长文可以分段贴。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 287, 'translate-google', 'translate', 'Google 翻译', 'https://translate.google.com', '在线翻译', '在线翻译', '谷歌翻译', '英文', '美国', '', '', 'Google 翻译语种多，也可以翻译整个网页。国内网络经常打不开。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 288, 'fanyi-caiyunapp', 'translate', '彩云小译', 'https://fanyi.caiyunapp.com', '在线翻译', '在线翻译', '彩云', '中文', '中国', '', '', '彩云小译偏中英文献和网页翻译，可以按句子对照。术语不准时换一种译法再看。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 289, 'translate-volcengine', 'translate', '火山翻译', 'https://translate.volcengine.com', '在线翻译', '在线翻译', '', '中文', '中国', '', '', '火山翻译适合短句和一段话。专有名词译完再核对一次。', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 290, 'map-baidu', 'map', '百度地图', 'https://map.baidu.com', '在线地图', '在线地图', '', '中文', '中国', '', '', '百度地图查地点、公交和路线。导航前看清是驾车、公交还是步行。地点重名时先对城市。', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 291, 'map-qq', 'map', '腾讯地图', 'https://map.qq.com', '在线地图', '在线地图', '', '中文', '中国', '', '', '腾讯地图查地点和路线。找不到时换高德或百度再搜一次店名。', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 292, 'maps-google', 'map', 'Google 地图', 'https://maps.google.com', '在线地图', '在线地图', '谷歌地图', '英文', '美国', '', '', 'Google 地图看国外地点和路线更全。国内网络经常打不开，国内地点用高德或百度。', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 293, 'maps-apple', 'map', '苹果地图', 'https://maps.apple.com', '在线地图', '在线地图', 'Apple地图', '英文', '美国', '', '', '苹果地图跟着 Apple 设备走，网页版可以查地点。国内的公交和路况，高德通常更全。', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 294, 'tianditu-gov', 'map', '天地图', 'https://www.tianditu.gov.cn', '在线地图', '在线地图', '', '中文', '中国', '', '', '天地图是公开的国家基础地图，适合查行政区、地名和影像。导航还是用高德或百度。', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 295, 'openstreetmap', 'map', 'OpenStreetMap', 'https://www.openstreetmap.org', '在线地图', '在线地图', 'OSM', '英文', '', '', '', 'OpenStreetMap 是公开协作的地图，国外小路有时比商业地图全。国内网络有时较慢。', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 296, 'cursor-ai', 'ai-code', 'Cursor', 'https://cursor.com/', 'AI 代码编辑器，支持理解项目、修改文件和审阅变更', '编程,代码编辑器,AI', '', '', '', '', '', 'Cursor 适合在已有代码仓库里理解项目、规划改动和审阅代码差异。它提供能编辑文件的 Agent，也提供可先讨论方案的模式。
+
+### 第一次使用怎么控制改动范围？
+
+打开一个熟悉的仓库，先让它找出某个页面的入口和测试。确认位置后，指定一个具体的小改动，例如补一个空状态，然后查看逐文件差异并运行相关测试。涉及多个文件时，可先让它列方案再选择范围。[Cursor 官方 Agent 指南](https://cursor.com/help/ai-features/agent)', 0, 0, 1, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 297, 'github-copilot', 'ai-code', 'GitHub Copilot', 'https://github.com/features/copilot', 'GitHub 的编程助手，支持 IDE 代码补全与代码问答', '编程,代码补全,AI', '', '', '', '', '', 'GitHub Copilot 可以在支持的 IDE 里随输入给出行内代码建议，也能用对话解释已有代码或讨论实现。它适合希望留在现有编辑器里完成日常编程的人。
+
+### 代码补全和对话分别什么时候用？
+
+写一个小函数时，可以先写函数名、参数和预期返回值，再看行内建议。遇到陌生模块时，把相关代码带进对话，让它解释数据从哪里来、应在哪个位置补测试。采纳建议前看差异并跑测试。[GitHub IDE 补全指南](https://docs.github.com/en/copilot/how-tos/copilot-in-your-ide/copilot-for-common-tasks/get-ide-code-suggestions) · [IDE 对话指南](https://docs.github.com/en/copilot/how-tos/copilot-in-your-ide/chat-with-copilot/chat-in-ide)', 0, 0, 2, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 298, 'elicit', 'ai-search', 'Elicit', 'https://elicit.com/', '用研究问题找论文，支持文献筛选和证据提取', '论文,文献综述,AI', '', '', '', '', '', 'Elicit 的对象是研究论文。它可以根据研究问题查找文献，也提供为系统综述设计的筛选、提取和报告流程。
+
+### 怎么用它整理一组论文？
+
+先把问题写得能用文献回答，例如限定对象、干预和结果。筛出相关论文后，可以按样本、方法、结论等字段做提取表。发现结果冲突时，回论文的摘要、方法和数据表核对，尤其留意工具是否拿到了全文。[Elicit 系统综述手册](https://support.elicit.com/en/articles/14759154-systematic-reviews-in-elicit)', 0, 0, 3, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 299, 'gamma-app', 'ai-office', 'Gamma', 'https://gamma.app/', '把提纲或已有内容整理成演示文稿，支持导出 PPTX', 'PPT,演示文稿,AI', '', '', '', '', '', 'Gamma 可以从提示词生成演示文稿，也可以导入已有文档或幻灯片作为起点。适合准备汇报初稿、课程讲义和介绍材料。
+
+### 如何把提纲变成一份可交付的 PPT？
+
+先写受众、目的和各页要讲的结论，例如用五页解释一个项目的背景、进度和下一步。生成后检查标题层级和图表说明，再导出 PPTX 或 PDF。接收方需要二次编辑时，优先试导出 PPTX，并在目标软件里检查一次排版。[Gamma 创建指南](https://help.gamma.app/en/articles/7838093-how-do-i-create-a-new-presentation-document-or-webpage-in-gamma) · [导出帮助](https://help.gamma.app/en/articles/8022861-what-s-the-easiest-way-to-export-my-gamma)', 0, 0, 4, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 300, 'elevenlabs', 'ai-audio', 'ElevenLabs', 'https://elevenlabs.io/', 'AI 文字转语音，适合旁白、配音和分段试听', '配音,文字转语音,AI', '', '', '', '', '', 'ElevenLabs 提供文字转语音和浏览器音频制作工具。可以把脚本转成旁白，再试听语速、停顿和专名的读法。
+
+### 做旁白时怎么试音？
+
+先用一小段实际台词选音色，并把人名、产品名或容易念错的缩写放进样本。试听满意后按段生成，方便单独重做有问题的部分。多人对话可先按角色把脚本分好，再决定各段音色。[ElevenLabs 文字转语音文档](https://elevenlabs.io/docs/overview/capabilities/text-to-speech)', 0, 0, 5, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 301, 'adobe-firefly', 'ai-ae0faa3203a9', 'Adobe Firefly', 'https://firefly.adobe.com/', 'Adobe 的 AI 图像工具，支持文字出图与选区编辑', '图像生成,局部编辑,AI', '', '', '', '', '', 'Adobe Firefly 有文字出图和生成式编辑入口。做一张新图时可以从构图、主体和光线写提示词。手头已有图片时，可以选择要改的区域，再指定要添加或替换的内容。
+
+### 一张产品图只想换背景时怎么做？
+
+优先用已有图做选区编辑。只圈背景，保留商品轮廓，描述新背景的颜色和光线。生成之后放大检查边缘和阴影，再把合适的结果用于下一版排版。[Adobe Firefly 产品页](https://www.adobe.com/products/firefly.html)', 0, 0, 6, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 302, 'dify', 'ai-6bf6d3f3d626', 'Dify', 'https://www.dify.ai/', '用可视化流程搭建 AI 应用，支持接入知识库', '工作流,知识库,智能体,AI', '', '', '', '', '', 'Dify 可以在画布上连起模型、知识检索和分支等步骤。它适合需要把问答或文档处理整理成可重复流程的人。
+
+### 知识库问答从哪里开始？
+
+用几份允许使用的文档建一个小知识库，先接入检索再生成回答。测试两类问题，一类能从文档找到答案，另一类文档没有涉及。查看检索到了什么，以及模型遇到缺信息时是否会说明。[Dify 入门说明](https://www.dify.ai/blog/get-started-with-dify) · [工作流说明](https://www.dify.ai/workflows)', 0, 0, 7, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+  UNION ALL SELECT 303, 'n8n', 'ai-6bf6d3f3d626', 'n8n', 'https://n8n.io/', '节点式自动化工作流，适合连接应用和定时任务', '自动化,工作流,AI', '', '', '', '', '', 'n8n 用触发器和节点组织自动化流程。它适合连接已有应用、按时处理数据，再把结果保存或通知给使用者。
+
+### 第一条工作流可以做什么？
+
+先做一条只有几步的流程，例如定时读取公开天气数据，提取当天的摘要，再写入数据表。先手动跑一遍，逐节点检查输入输出，确认格式和失败情况后再开启定时运行。[n8n 官方工作流入门](https://github.com/n8n-io/n8n-docs/blob/main/docs/get-started/build-your-first-workflow.md)', 0, 0, 8, 0, 0, 0, 'online', 0, @kaiwulu_init_at
+) AS seed
+WHERE @kaiwulu_initialize = 1;
+
+INSERT INTO `articles` (`id`, `title`, `summary`, `body`, `format`, `cover_url`, `video_url`, `category`, `featured`, `sort`, `draft`, `views`, `created_at`)
+SELECT seed.`id`, seed.`title`, seed.`summary`, seed.`body`, seed.`format`, seed.`cover_url`, seed.`video_url`, seed.`category`, seed.`featured`, seed.`sort`, seed.`draft`, seed.`views`, seed.`created_at` FROM (
+  SELECT 1 AS `id`, '网盘里的文件，先分成要同步和只是囤着' AS `title`, '同步盘适合正在改的文档。装机包和影视放进容量大的网盘，不要跟每天要打开的文件挤在一起。' AS `summary`, '同步盘的价值是几台设备上的同一份文件始终一致，适合稿子、表格和正在写的代码。装机镜像、录屏和压缩包几乎不会改，放进去只会把同步队列拖慢。
+
+一个能长期用的分法：正在改的进同步盘，一个月没打开的挪到普通网盘，确定不会再用的就删。导航上把这两类网盘分开收藏，比在一个客户端里翻目录快。' AS `body`, '' AS `format`, '' AS `cover_url`, '' AS `video_url`, '' AS `category`, 0 AS `featured`, 0 AS `sort`, 0 AS `draft`, 0 AS `views`, @kaiwulu_init_at AS `created_at`
+  UNION ALL SELECT 2, '工具变多以后，导航比一排菜单好找', '计算器、进制、时间戳这些小工具还在，只是不再占据整个首页。首页改成按场景找网站。', '旧站把每个工具做成一个顶部入口。工具少的时候这样清楚，工具一多，菜单就变成一串记不住的名字。
+
+现在这些工具收在「资源工具 / 网页工具」里，源码留在仓库的 legacy 目录。新首页只回答一件事：这件事该打开哪个网站。工具本身下一期再迁进新界面。', '', '', '', '', 0, 0, 0, 0, @kaiwulu_init_at
+  UNION ALL SELECT 3, '学习网站按正在看收，不要按以后再说收', '公开课和文档站很容易收成一长列。只把这周会打开的留在常用，其余放进分类。', 'MDN、公开课和教程站都值得留，但常用栏只有十个位置。把「以后可能会看」的课放进常用，常用就不再常用。
+
+这周正在查的文档留在热门推荐或自己的星标里。一门课看完，就把星去掉。分类页还在，想起来的时候搜名字就能回到原处。', '', '', '', '', 0, 0, 0, 0, @kaiwulu_init_at
+) AS seed
+WHERE @kaiwulu_initialize = 1;
+
+INSERT INTO `tags` (`id`, `group`, `name`, `sort`)
+SELECT seed.`id`, seed.`group`, seed.`name`, seed.`sort` FROM (
+  SELECT 1 AS `id`, '网址集' AS `group`, '设计' AS `name`, 1 AS `sort`
+  UNION ALL SELECT 2, '网址集', '技术博客', 2
+  UNION ALL SELECT 3, '网址集', '公开课', 3
+  UNION ALL SELECT 4, '网址集', '导航', 4
+  UNION ALL SELECT 5, '小游戏', '独立游戏', 5
+  UNION ALL SELECT 6, '小游戏', '老游戏', 6
+  UNION ALL SELECT 7, '小游戏', '在线玩', 7
+  UNION ALL SELECT 8, '小游戏', 'Steam', 8
+  UNION ALL SELECT 9, '查询', '天气', 9
+  UNION ALL SELECT 10, '查询', '快递', 10
+  UNION ALL SELECT 11, '查询', '火车票', 11
+  UNION ALL SELECT 12, '查询', '汇率', 12
+  UNION ALL SELECT 13, '工具', 'JSON', 13
+  UNION ALL SELECT 14, '工具', '时间戳', 14
+  UNION ALL SELECT 15, '工具', '进制', 15
+  UNION ALL SELECT 16, '工具', '颜色', 16
+  UNION ALL SELECT 17, '资源', '软件', 17
+  UNION ALL SELECT 18, '资源', '字体', 18
+  UNION ALL SELECT 19, '资源', '模板', 19
+  UNION ALL SELECT 20, '资源', '字幕', 20
+  UNION ALL SELECT 21, '游戏', '平台', 21
+  UNION ALL SELECT 22, '游戏', '资讯', 22
+  UNION ALL SELECT 23, 'AI', '对话', 23
+  UNION ALL SELECT 24, 'AI', '图像', 24
+  UNION ALL SELECT 25, 'AI', '视频', 25
+  UNION ALL SELECT 26, '生活', '购物', 26
+  UNION ALL SELECT 27, '生活', '招聘', 27
+  UNION ALL SELECT 28, '生活', '财经', 28
+  UNION ALL SELECT 29, '生活', '社区', 29
+  UNION ALL SELECT 30, '查询', '备案', 30
+  UNION ALL SELECT 31, '查询', '企业', 31
+) AS seed
+WHERE @kaiwulu_initialize = 1;
+
+INSERT INTO `category_guides` (`category_slug`, `title`, `intro`, `home_label`)
+SELECT seed.`category_slug`, seed.`title`, seed.`intro`, seed.`home_label` FROM (
+  SELECT 'chat' AS `category_slug`, 'AI 通用助手' AS `title`, '写提纲、读长文、查资料和解释代码，可以从 AI 对话助手开始。读文档前先确认能上传的格式和大小，查资料时优先选能列出来源的工具，并打开原文核对。' AS `intro`, 'AI 对话' AS `home_label`
+  UNION ALL SELECT 'design', '设计素材与在线设计', '找图标、配色、作品参考或在线协作工具，可以按项目需要挑选。下载素材前核对单个作品的授权和署名要求，交付前确认能否导出所需格式。', '设计素材'
+  UNION ALL SELECT 'draw', 'AI 视频与短剧工具', '从一张图做动效、按提示词出镜头，或从剧本开始制作短剧。选工具前先分清任务是做单镜头、多个镜头，还是需要分镜和剪辑的完整流程。', ''
+  UNION ALL SELECT 'learn', '学习网站与公开课', '想系统学习可从大学公开课入手，查 Web API 可看开发文档，刚开始编程可跟着短示例练习。选课时先看先修要求、授课语言和课后练习。', '学习资源'
+  UNION ALL SELECT 'query', '生活实用查询', '按任务找查询入口，出行可查车次、航班和天气，寄件可查物流，核对企业信息可查公示平台。涉及办事或资质核验时，以对应官方入口为准。', '实用查询'
+  UNION ALL SELECT 'webtool', '在线网页工具', '临时压缩图片、格式化 JSON、换算时间戳或生成二维码，可以在浏览器里完成。处理客户文件、密钥和日志时，先确认工具是否会上传数据。', '网页工具'
+  UNION ALL SELECT 'ai', 'AI 工具导航', '按用途选 AI 工具。日常提问找通用助手，查资料找搜索与研究，做图、视频或配音进相应创作分类，写代码、做文档和搭流程也有独立入口。', 'AI 工具'
+  UNION ALL SELECT 'ai-search', 'AI 搜索与研究工具', '查网页信息、比较来源或找论文时，先按资料类型选工具。核对引用时，优先看结果能否直接跳到原文。', ''
+  UNION ALL SELECT 'ai-ae0faa3203a9', 'AI 图像生成与设计工具', '生成插画、编辑商品图、制作海报和探索三维形象，都可以从这个分类开始。已有素材时，优先看工具是否支持参考图和局部调整。', ''
+  UNION ALL SELECT 'ai-audio', 'AI 音乐、配音与音频工具', '按制作环节找工具。做配乐看歌曲生成，做旁白看文字转语音，需要整理素材时再看音频剪辑和译制。', ''
+  UNION ALL SELECT 'ai-code', 'AI 编程助手与应用生成工具', '手头已有代码仓库时，可选能读取项目和编辑文件的编程助手。想先做一个应用雏形，可以从低代码或自然语言生成应用的工具开始。', ''
+  UNION ALL SELECT 'ai-office', 'AI 写作、文档与办公工具', '根据要交付的内容选工具。整理资料看文档问答，起草内容看写作，做汇报看演示文稿的编辑和导出能力。', ''
+  UNION ALL SELECT 'ai-6bf6d3f3d626', 'AI 智能体与工作流工具', '需要让 AI 按步骤完成任务时，可按触发方式、可连接的数据和是否要人工确认来比较工具。', ''
+) AS seed
+WHERE @kaiwulu_initialize = 1;
+
+INSERT INTO `history_events` (`month`, `day`, `year`, `text`)
+SELECT seed.`month`, seed.`day`, seed.`year`, seed.`text` FROM (
+  SELECT 1 AS `month`, 1 AS `day`, 1863 AS `year`, '美国《解放奴隶宣言》生效。' AS `text`
+  UNION ALL SELECT 1, 24, 1984, '苹果麦金塔个人电脑开始发售。'
+  UNION ALL SELECT 2, 11, 1847, '爱迪生出生。'
+  UNION ALL SELECT 3, 7, 1876, '贝尔获得电话专利。'
+  UNION ALL SELECT 3, 14, 1879, '爱因斯坦出生。'
+  UNION ALL SELECT 4, 12, 1961, '加加林完成人类首次载人航天。'
+  UNION ALL SELECT 4, 23, 1995, '联合国教科文组织把 4 月 23 日定为世界读书日。'
+  UNION ALL SELECT 5, 4, 1919, '五四运动爆发。'
+  UNION ALL SELECT 6, 5, 1972, '联合国把 6 月 5 日定为世界环境日。'
+  UNION ALL SELECT 7, 1, 1997, '香港回归中国。'
+  UNION ALL SELECT 7, 20, 1969, '阿波罗 11 号登月。'
+  UNION ALL SELECT 8, 8, 2008, '北京奥运会开幕。'
+  UNION ALL SELECT 9, 10, 1985, '中国第一个教师节。'
+  UNION ALL SELECT 10, 1, 1949, '中华人民共和国成立，开国大典举行。'
+  UNION ALL SELECT 10, 3, 1990, '两德正式统一。'
+  UNION ALL SELECT 10, 3, 1929, '塞尔维亚-克罗地亚-斯洛文尼亚王国改名为南斯拉夫王国。'
+  UNION ALL SELECT 11, 9, 1989, '柏林墙开放。'
+  UNION ALL SELECT 12, 17, 1903, '莱特兄弟完成首次有动力、可持续的飞行。'
+) AS seed
+WHERE @kaiwulu_initialize = 1;
+
+COMMIT;
+DO RELEASE_LOCK(@kaiwulu_init_lock_name);
+SELECT CASE
+  WHEN @kaiwulu_initialize = 1 THEN 'Catalog initialized'
+  WHEN @kaiwulu_init_lock = 1 THEN 'Catalog already contains data'
+  ELSE 'Initialization lock unavailable'
+END AS result;

@@ -29,25 +29,7 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	if err := seed.Run(db); err != nil {
-		return err
-	}
-	if err := seed.EnsureCatalog(db); err != nil {
-		return err
-	}
 	if err := seed.EnsureSlugs(db); err != nil {
-		return err
-	}
-	if err := editorial.BackfillSiteGuides(db); err != nil {
-		return err
-	}
-	if err := seed.EnsureIntros(db); err != nil {
-		return err
-	}
-	if err := seed.EnsureTags(db); err != nil {
-		return err
-	}
-	if err := seed.EnsureProfile(db); err != nil {
 		return err
 	}
 	addr := os.Getenv("API_ADDR")
@@ -92,7 +74,7 @@ func openDB(cfg config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	sqlDB.SetMaxOpenConns(10)
-	if err := db.AutoMigrate(&models.Category{}, &models.Link{}, &models.Article{}, &models.ArticleComment{}, &models.Feedback{}, &models.Tag{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}, &models.InternetRankMonth{}, &models.InternetRankEntry{}, &models.InternetRankBlock{}); err != nil {
+	if err := db.AutoMigrate(&models.Category{}, &models.CategoryGuide{}, &models.HistoryEvent{}, &models.Link{}, &models.Article{}, &models.ArticleComment{}, &models.Feedback{}, &models.Tag{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}, &models.InternetRankMonth{}, &models.InternetRankEntry{}, &models.InternetRankBlock{}, &models.SubmissionReview{}); err != nil {
 		return nil, err
 	}
 	if err := ensureUserEmail(db); err != nil {

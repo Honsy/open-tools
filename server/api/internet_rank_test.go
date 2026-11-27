@@ -50,3 +50,18 @@ func TestInternetRankExcludesProviderRiskAndBlockedDomains(t *testing.T) {
 		}
 	}
 }
+
+func TestRankPreviewMatchesPublicRankingOrderAndExclusions(t *testing.T) {
+	entries := []models.InternetRankEntry{
+		{Domain: "risk.example.com", Visits: 400}, {Domain: "unwanted.org", Visits: 380, Risky: true},
+		{Domain: "z.example.net", Visits: 200}, {Domain: "a.example.net", Visits: 200},
+		{Domain: "safe.example.org", Visits: 100}, {Domain: "example.com", Visits: 500},
+	}
+	visible, excluded := rankPreviewEntries(entries, []string{"example.com"})
+	if len(visible) != 3 || visible[0].Domain != "a.example.net" || visible[1].Domain != "z.example.net" || visible[2].Domain != "safe.example.org" {
+		t.Fatalf("unexpected ranking preview: %+v", visible)
+	}
+	if len(excluded) != 3 || excluded[0].Reason != "命中风险名单" || excluded[1].Reason != "数据源风险标记" {
+		t.Fatalf("unexpected exclusions: %+v", excluded)
+	}
+}

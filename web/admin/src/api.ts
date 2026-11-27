@@ -15,3 +15,14 @@ export function formatDate(value: string) {
   const d = `${date.getDate()}`.padStart(2, "0");
   return `${date.getFullYear()}-${m}-${d}`;
 }
+import { ref } from "vue";
+
+export const adminName = ref("");
+
+export type AdminPage<T> = { items: T[]; total: number; page: number; pageSize: number };
+export type AdminCategory = { slug: string; name: string; parentSlug: string; kind: string; contentKind: string };
+
+export function categoryLabel(category: AdminCategory, catalog: AdminCategory[]) {
+  const parent = catalog.find(item => item.slug === category.parentSlug);
+  return parent ? `${parent.name} / ${category.name}` : category.name;
+}

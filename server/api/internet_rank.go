@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -60,6 +61,7 @@ func mountAdminInternetRank(r *gin.RouterGroup, db *gorm.DB) {
 		}
 		c.JSON(http.StatusOK, gin.H{"months": months, "blocked": blocked})
 	})
+	r.POST("/internet-rank/preview", previewInternetRank(db))
 	r.POST("/internet-rank", importInternetRank(db))
 	r.POST("/internet-rank/blocked", func(c *gin.Context) {
 		var req struct {
@@ -95,46 +97,140 @@ func blockRankDomain(db *gorm.DB, domain string) error {
 	return db.Clauses(clause.OnConflict{DoNothing: true}).Create(&models.InternetRankBlock{Domain: domain}).Error
 }
 
-func importInternetRank(db *gorm.DB) gin.HandlerFunc {
+func parseRankUpload(c *gin.Context) (models.InternetRankMonth, []models.InternetRankEntry, error) {
+	var snapshot models.InternetRankMonth
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxRankUpload)
+	if err := c.Request.ParseMultipartForm(maxRankUpload); err != nil {
+		return snapshot, nil, errors.New("请选择不超过 4 MB 的 CSV 文件")
+	}
+	defer c.Request.MultipartForm.RemoveAll()
+	month := strings.TrimSpace(c.PostForm("month"))
+	source := strings.TrimSpace(c.PostForm("source"))
+	sourceURL := strings.TrimSpace(c.PostForm("sourceUrl"))
+	if date, err := time.Parse("2006-01", month); err != nil || date.Year() == 0 || month >= time.Now().In(time.FixedZone("Asia/Shanghai", 8*3600)).Format("2006-01") {
+		return snapshot, nil, errors.New("请选择已结束的统计月份")
+	}
+	if !rankText(source, 128) || len(sourceURL) > 512 || !strings.HasPrefix(publicMedia(sourceURL), "https://") {
+		return snapshot, nil, errors.New("请填写数据来源名称和 HTTPS 说明地址")
+	}
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		return snapshot, nil, errors.New("请选择 CSV 文件")
+	}
+	defer file.Close()
+	entries, err := readInternetRankCSV(file, month)
+	return models.InternetRankMonth{Month: month, Source: source, SourceURL: sourceURL, Entries: len(entries)}, entries, err
+}
+
+func rankVersion(db *gorm.DB, month string) (string, error) {
+	var existing models.InternetRankMonth
+	err := db.Where("month = ?", month).Take(&existing).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return "new", nil
+	}
+	return existing.UpdatedAt.Format(time.RFC3339Nano), err
+}
+
+func previewInternetRank(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxRankUpload)
-		if err := c.Request.ParseMultipartForm(maxRankUpload); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "请选择不超过 4 MB 的 CSV 文件"})
-			return
-		}
-		defer c.Request.MultipartForm.RemoveAll()
-		month := strings.TrimSpace(c.PostForm("month"))
-		source := strings.TrimSpace(c.PostForm("source"))
-		sourceURL := strings.TrimSpace(c.PostForm("sourceUrl"))
-		if date, err := time.Parse("2006-01", month); err != nil || date.Year() == 0 || month >= time.Now().In(time.FixedZone("Asia/Shanghai", 8*3600)).Format("2006-01") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "请选择已结束的统计月份"})
-			return
-		}
-		if !rankText(source, 128) || len(sourceURL) > 512 || !strings.HasPrefix(publicMedia(sourceURL), "https://") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "请填写数据来源名称和 HTTPS 说明地址"})
-			return
-		}
-		file, _, err := c.Request.FormFile("file")
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "请选择 CSV 文件"})
-			return
-		}
-		defer file.Close()
-		entries, err := readInternetRankCSV(file, month)
+		snapshot, entries, err := parseRankUpload(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		snapshot := models.InternetRankMonth{Month: month, Source: source, SourceURL: sourceURL, Entries: len(entries)}
+		query := db.WithContext(c.Request.Context())
+		var blocks []string
+		if err := query.Model(&models.InternetRankBlock{}).Pluck("domain", &blocks).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "读取风险名单失败"})
+			return
+		}
+		version, err := rankVersion(query, snapshot.Month)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "读取已有榜单失败"})
+			return
+		}
+		visible, excluded := rankPreviewEntries(entries, blocks)
+		preview := make([]gin.H, 0, min(10, len(visible)))
+		for _, entry := range visible[:min(10, len(visible))] {
+			preview = append(preview, gin.H{"Domain": entry.Domain, "Name": entry.Name, "Category": entry.Category, "Visits": strconv.FormatUint(entry.Visits, 10)})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"month": snapshot.Month, "total": len(entries), "excluded": len(entries) - len(visible),
+			"version": version, "entries": preview, "excludedEntries": excluded,
+		})
+	}
+}
+
+type rankPreviewExclusion struct {
+	Domain string `json:"domain"`
+	Reason string `json:"reason"`
+}
+
+func rankPreviewEntries(entries []models.InternetRankEntry, blocks []string) ([]models.InternetRankEntry, []rankPreviewExclusion) {
+	blocked := make(map[string]bool, len(blocks))
+	for _, domain := range blocks {
+		blocked[domain] = true
+	}
+	visible := make([]models.InternetRankEntry, 0, len(entries))
+	excluded := make([]rankPreviewExclusion, 0, 10)
+	for _, entry := range entries {
+		if entry.Risky {
+			if len(excluded) < 10 {
+				excluded = append(excluded, rankPreviewExclusion{entry.Domain, "数据源风险标记"})
+			}
+			continue
+		}
+		domain := entry.Domain
+		for domain != "" && !blocked[domain] {
+			_, domain, _ = strings.Cut(domain, ".")
+		}
+		if domain == "" {
+			visible = append(visible, entry)
+		} else if len(excluded) < 10 {
+			excluded = append(excluded, rankPreviewExclusion{entry.Domain, "命中风险名单"})
+		}
+	}
+	sort.Slice(visible, func(i, j int) bool {
+		if visible[i].Visits == visible[j].Visits {
+			return visible[i].Domain < visible[j].Domain
+		}
+		return visible[i].Visits > visible[j].Visits
+	})
+	return visible, excluded
+}
+
+var errRankPreviewStale = errors.New("该月份已经被更新，请重新预览后再发布")
+
+func importInternetRank(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		snapshot, entries, err := parseRankUpload(c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		expectedVersion := c.PostForm("previewVersion")
 		err = db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+			if expectedVersion != "" {
+				current, err := rankVersion(tx.Clauses(clause.Locking{Strength: "UPDATE"}), snapshot.Month)
+				if err != nil {
+					return err
+				}
+				if current != expectedVersion {
+					return errRankPreviewStale
+				}
+			}
 			if err := tx.Clauses(clause.OnConflict{UpdateAll: true}).Create(&snapshot).Error; err != nil {
 				return err
 			}
-			if err := tx.Where("month = ?", month).Delete(&models.InternetRankEntry{}).Error; err != nil {
+			if err := tx.Where("month = ?", snapshot.Month).Delete(&models.InternetRankEntry{}).Error; err != nil {
 				return err
 			}
 			return tx.CreateInBatches(entries, 500).Error
 		})
+		if errors.Is(err, errRankPreviewStale) {
+			c.JSON(http.StatusConflict, gin.H{"error": errRankPreviewStale.Error()})
+			return
+		}
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "导入失败，原有月榜已保留"})
 			return

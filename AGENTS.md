@@ -16,8 +16,18 @@
 库是独立的 MySQL `opentools`。不要把表写进 YouGo 的 `laoyouba`。
 
 - 本机开发：`127.0.0.1:3306`，库 `opentools`。`server/config.yaml` 已忽略，不要提交，也不要指到线上。
-- 新站写进 `links`（后台「网址」）。启动时 `EnsureCatalog` 只补还没有的名字，并只在旧地址还没被改过时修一批已知坏链。已经在库里的行不要靠改 seed 去覆盖。
-- 首页点击数是种子基线，不是实时流量。新站 `clicks`、`views` 从 0 起。详情页加浏览，`/go/:id` 加点击。不要编访问量。
+- 新库先导入 `server/init.sql`，再启动 Go。这个脚本建内容表并导入初始网址、分类、标签、文章、分类导读和历史事件。只有内容表均为空时才导入。系统表和首个管理员由 Go 初始化。
+- 已有内容的库保留原数据。切换到数据库内容时，执行 `server/migrations/20261127_catalog_content.sql`，补分类导读和历史事件，并更新仍与指定旧稿完全一致的详情。日常在后台「网址」编辑 `links`。应用启动不补写内容。
+- `server/migrations/20261127_ai_creation_guides.sql` 更新仍与旧稿一致的即梦、可灵和 Vidu 详情，将导入的同名「对话」子分类改为「AI 助手」，保留其链接和收录。
+- `server/migrations/20261127_catalog_taxonomy.sql` 在分类导读表建好后执行。它前置 AI 目录、按用途调整现有子分类、补充来源可核对的工具介绍，并保留原有网址和计数。
+- 新库的 `clicks`、`views` 从 0 起。历史库原有点击数可能包含旧种子基线。详情页加浏览，`/go/:id` 加点击。
+
+从仓库根目录初始化本机数据库：
+
+```bash
+mysql -h 127.0.0.1 -u root -p -e 'CREATE DATABASE IF NOT EXISTS opentools CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+mysql -h 127.0.0.1 -u root -p --default-character-set=utf8mb4 opentools < server/init.sql
+```
 
 ## 设计
 

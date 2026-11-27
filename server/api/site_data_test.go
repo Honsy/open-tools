@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"opentools/models"
-	"opentools/seed"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -35,7 +34,7 @@ func TestSiteDetailUsesEditorialIntroAndSuppressesPlaceholder(t *testing.T) {
 	router := gin.New()
 	router.GET(siteAPIPrefix+"/site/:slug", sitePage(db))
 	for _, example := range []struct{ body, summary, heading string }{
-		{seed.LegacyPlaceholderIntro("Poe", "多个模型对话"), "Poe｜多模型 AI 聊天", ""},
+		{"Poe，多个模型对话。先看它是不是你要找的那一个，再打开。\n\n页面改版、要登录或分地区开放时，以网站自己的说明为准。", "Poe｜多模型 AI 聊天", ""},
 		{"Poe 可以切换模型。\n\n### Poe 怎么选模型？\n\n从目录搜索模型。", "Poe 可以切换模型。", "<h3>Poe 怎么选模型？</h3>"},
 	} {
 		link.Body = example.body

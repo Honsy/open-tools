@@ -163,6 +163,42 @@ test("site details publish the guide and its metadata in the server-rendered HTM
   assert.ok(!short.includes('class="site-description"'));
 });
 
+test("category tabs have working links and render the selected list with the shared panel", () => {
+  const selected = { Slug: "draw", Name: "创作", On: true, Links: [
+    { Href: "/site/jimeng-jianying", Name: "即梦", Letter: "即", Layout: "row", JSON: "{}" },
+  ] };
+  const category = renderPage({ template: "category", shell, data: {
+    Name: "AI 工具", Heading: "AI 工具", Section: {
+      Slug: "ai", Name: "AI 工具", HideTitle: true, More: "/c/ai", Layout: "row",
+      Tabs: [{ Slug: "chat", Name: "对话" }, selected],
+    },
+  } });
+  assert.match(category, /href="\/c\/chat"[^>]*aria-controls="panel-ai-chat"/);
+  assert.match(category, /href="\/c\/draw"[^>]*aria-current="true"/);
+  assert.match(category, /data-catalog-more href="\/c\/draw" aria-label="查看全部创作"/);
+  assert.match(category, /id="panel-ai-chat"[^>]* hidden>/);
+  const fragment = renderPage({ template: "catalogPanel", data: { Tab: selected, Layout: "row" } });
+  assert.match(fragment, /<div data-catalog-content>/);
+  assert.match(fragment, /href="\/site\/jimeng-jianying"/);
+  assert.doesNotMatch(fragment, /<!doctype html>|<header/);
+  assert.ok(category.includes(fragment));
+});
+
+test("search results render an inline scope control, filter state and site metadata", () => {
+  const result = renderPage({
+    template: "search", shell: { ...shell, Path: "/search", Query: "AI", SearchScope: "ai" },
+    data: { Query: "AI", Total: 1, Scopes: [
+      { Name: "全部", URL: "/search?q=AI", Count: 2 },
+      { Name: "AI 工具", URL: "/search?q=AI&scope=ai", Count: 1, Active: true },
+    ], Links: [{ Name: "Cursor", Href: "/site/cursor-ai", Layout: "result", Domain: "cursor.com", Category: "编程与应用" }] },
+  });
+  assert.match(result, /<input type="hidden" name="scope" value="ai"/);
+  assert.match(result, /aria-label="搜索范围"/);
+  assert.doesNotMatch(result, /search-engines/);
+  assert.match(result, /href="\/search\?q=AI&amp;scope=ai" aria-current="true"/);
+  assert.match(result, /cursor\.com[\s\S]*编程与应用/);
+});
+
 test("internet ranking renders a complete month with its attribution and category filter", () => {
   const selected = { month: "2026-10", source: "测试数据源", sourceUrl: "https://example.org/methodology" };
   const page = renderPage({ template: "internetRank", shell, data: {
@@ -195,7 +231,7 @@ test("public navigation and board entries render from the Go JSON field names", 
       Slug: "daily", Kind: "articles", On: true, Posts: [{ ID: 42, Title: "一篇文章" }],
     }] }],
   } });
-  assert.match(home, /href="\/c\/ai">AI 工具<\/a>/);
+  assert.match(home, /href="\/c\/ai"[^>]*>AI 工具<\/a>/);
   assert.match(home, /data-simple>.*简约模式<\/button>/);
   assert.ok(home.includes('href="/c/learn">学习</a>'));
   assert.ok(home.includes("<b>1984</b> 历史事件"));
@@ -204,4 +240,6 @@ test("public navigation and board entries render from the Go JSON field names", 
     assert.match(html, /href="https:\/\/example\.test\/news"[^>]*>热搜条目<\/a>/);
   }
   assert.match(home, /id="sec-latest"[\s\S]*id="sec-daily"[\s\S]*href="\/a\/42"[\s\S]*<footer/);
+  assert.match(home, /id="sec-shortcuts"[\s\S]*id="home-browse"[\s\S]*id="sec-boards"/);
+  assert.match(home, /href="\/#desk-custom">收藏<\/a>/);
 });

@@ -15,36 +15,6 @@
     localStorage.setItem(key, JSON.stringify(list));
   }
 
-  function tile(link) {
-    var a = document.createElement("a");
-    a.className = "site-link card card-compact tile bg-base-200 hover:bg-base-300 shadow-none";
-    a.href = link.slug ? "/site/" + link.slug : link.url;
-    var raw = JSON.stringify({
-      id: link.id, name: link.name, url: link.url, desc: link.desc,
-      slug: link.slug, categorySlug: link.categorySlug, clicks: link.clicks
-    });
-    a.setAttribute("data-link", raw);
-    var mark = document.createElement("span");
-    mark.className = "mark";
-    mark.textContent = (link.name || "站").slice(0, 1);
-    var meta = document.createElement("span");
-    meta.className = "meta";
-    var name = document.createElement("span");
-    name.className = "name";
-    name.textContent = link.name || "";
-    var star = document.createElement("button");
-    star.type = "button";
-    star.className = "star";
-    star.textContent = "★";
-    star.setAttribute("aria-label", "收藏");
-    star.setAttribute("data-star", raw);
-    meta.appendChild(name);
-    a.appendChild(mark);
-    a.appendChild(meta);
-    a.appendChild(star);
-    return a;
-  }
-
   function fill(id, list, empty) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -54,8 +24,9 @@
       return;
     }
     list.forEach(function (link) {
-      el.appendChild(tile(link));
+      el.appendChild(card(link, "row"));
     });
+    watchIcons(el);
   }
 
   var iconBusy = 0;
@@ -110,8 +81,10 @@
   }
 
   function card(link, layout) {
+    var entry = document.createElement("div");
+    entry.className = "site-entry card " + (layout || "row") + " border border-base-300 bg-base-100 hover:bg-base-200 shadow-none";
     var a = document.createElement("a");
-    a.className = "site-link card card-compact " + (layout || "row") + " bg-base-200 hover:bg-base-300 shadow-none";
+    a.className = "site-link";
     a.href = link.slug ? "/site/" + link.slug : (link.url || "#");
     if (link.desc) a.title = link.desc;
     var raw = JSON.stringify({
@@ -121,6 +94,7 @@
     a.setAttribute("data-link", raw);
     var mark = document.createElement("span");
     mark.className = "mark";
+    mark.setAttribute("aria-hidden", "true");
     var host = "";
     try {
       host = new URL(link.url).hostname;
@@ -157,70 +131,100 @@
     }
     var star = document.createElement("button");
     star.type = "button";
-    star.className = "star";
-    star.textContent = "★";
-    star.setAttribute("aria-label", "收藏");
+    star.className = "star btn btn-ghost";
+    star.textContent = "☆";
+    star.setAttribute("aria-label", "收藏 " + link.name);
+    star.setAttribute("aria-pressed", "false");
     star.setAttribute("data-star", raw);
     a.appendChild(mark);
     a.appendChild(meta);
-    a.appendChild(star);
-    return a;
+    entry.append(a, star);
+    return entry;
   }
 
-  function loadLazy(panel) {
-    var slug = panel.getAttribute("data-lazy");
-    if (!slug || panel.getAttribute("data-loaded")) return;
-    panel.setAttribute("data-loaded", "1");
-    var grid = panel.querySelector(".link-grid");
-    var layout = panel.getAttribute("data-layout") || "row";
-    fetch("/api/categories/" + encodeURIComponent(slug) + "?limit=24", { credentials: "same-origin" })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        var links = (data.tabs && data.tabs[0] && data.tabs[0].links) || [];
-        if (!grid) return;
-        grid.textContent = "";
-        if (!links.length) {
-          grid.textContent = "这一栏还没有网站。";
-          return;
-        }
-        links.forEach(function (link) {
-          grid.appendChild(card(link, layout));
-        });
-        var more = document.createElement("a");
-        more.className = "grid-more btn btn-ghost btn-sm";
-        more.href = "/c/" + encodeURIComponent(slug);
-        more.textContent = "查看全部 " + (data.name || "网站") + " →";
-        grid.appendChild(more);
-        if (typeof paintStars === "function") paintStars(state.stars);
+  function loadCatalogPanel(panel, link, preview) {
+    var status = panel.querySelector("[data-catalog-status]");
+    if (!status || panel.getAttribute("aria-busy") === "true") return;
+    var fallback = panel.querySelector("[data-catalog-fallback]");
+    var url = new URL(link.href);
+    url.searchParams.set("fragment", "catalog");
+    if (preview) url.searchParams.set("preview", "1");
+    status.textContent = "正在加载" + link.textContent.trim() + "…";
+    fallback.hidden = true;
+    panel.setAttribute("aria-busy", "true");
+    fetch(url, { credentials: "same-origin" })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Category request failed");
+        return response.text();
+      })
+      .then(function (html) {
+        var fragment = new DOMParser().parseFromString(html, "text/html").querySelector("[data-catalog-content]");
+        if (!fragment) throw new Error("Category list missing");
+        panel.replaceChildren(fragment);
+        paintStars(state.stars);
         watchIcons(panel);
       })
       .catch(function () {
-        panel.removeAttribute("data-loaded");
-        if (grid) grid.textContent = "这一栏没有加载出来。";
+        status.textContent = "列表没有加载出来。再点一次分类重试，或直接打开分类页。";
+        fallback.hidden = false;
+      })
+      .finally(function () {
+        panel.removeAttribute("aria-busy");
       });
   }
+
+  document.querySelectorAll("[data-catalog-tabs]").forEach(function (section) {
+    var links = section.querySelectorAll("[data-catalog-tab]");
+    var panels = section.querySelectorAll("[data-catalog-panel]");
+    var more = section.querySelector("[data-catalog-more]");
+    var preview = section.hasAttribute("data-catalog-preview");
+    links.forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        var panel = document.getElementById(link.getAttribute("aria-controls"));
+        if (!panel) return;
+        event.preventDefault();
+        links.forEach(function (item) {
+          var active = item === link;
+          item.classList.toggle("tab-active", active);
+          item.classList.toggle("font-medium", active);
+          item.classList.toggle("text-primary", active);
+          if (active) item.setAttribute("aria-current", "true");
+          else item.removeAttribute("aria-current");
+        });
+        panels.forEach(function (item) { item.hidden = item !== panel; });
+        if (more) {
+          more.href = link.href;
+          more.setAttribute("aria-label", "查看全部" + link.textContent.trim());
+        }
+        if (!preview && history.replaceState) {
+          var url = new URL(location.href);
+          url.searchParams.set("tab", link.getAttribute("data-catalog-tab"));
+          history.replaceState(history.state, "", url);
+        }
+        loadCatalogPanel(panel, link, preview);
+        watchIcons(panel);
+      });
+    });
+  });
 
   function show(box, id) {
     box.querySelectorAll("[data-tab]").forEach(function (btn) {
       var active = btn.getAttribute("data-tab") === id;
       btn.classList.toggle("tab-active", active);
       btn.classList.toggle("active", active);
-      btn.setAttribute("aria-selected", active ? "true" : "false");
+      btn.setAttribute(btn.hasAttribute("aria-pressed") ? "aria-pressed" : "aria-selected", active ? "true" : "false");
     });
     box.querySelectorAll("[data-panel]").forEach(function (panel) {
       var on = panel.getAttribute("data-panel") === id;
       panel.hidden = !on;
-      if (on) loadLazy(panel);
     });
     watchIcons(box);
   }
 
   document.querySelectorAll("[data-tabs]").forEach(function (box) {
     box.querySelectorAll("[data-tab]").forEach(function (btn) {
-      btn.addEventListener("click", function (event) {
-        if (btn.tagName === "A") {
-          return; // Category links open the complete, server-paginated catalog.
-        }
+      btn.addEventListener("click", function () {
         show(box, btn.getAttribute("data-tab"));
       });
     });
@@ -273,7 +277,24 @@
   } catch (err) {
     hash = "";
   }
-  if (hash.indexOf("tab-") === 0) {
+  var shortcuts = document.getElementById("sec-shortcuts");
+  function showFavorites() {
+    show(shortcuts, "edit");
+    shortcuts.scrollIntoView();
+    shortcuts.querySelector('[data-tab="edit"]').focus({ preventScroll: true });
+  }
+  if (shortcuts) {
+    document.querySelectorAll('a[href="/#desk-custom"]').forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        showFavorites();
+      });
+    });
+  }
+  if (hash === "desk-custom" && shortcuts) {
+    showFavorites();
+  } else if (hash.indexOf("tab-") === 0) {
     var tab = document.getElementById(hash);
     if (tab) tab.click();
     var scroll = tab && tab.getAttribute("data-scroll");
@@ -333,6 +354,7 @@
   });
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
+    if (catPop && !catPop.hidden) catOpen.focus();
     setCat(false);
     document.querySelectorAll(".dropdown.dropdown-open").forEach(function (node) { node.classList.remove("dropdown-open"); });
   });
@@ -355,7 +377,7 @@
 
   var signedIn = !!document.body.getAttribute("data-user");
   var state = { stars: [], recent: [] };
-  var starEmpty = "点星星，把网站留在这里。";
+  var starEmpty = "点星标收藏网站。";
   var recentEmpty = "还没有打开过网站。";
 
   function paintStars(list) {
@@ -363,8 +385,13 @@
       var item = JSON.parse(btn.getAttribute("data-star"));
       var on = list.some(function (row) { return row.id === item.id; });
       btn.classList.toggle("on", on);
-      btn.setAttribute("aria-label", on ? "取消收藏" : "收藏");
-      if (btn.classList.contains("site-save")) btn.textContent = on ? "✓ 已收藏" : "☆ 收藏";
+      if (btn.classList.contains("site-save")) {
+        btn.setAttribute("aria-label", on ? "取消收藏" : "收藏");
+        btn.textContent = on ? "✓ 已收藏" : "☆ 收藏";
+      } else {
+        btn.setAttribute("aria-pressed", String(on));
+        btn.textContent = on ? "★" : "☆";
+      }
     });
   }
 
@@ -551,6 +578,13 @@
       toc.append(tocTitle, headingList);
       toc.hidden = false;
     }
+  }
+
+  var filters = document.querySelector("[data-search-filters]");
+  var selectedFilter = filters && filters.querySelector('[aria-current="true"]');
+  if (selectedFilter) {
+    var clippedBy = selectedFilter.getBoundingClientRect().right - filters.getBoundingClientRect().right;
+    if (clippedBy > 0) filters.scrollLeft += clippedBy + 4;
   }
 
   var form = document.querySelector("form.search");

@@ -1,1 +1,17 @@
-<a class="site-link card card-compact <%= page?.Layout %> bg-base-200 hover:bg-base-300 shadow-none" href="<%= safeURL(page?.Href) %>" title="<%= page?.Desc %>" data-link="<%= page?.JSON %>"><span class="mark"><% if (shown(page?.Host)) { %><img alt="" data-src="<%= safeURL(page?.Icon) %>" decoding="async" onload="this.nextElementSibling.remove()" onerror="this.remove()"><% } %><b><%= page?.Letter %></b></span><span class="meta"><span class="name"><%= page?.Name %></span><% if (shown(page?.Desc)) { %><span class="desc"><%= page?.Desc %></span><% } %></span><button class="star<%= page?.Star %>" type="button" data-star="<%= page?.JSON %>" aria-label="<% if (shown(page?.Star)) { %>取消收藏<% } else { %>收藏<% } %>">★</button></a>
+<% const result = page?.Layout === "result"; %>
+<div class="site-entry <%= page?.Layout %> <% if (result) { %>card hover:bg-base-200<% } else { %>card border border-base-300 bg-base-100 hover:bg-base-200 shadow-none<% } %>">
+  <a class="site-link" href="<%= safeURL(page?.Href) %>" title="<%= page?.Desc %>" data-link="<%= page?.JSON %>">
+    <span class="mark" aria-hidden="true"><% if (shown(page?.Host)) { %><img alt="" data-src="<%= safeURL(page?.Icon) %>" decoding="async" onload="this.nextElementSibling.remove()" onerror="this.remove()"><% } %><b><%= page?.Letter %></b></span>
+    <span class="meta">
+      <span class="name"><%= page?.Name %></span>
+      <% if (result && (page.Domain || page.Category)) { %>
+      <span class="mb-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-neutral">
+        <% if (page.Domain) { %><span class="min-w-0 truncate"><%= page.Domain %></span><% } %>
+        <% if (page.Category) { %><span class="badge badge-ghost badge-xs max-w-full truncate font-normal"><%= page.Category %></span><% } %>
+      </span>
+      <% } %>
+      <% if (shown(page?.Desc)) { %><span class="desc"><%= page?.Desc %></span><% } %>
+    </span>
+  </a>
+  <button class="star btn btn-ghost<%= page?.Star %>" type="button" data-star="<%= page?.JSON %>" aria-label="收藏 <%= page?.Name %>" aria-pressed="<%= shown(page?.Star) %>"><%= shown(page?.Star) ? "★" : "☆" %></button>
+</div>

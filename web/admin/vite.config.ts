@@ -44,4 +44,16 @@ export default defineConfig({
   base: "/admin/",
   plugins: [devGateway(), vue()],
   server: { port: 5173, strictPort: true },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("/node_modules/@primeuix/themes/")) return "admin-theme";
+          if (id.includes("/node_modules/@vue/") || id.includes("/node_modules/vue/") || id.includes("/node_modules/vue-router/")) return "vue-runtime";
+          if (id.includes("/node_modules/@primevue/core/")) return "admin-ui-core";
+          if (id.includes("/node_modules/primevue/datatable/")) return "admin-table";
+        },
+      },
+    },
+  },
 });
