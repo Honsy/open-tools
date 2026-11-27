@@ -285,7 +285,7 @@ func randomLink(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var link models.Link
 		err := db.Where("status = ? AND (url LIKE ? OR url LIKE ?)", "online", "https://%", "http://%").
-			Order("RAND()").First(&link).Error
+			Order("RANDOM()").First(&link).Error
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "没有可打开的网址"})
 			return

@@ -17,7 +17,7 @@ import (
 	"opentools/models"
 	"opentools/storage"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -42,10 +42,10 @@ func Save(db *gorm.DB, slug, title, summary, body, category, cover string) error
 }
 
 func SaveGenerated(cfg config.Config, slug, title, body, category string) error {
-	if cfg.MySQLDB != "opentools" {
+	if cfg.PostgresDB != "opentools" {
 		return errors.New("destination database must be opentools")
 	}
-	db, err := gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{})
 	if err != nil {
 		return errors.New("cannot connect to opentools")
 	}

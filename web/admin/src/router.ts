@@ -8,10 +8,12 @@ import AdminTags from "./pages/admin/Tags.vue";
 import AdminFeedback from "./pages/admin/Feedback.vue";
 import AdminUsers from "./pages/admin/Users.vue";
 import AdminInternetRank from "./pages/admin/InternetRank.vue";
+import AdminAgentDiscovery from "./pages/admin/AgentDiscovery.vue";
 
 const adminChildren = [
   { path: "", component: AdminReview },
   { path: "links", component: AdminLinks },
+  { path: "agent-discovery", component: AdminAgentDiscovery },
   { path: "categories", component: AdminCategories },
   { path: "articles", component: AdminArticles },
   { path: "tags", component: AdminTags },

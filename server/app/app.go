@@ -1,12 +1,9 @@
 package app
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
-
-	_ "github.com/go-sql-driver/mysql"
 
 	"opentools/api"
 	"opentools/config"
@@ -16,7 +13,7 @@ import (
 	"opentools/models"
 	"opentools/seed"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -39,7 +36,7 @@ func Run() error {
 			addr = "127.0.0.1:" + port
 		}
 	}
-	log.Printf("open-tools api %s mysql %s/%s", addr, cfg.MySQLHost+":"+cfg.MySQLPort, cfg.MySQLDB)
+	log.Printf("open-tools api %s postgresql %s/%s", addr, cfg.PostgresHost+":"+cfg.PostgresPort, cfg.PostgresDB)
 	api.Configure(cfg)
 	r := api.Router(db)
 	api.WarmIcons(db)
@@ -53,31 +50,8 @@ func Run() error {
 }
 
 func openDB(cfg config.Config) (*gorm.DB, error) {
-	server, err := sql.Open("mysql", cfg.ServerDSN())
+	db, err := OpenSchema(cfg)
 	if err != nil {
-		return nil, err
-	}
-	defer server.Close()
-	stmt := fmt.Sprintf(
-		"CREATE DATABASE IF NOT EXISTS `%s` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
-		cfg.MySQLDB,
-	)
-	if _, err := server.Exec(stmt); err != nil {
-		return nil, err
-	}
-	db, err := gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, err
-	}
-	sqlDB.SetMaxOpenConns(10)
-	if err := db.AutoMigrate(&models.Category{}, &models.CategoryGuide{}, &models.HistoryEvent{}, &models.Link{}, &models.Article{}, &models.ArticleComment{}, &models.Feedback{}, &models.Tag{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}, &models.InternetRankMonth{}, &models.InternetRankEntry{}, &models.InternetRankBlock{}, &models.SubmissionReview{}); err != nil {
-		return nil, err
-	}
-	if err := ensureUserEmail(db); err != nil {
 		return nil, err
 	}
 	if err := seed.MigrateAccounts(db, cfg.AdminUser, cfg.AdminPassword); err != nil {
@@ -86,19 +60,35 @@ func openDB(cfg config.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
-func ensureUserEmail(db *gorm.DB) error {
-	if err := db.Exec("ALTER TABLE users MODIFY COLUMN email VARCHAR(254) NULL").Error; err != nil {
-		return err
+// OpenSchema initializes PostgreSQL tables without creating or modifying a user account.
+func OpenSchema(cfg config.Config) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{})
+	if err != nil {
+		return nil, err
 	}
-	if err := db.Exec("UPDATE users SET email = NULL WHERE email = ''").Error; err != nil {
-		return err
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
 	}
-	var n int64
-	if err := db.Raw("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'users' AND index_name = 'ux_users_email'").Scan(&n).Error; err != nil {
-		return err
+	sqlDB.SetMaxOpenConns(10)
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(82422402)").Error; err != nil {
+			return err
+		}
+		if err := tx.AutoMigrate(&models.Category{}, &models.CategoryGuide{}, &models.HistoryEvent{}, &models.Link{}, &models.Article{}, &models.ArticleComment{}, &models.Feedback{}, &models.Tag{}, &models.User{}, &models.UserLink{}, &models.PasswordReset{}, &models.InternetRankMonth{}, &models.InternetRankEntry{}, &models.InternetRankBlock{}, &models.SubmissionReview{}); err != nil {
+			return err
+		}
+		if err := tx.Exec("UPDATE users SET email = NULL WHERE email = ''").Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON users (lower(email))").Error; err != nil {
+			return err
+		}
+		return tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_username_lower ON users (lower(username))").Error
+	})
+	if err != nil {
+		_ = sqlDB.Close()
+		return nil, err
 	}
-	if n > 0 {
-		return nil
-	}
-	return db.Exec("CREATE UNIQUE INDEX ux_users_email ON users (email)").Error
+	return db, nil
 }

@@ -105,7 +105,7 @@ func loginPost(db *gorm.DB) gin.HandlerFunc {
 			})
 		}
 		var user models.User
-		if err := db.Where("username = ?", name).First(&user).Error; err != nil ||
+		if err := db.Where("lower(username) = lower(?)", name).First(&user).Error; err != nil ||
 			bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
 			fail("账号或密码不对")
 			return
@@ -144,7 +144,7 @@ func registerPost(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		var n int64
-		db.Model(&models.User{}).Where("username = ?", name).Count(&n)
+		db.Model(&models.User{}).Where("lower(username) = lower(?)", name).Count(&n)
 		if n > 0 {
 			fail(http.StatusConflict, "这个用户名已经有人用了")
 			return

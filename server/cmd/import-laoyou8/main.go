@@ -13,6 +13,7 @@ import (
 
 	mysqlDSN "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -49,10 +50,10 @@ func run(apply bool) error {
 	if err != nil {
 		return err
 	}
-	if cfg.MySQLDB != "opentools" {
+	if cfg.PostgresDB != "opentools" {
 		return errors.New("destination database must be opentools")
 	}
-	destination, err := gorm.Open(mysql.Open(cfg.DSN()), dbConfig)
+	destination, err := gorm.Open(postgres.Open(cfg.DSN()), dbConfig)
 	if err != nil {
 		return errors.New("cannot connect to the opentools destination database")
 	}

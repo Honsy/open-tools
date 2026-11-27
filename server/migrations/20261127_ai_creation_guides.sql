@@ -1,20 +1,19 @@
 -- AI 创作工具详情。仅更新与已核对的旧稿一致的条目。
 
-SET NAMES utf8mb4;
-
-START TRANSACTION;
+BEGIN;
+SELECT pg_advisory_xact_lock(82422402);
 
 -- 两个同名的子分类有不同的收录。保留旧 slug 和所属站点。
-UPDATE `categories`
-SET `name` = 'AI 助手'
-WHERE `slug` = 'ai-6bf6d3f3d626'
-  AND `parent_slug` = 'ai'
-  AND `kind` = 'tab'
-  AND `name` = '对话';
+UPDATE "categories"
+SET "name" = 'AI 助手'
+WHERE "slug" = 'ai-6bf6d3f3d626'
+  AND "parent_slug" = 'ai'
+  AND "kind" = 'tab'
+  AND "name" = '对话';
 
-UPDATE `links`
-SET `desc` = 'AI 图片、视频与短剧画布，支持图生视频和首尾帧',
-    `body` = '即梦适合在一个项目里做图、试镜头，再把素材串成短片。已有角色图、产品图或分镜图，可以直接用作视频参考。做多镜头故事时，短剧画布能把剧本、图片、分镜视频和声音放在一起。
+UPDATE "links"
+SET "desc" = 'AI 图片、视频与短剧画布，支持图生视频和首尾帧',
+    "body" = '即梦适合在一个项目里做图、试镜头，再把素材串成短片。已有角色图、产品图或分镜图，可以直接用作视频参考。做多镜头故事时，短剧画布能把剧本、图片、分镜视频和声音放在一起。
 
 ### 即梦怎么让一张角色图动起来？
 
@@ -23,17 +22,17 @@ SET `desc` = 'AI 图片、视频与短剧画布，支持图生视频和首尾帧
 ### 做多镜头短片，角色和分镜怎么管理？
 
 把角色、道具和场景图集中放在画布，后续镜头引用对应素材。计划在其他项目继续使用的角色或产品，可存进即梦资产库。剧本可以放在文本节点，画面满意后还能把片段送到多轨编辑器或剪映整理。[即梦官方画布与资产说明](https://jimeng.jianying.com/tutorials/drama-studio/canvas)'
-WHERE `slug` IN ('jimeng-jianying')
-  AND `name` = '即梦'
-  AND `url` = 'https://jimeng.jianying.com'
-  AND CAST(`desc` AS BINARY) = '图像和视频'
-  AND CAST(`body` AS BINARY) = '即梦用来按文字生成图片和短视频，适合先出一版画面再决定要不要重做。提示词越具体，结果越稳定。
+WHERE "slug" IN ('jimeng-jianying')
+  AND "name" = '即梦'
+  AND "url" = 'https://jimeng.jianying.com'
+  AND "desc" COLLATE "C" = '图像和视频'
+  AND "body" COLLATE "C" = '即梦用来按文字生成图片和短视频，适合先出一版画面再决定要不要重做。提示词越具体，结果越稳定。
 
 生成结果的人物和商标可能撞上现有作品。拿去发布前自己看一遍画面里有没有不该出现的标识。';
 
-UPDATE `links`
-SET `desc` = '快手 AI 视频与图片工具，支持图生视频、首尾帧和多镜头',
-    `body` = '可灵适合把一张图片变成短镜头，或从文字开始试动作和运镜。已有广告产品图、角色设定图或插画时，可以从图生视频开始。能否使用首尾帧、多镜头和参考元素，取决于选中的模型与模式。
+UPDATE "links"
+SET "desc" = '快手 AI 视频与图片工具，支持图生视频、首尾帧和多镜头',
+    "body" = '可灵适合把一张图片变成短镜头，或从文字开始试动作和运镜。已有广告产品图、角色设定图或插画时，可以从图生视频开始。能否使用首尾帧、多镜头和参考元素，取决于选中的模型与模式。
 
 ### 可灵图生视频什么时候用首尾帧？
 
@@ -42,17 +41,17 @@ SET `desc` = '快手 AI 视频与图片工具，支持图生视频、首尾帧�
 ### 一段生成里能安排多个镜头吗？
 
 可灵的部分模型支持多镜头叙事，也可绑定参考元素来辅助保持主体一致。写多镜头时把动作分段，例如「全景：走进店里」「近景：把信放在柜台上」「特写：打开信封」。先在界面确认选中的模型有对应选项，再决定拆成几段生成。[快手官方多镜头与元素绑定说明](https://ir.kuaishou.com/zh-hant/node/11216/pdf)'
-WHERE `slug` IN ('midjourney', 'klingai')
-  AND `name` = '可灵'
-  AND `url` = 'https://klingai.com'
-  AND CAST(`desc` AS BINARY) = '图像和视频'
-  AND CAST(`body` AS BINARY) = '可灵按文字或图片生成视频和图像，是快手的正版创作工具。生成前看清当前账号的额度和分辨率选项。
+WHERE "slug" IN ('midjourney', 'klingai')
+  AND "name" = '可灵'
+  AND "url" = 'https://klingai.com'
+  AND "desc" COLLATE "C" = '图像和视频'
+  AND "body" COLLATE "C" = '可灵按文字或图片生成视频和图像，是快手的正版创作工具。生成前看清当前账号的额度和分辨率选项。
 
 画面里如果出现商标或名人面孔，发布前先拿掉。商用范围以它自己的使用条款为准。';
 
-UPDATE `links`
-SET `desc` = 'AI 视频生成工具，支持多主体参考、图生视频和首尾帧',
-    `body` = 'Vidu 由生数科技推出。手里只有文字，可以从文生视频开始。有一张现成画面，可以用图生视频。需要把已有的角色、道具或场景作为参考，则适合先看参考生视频。不同模型支持的输入和模式有所不同。
+UPDATE "links"
+SET "desc" = 'AI 视频生成工具，支持多主体参考、图生视频和首尾帧',
+    "body" = 'Vidu 由生数科技推出。手里只有文字，可以从文生视频开始。有一张现成画面，可以用图生视频。需要把已有的角色、道具或场景作为参考，则适合先看参考生视频。不同模型支持的输入和模式有所不同。
 
 ### Vidu 的参考生视频和首尾帧怎么选？
 
@@ -61,11 +60,11 @@ SET `desc` = 'AI 视频生成工具，支持多主体参考、图生视频和首
 ### 连做几段镜头，先核对什么？
 
 选支持参考生视频的模型，给同一角色沿用同一份主体素材，每段只改动作或构图。先做一个短镜头，核对角色辨识度和动作，再继续生成下一段。参考、多主体和首尾帧的可用组合可以查官方模型表，网页编辑器的实际选项以界面为准。[Vidu 官方模型表](https://platform.vidu.cn/docs/model-map)'
-WHERE `slug` IN ('vidu')
-  AND `name` = 'Vidu'
-  AND `url` = 'https://www.vidu.cn'
-  AND CAST(`desc` AS BINARY) = '视频'
-  AND CAST(`body` AS BINARY) = 'Vidu 把文字或图片做成短视频，国内可以直接打开。先选参考图，再写镜头怎么动。
+WHERE "slug" IN ('vidu')
+  AND "name" = 'Vidu'
+  AND "url" = 'https://www.vidu.cn'
+  AND "desc" COLLATE "C" = '视频'
+  AND "body" COLLATE "C" = 'Vidu 把文字或图片做成短视频，国内可以直接打开。先选参考图，再写镜头怎么动。
 
 人物和物品在镜头里会变。要固定主体时，用同一张参考图接着做。';
 

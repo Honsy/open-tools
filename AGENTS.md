@@ -13,20 +13,22 @@
 
 ## 数据
 
-库是独立的 MySQL `opentools`。不要把表写进 YouGo 的 `laoyouba`。
+开物录使用独立的 PostgreSQL 库 `opentools`。YouGo 和开工 Agent 各自使用独立的库与角色。
 
-- 本机开发：`127.0.0.1:3306`，库 `opentools`。`server/config.yaml` 已忽略，不要提交，也不要指到线上。
+- 本机开发使用 `127.0.0.1:5432`，库 `opentools`，角色 `kaiwu`。在 `server/config.yaml` 或用 `KAIWU_PG*` 环境变量配置连接。`server/config.yaml` 已忽略，不要提交，也不要指到线上。
 - 新库先导入 `server/init.sql`，再启动 Go。这个脚本建内容表并导入初始网址、分类、标签、文章、分类导读和历史事件。只有内容表均为空时才导入。系统表和首个管理员由 Go 初始化。
 - 已有内容的库保留原数据。切换到数据库内容时，执行 `server/migrations/20261127_catalog_content.sql`，补分类导读和历史事件，并更新仍与指定旧稿完全一致的详情。日常在后台「网址」编辑 `links`。应用启动不补写内容。
 - `server/migrations/20261127_ai_creation_guides.sql` 更新仍与旧稿一致的即梦、可灵和 Vidu 详情，将导入的同名「对话」子分类改为「AI 助手」，保留其链接和收录。
 - `server/migrations/20261127_catalog_taxonomy.sql` 在分类导读表建好后执行。它前置 AI 目录、按用途调整现有子分类、补充来源可核对的工具介绍，并保留原有网址和计数。
+- `server/migrations/20261127_ai_catalog_expansion.sql` 和 `server/migrations/20261127_aigc_creation_catalog.sql` 在分类整理后执行，补充 AI 和创作工具条目。
 - 新库的 `clicks`、`views` 从 0 起。历史库原有点击数可能包含旧种子基线。详情页加浏览，`/go/:id` 加点击。
 
 从仓库根目录初始化本机数据库：
 
 ```bash
-mysql -h 127.0.0.1 -u root -p -e 'CREATE DATABASE IF NOT EXISTS opentools CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-mysql -h 127.0.0.1 -u root -p --default-character-set=utf8mb4 opentools < server/init.sql
+createuser --pwprompt kaiwu
+createdb --owner=kaiwu opentools
+psql -h 127.0.0.1 -U kaiwu -d opentools -v ON_ERROR_STOP=1 -f server/init.sql
 ```
 
 ## 设计
@@ -81,7 +83,10 @@ mysql -h 127.0.0.1 -u root -p --default-character-set=utf8mb4 opentools < server
 | 入口 | `kaiwulu.com` 的 HTTP 跳转 HTTPS。Nginx 按路径分别访问 Go、Node 和静态文件 |
 | 后台 | `/admin/`，静态在当前发布目录 `/data/app/kaiwu/releases/<版本>/admin`，构建用 `npm --prefix web/admin run build` |
 | YouGo | 同机 `/yougo/`，反代 `127.0.0.1:8000`。不要占 80 |
-| MySQL | 本机 `127.0.0.1:13366`，库 `opentools`。YouGo 仍用库 `laoyouba` |
+| PostgreSQL | systemd `postgresql-17`，监听 `127.0.0.1:5432`。开物录用 `opentools`，YouGo 用 `yougo`，开工 Agent 用 `kaigong_agent` |
+| 开工 Agent | systemd `kaigong-api`、`kaigong-worker`，API 监听 `127.0.0.1:8090`，Nginx 提供 `/agent/` |
+
+数据库和 Agent 的生产环境变量由 systemd 从 `/etc/kaiwu-stack-postgres/` 加载。`deploy/migrate_mysql_to_postgres.py` 从旧 MySQL 实例复制数据到空的 PostgreSQL 库，包含逐表行数和内容校验。
 
 这台机器更新靠本机交叉编译后上传，不要在机器上 `git pull`。Linux 包：`CGO_ENABLED=0 GOOS=linux GOARCH=amd64`。编完把 `GOOS` 设回 `windows`，否则下一发本机编译会变成 ELF。不要编 Windows 可执行文件来跑本地接口。
 

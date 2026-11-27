@@ -1,36 +1,35 @@
 -- AI 工具按用途整理。先执行 20261127_catalog_content.sql。旧网址及点击数据继续沿用。
 
-SET NAMES utf8mb4;
+BEGIN;
+SELECT pg_advisory_xact_lock(82422402);
 
-START TRANSACTION;
+UPDATE "categories" SET "sort" = 0, "show_on_home" = TRUE WHERE "slug" = 'ai' AND "kind" = 'section';
 
-UPDATE `categories` SET `sort` = 0, `show_on_home` = 1 WHERE `slug` = 'ai' AND `kind` = 'section';
+UPDATE "categories" SET "name" = '通用助手', "sort" = 1 WHERE "slug" = 'chat' AND "parent_slug" = 'ai' AND "name" = '对话';
 
-UPDATE `categories` SET `name` = '通用助手', `sort` = 1 WHERE `slug` = 'chat' AND `parent_slug` = 'ai' AND `name` = '对话';
+UPDATE "categories" SET "name" = '视频与短剧', "sort" = 4 WHERE "slug" = 'draw' AND "parent_slug" = 'ai' AND "name" = '创作';
 
-UPDATE `categories` SET `name` = '视频与短剧', `sort` = 4 WHERE `slug` = 'draw' AND `parent_slug` = 'ai' AND `name` = '创作';
+UPDATE "categories" SET "name" = '图像与设计', "sort" = 3 WHERE "slug" = 'ai-ae0faa3203a9' AND "parent_slug" = 'ai' AND "name" = '绘图';
 
-UPDATE `categories` SET `name` = '图像与设计', `sort` = 3 WHERE `slug` = 'ai-ae0faa3203a9' AND `parent_slug` = 'ai' AND `name` = '绘图';
+UPDATE "categories" SET "name" = '智能体与流程', "sort" = 8 WHERE "slug" = 'ai-6bf6d3f3d626' AND "parent_slug" = 'ai' AND "name" IN ('对话', 'AI 助手');
 
-UPDATE `categories` SET `name` = '智能体与流程', `sort` = 8 WHERE `slug` = 'ai-6bf6d3f3d626' AND `parent_slug` = 'ai' AND `name` IN ('对话', 'AI 助手');
+INSERT INTO "categories" ("slug", "name", "parent_slug", "kind", "content_kind", "sort", "show_on_home") VALUES
+  ('ai-search', '搜索与研究', 'ai', 'tab', 'links', 2, FALSE),
+  ('ai-ae0faa3203a9', '图像与设计', 'ai', 'tab', 'links', 3, FALSE),
+  ('ai-audio', '音乐与语音', 'ai', 'tab', 'links', 5, FALSE),
+  ('ai-code', '编程与应用', 'ai', 'tab', 'links', 6, FALSE),
+  ('ai-office', '写作与办公', 'ai', 'tab', 'links', 7, FALSE),
+  ('ai-6bf6d3f3d626', '智能体与流程', 'ai', 'tab', 'links', 8, FALSE)
+ON CONFLICT DO NOTHING;
 
-INSERT INTO `categories` (`slug`, `name`, `parent_slug`, `kind`, `content_kind`, `sort`, `show_on_home`) VALUES
-  ('ai-search', '搜索与研究', 'ai', 'tab', 'links', 2, 0),
-  ('ai-ae0faa3203a9', '图像与设计', 'ai', 'tab', 'links', 3, 0),
-  ('ai-audio', '音乐与语音', 'ai', 'tab', 'links', 5, 0),
-  ('ai-code', '编程与应用', 'ai', 'tab', 'links', 6, 0),
-  ('ai-office', '写作与办公', 'ai', 'tab', 'links', 7, 0),
-  ('ai-6bf6d3f3d626', '智能体与流程', 'ai', 'tab', 'links', 8, 0)
-ON DUPLICATE KEY UPDATE `slug` = `categories`.`slug`;
+UPDATE "category_guides" SET "title" = 'AI 通用助手' WHERE "category_slug" = 'chat' AND "title" = 'AI 对话助手';
 
-UPDATE `category_guides` SET `title` = 'AI 通用助手' WHERE `category_slug` = 'chat' AND `title` = 'AI 对话助手';
+UPDATE "category_guides"
+SET "title" = 'AI 视频与短剧工具', "intro" = '从一张图做动效、按提示词出镜头，或从剧本开始制作短剧。选工具前先分清任务是做单镜头、多个镜头，还是需要分镜和剪辑的完整流程。', "home_label" = ''
+WHERE "category_slug" = 'draw' AND "title" = 'AI 绘画与视频生成' AND "home_label" = '绘图与视频'
+  AND "intro" COLLATE "C" = '做插画、商品图或短视频时，先按文生图、图生图或图生视频挑工具。需要交付成品时，生成前先看导出尺寸、水印和商用条款。';
 
-UPDATE `category_guides`
-SET `title` = 'AI 视频与短剧工具', `intro` = '从一张图做动效、按提示词出镜头，或从剧本开始制作短剧。选工具前先分清任务是做单镜头、多个镜头，还是需要分镜和剪辑的完整流程。', `home_label` = ''
-WHERE `category_slug` = 'draw' AND `title` = 'AI 绘画与视频生成' AND `home_label` = '绘图与视频'
-  AND CAST(`intro` AS BINARY) = '做插画、商品图或短视频时，先按文生图、图生图或图生视频挑工具。需要交付成品时，生成前先看导出尺寸、水印和商用条款。';
-
-INSERT INTO `category_guides` (`category_slug`, `title`, `intro`, `home_label`) VALUES
+INSERT INTO "category_guides" ("category_slug", "title", "intro", "home_label") VALUES
   ('ai', 'AI 工具导航', '按用途选 AI 工具。日常提问找通用助手，查资料找搜索与研究，做图、视频或配音进相应创作分类，写代码、做文档和搭流程也有独立入口。', 'AI 工具'),
   ('ai-search', 'AI 搜索与研究工具', '查网页信息、比较来源或找论文时，先按资料类型选工具。核对引用时，优先看结果能否直接跳到原文。', ''),
   ('ai-ae0faa3203a9', 'AI 图像生成与设计工具', '生成插画、编辑商品图、制作海报和探索三维形象，都可以从这个分类开始。已有素材时，优先看工具是否支持参考图和局部调整。', ''),
@@ -38,12 +37,13 @@ INSERT INTO `category_guides` (`category_slug`, `title`, `intro`, `home_label`) 
   ('ai-code', 'AI 编程助手与应用生成工具', '手头已有代码仓库时，可选能读取项目和编辑文件的编程助手。想先做一个应用雏形，可以从低代码或自然语言生成应用的工具开始。', ''),
   ('ai-office', 'AI 写作、文档与办公工具', '根据要交付的内容选工具。整理资料看文档问答，起草内容看写作，做汇报看演示文稿的编辑和导出能力。', ''),
   ('ai-6bf6d3f3d626', 'AI 智能体与工作流工具', '需要让 AI 按步骤完成任务时，可按触发方式、可连接的数据和是否要人工确认来比较工具。', '')
-ON DUPLICATE KEY UPDATE `category_slug` = `category_guides`.`category_slug`;
+ON CONFLICT DO NOTHING;
 
 -- 只有原分类和已核对的站点标识均匹配时才移动。
-UPDATE `links` AS site
-JOIN (
-SELECT 'metaso' AS `slug`, '秘塔' AS `name`, 'https://metaso.cn' AS `url`, 'chat' AS `old_category`, 'ai-search' AS `new_category`
+UPDATE "links" AS site
+SET category_slug = target.slug
+FROM (
+SELECT 'metaso' AS "slug", '秘塔' AS "name", 'https://metaso.cn' AS "url", 'chat' AS "old_category", 'ai-search' AS "new_category"
 UNION ALL SELECT 'perplexity', 'Perplexity', 'https://www.perplexity.ai', 'chat', 'ai-search'
 UNION ALL SELECT 'n', '纳米AI', 'https://www.n.cn/downloads?src=AIBotCode', 'ai-6bf6d3f3d626', 'ai-search'
 UNION ALL SELECT 'yige-baidu', '文心一格', 'https://yige.baidu.com', 'draw', 'ai-ae0faa3203a9'
@@ -83,21 +83,20 @@ UNION ALL SELECT 'coze', '扣子', 'https://www.coze.cn', 'chat', 'ai-6bf6d3f3d6
 UNION ALL SELECT 'fellou', 'fellou', 'https://fellou.ai', 'chat', 'ai-6bf6d3f3d626'
 UNION ALL SELECT 'tabbit', 'Tabbit', 'https://www.tabbit.com', 'chat', 'ai-6bf6d3f3d626'
 ) AS change_set
-  ON site.slug = change_set.slug AND CAST(site.name AS BINARY) = change_set.name
-  AND CAST(site.url AS BINARY) = change_set.url AND site.category_slug = change_set.old_category
-JOIN `categories` AS target ON target.slug = change_set.new_category AND target.parent_slug = 'ai'
-SET site.category_slug = target.slug;
+JOIN "categories" AS target ON target.slug = change_set.new_category AND target.parent_slug = 'ai'
+WHERE site.slug = change_set.slug AND site.name COLLATE "C" = change_set.name
+  AND site.url COLLATE "C" = change_set.url AND site.category_slug = change_set.old_category;
 
-INSERT INTO `links` (`slug`, `category_slug`, `name`, `url`, `desc`, `tags`, `alias`, `sort`, `body`,
-  `status`, `clicks`, `views`, `check_fails`, `user_id`, `pinned`, `pin_sort`, `created_at`)
-SELECT seed.slug, seed.category_slug, seed.name, seed.url, seed.`desc`, seed.tags, seed.alias, seed.sort, seed.body,
+INSERT INTO "links" ("slug", "category_slug", "name", "url", "desc", "tags", "alias", "sort", "body",
+  "status", "clicks", "views", "check_fails", "user_id", "pinned", "pin_sort", "created_at")
+SELECT seed.slug, seed.category_slug, seed.name, seed.url, seed."desc", seed.tags, seed.alias, seed.sort, seed.body,
   'online', 0, 0, 0, 0, FALSE, 0, CURRENT_TIMESTAMP(3)
 FROM (
-SELECT 'cursor-ai' AS `slug`, 'ai-code' AS `category_slug`, 'Cursor' AS `name`, 'https://cursor.com/' AS `url`, 'AI 代码编辑器，支持理解项目、修改文件和审阅变更' AS `desc`, '编程,代码编辑器,AI' AS `tags`, '' AS `alias`, 1 AS `sort`, 'Cursor 适合在已有代码仓库里理解项目、规划改动和审阅代码差异。它提供能编辑文件的 Agent，也提供可先讨论方案的模式。
+SELECT 'cursor-ai' AS "slug", 'ai-code' AS "category_slug", 'Cursor' AS "name", 'https://cursor.com/' AS "url", 'AI 代码编辑器，支持理解项目、修改文件和审阅变更' AS "desc", '编程,代码编辑器,AI' AS "tags", '' AS "alias", 1 AS "sort", 'Cursor 适合在已有代码仓库里理解项目、规划改动和审阅代码差异。它提供能编辑文件的 Agent，也提供可先讨论方案的模式。
 
 ### 第一次使用怎么控制改动范围？
 
-打开一个熟悉的仓库，先让它找出某个页面的入口和测试。确认位置后，指定一个具体的小改动，例如补一个空状态，然后查看逐文件差异并运行相关测试。涉及多个文件时，可先让它列方案再选择范围。[Cursor 官方 Agent 指南](https://cursor.com/help/ai-features/agent)' AS `body`
+打开一个熟悉的仓库，先让它找出某个页面的入口和测试。确认位置后，指定一个具体的小改动，例如补一个空状态，然后查看逐文件差异并运行相关测试。涉及多个文件时，可先让它列方案再选择范围。[Cursor 官方 Agent 指南](https://cursor.com/help/ai-features/agent)' AS "body"
 UNION ALL SELECT 'github-copilot', 'ai-code', 'GitHub Copilot', 'https://github.com/features/copilot', 'GitHub 的编程助手，支持 IDE 代码补全与代码问答', '编程,代码补全,AI', '', 2, 'GitHub Copilot 可以在支持的 IDE 里随输入给出行内代码建议，也能用对话解释已有代码或讨论实现。它适合希望留在现有编辑器里完成日常编程的人。
 
 ### 代码补全和对话分别什么时候用？
@@ -134,11 +133,11 @@ UNION ALL SELECT 'n8n', 'ai-6bf6d3f3d626', 'n8n', 'https://n8n.io/', '节点式�
 
 先做一条只有几步的流程，例如定时读取公开天气数据，提取当天的摘要，再写入数据表。先手动跑一遍，逐节点检查输入输出，确认格式和失败情况后再开启定时运行。[n8n 官方工作流入门](https://github.com/n8n-io/n8n-docs/blob/main/docs/get-started/build-your-first-workflow.md)'
 ) AS seed
-JOIN `categories` AS category ON category.slug = seed.category_slug AND category.parent_slug = 'ai'
+JOIN "categories" AS category ON category.slug = seed.category_slug AND category.parent_slug = 'ai'
 WHERE NOT EXISTS (
-  SELECT 1 FROM `links` AS current
-  WHERE current.slug = seed.slug OR current.name = seed.name
-    OR TRIM(TRAILING '/' FROM current.url) = TRIM(TRAILING '/' FROM seed.url)
+  SELECT 1 FROM "links" AS existing
+  WHERE existing.slug = seed.slug OR lower(existing.name) = lower(seed.name)
+    OR TRIM(TRAILING '/' FROM existing.url) = TRIM(TRAILING '/' FROM seed.url)
 );
 
 COMMIT;

@@ -79,7 +79,7 @@ func forgotPost(db *gorm.DB) gin.HandlerFunc {
 		}
 		sent := "如果这个邮箱注册过，重置邮件已经发出。去收件箱看，也包括垃圾箱。链接 30 分钟内有效。"
 		var user models.User
-		if err := db.Where("email = ?", email).First(&user).Error; err != nil {
+		if err := db.Where("lower(email) = lower(?)", email).First(&user).Error; err != nil {
 			view.Notice = sent
 			showAuth(c, db, http.StatusOK, view)
 			return
@@ -195,7 +195,7 @@ func resetUser(db *gorm.DB, token string) (models.User, bool) {
 
 func emailTaken(db *gorm.DB, email string, exceptID uint) bool {
 	var n int64
-	q := db.Model(&models.User{}).Where("email = ?", email)
+	q := db.Model(&models.User{}).Where("lower(email) = lower(?)", email)
 	if exceptID != 0 {
 		q = q.Where("id <> ?", exceptID)
 	}

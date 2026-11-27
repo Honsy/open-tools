@@ -25,6 +25,7 @@ func MountAdmin(r *gin.Engine, db *gorm.DB) {
 	g.GET("/submissions", adminSubmissions(db))
 	g.GET("/submission-reviews", adminSubmissionReviews(db))
 	g.PATCH("/submissions/:id", reviewSubmission(db))
+	mountDiscovery(g, db)
 	mountAdminInternetRank(g, db)
 	g.GET("/users", adminUsers(db))
 	g.GET("/links", adminLinks(db))
@@ -109,7 +110,7 @@ func adminLinks(db *gorm.DB) gin.HandlerFunc {
 		}
 		if text := strings.TrimSpace(c.Query("q")); text != "" {
 			like := "%" + escapeLike.Replace(clip(text, 254)) + "%"
-			q = q.Where("name LIKE ? ESCAPE '!' OR url LIKE ? ESCAPE '!'", like, like)
+			q = q.Where("name ILIKE ? ESCAPE '!' OR url ILIKE ? ESCAPE '!'", like, like)
 		}
 		rows := make([]models.Link, 0)
 		if _, paginated := c.GetQuery("page"); !paginated {

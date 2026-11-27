@@ -904,7 +904,7 @@ func toolPage(db *gorm.DB) gin.HandlerFunc {
 func randomRedirect(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var link models.Link
-		err := db.Where("status = ? AND slug <> ?", "online", "").Order("RAND()").First(&link).Error
+		err := db.Where("status = ? AND slug <> ?", "online", "").Order("RANDOM()").First(&link).Error
 		c.Header("X-Robots-Tag", "noindex, nofollow")
 		if err != nil || link.Slug == "" {
 			c.Redirect(http.StatusFound, "/")

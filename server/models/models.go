@@ -119,7 +119,7 @@ type Article struct {
 	LegacySlug string    `gorm:"index;size:255" json:"-"`
 	Title      string    `gorm:"size:255" json:"title"`
 	Summary    string    `gorm:"type:text" json:"summary"`
-	Body       string    `gorm:"type:longtext" json:"body"`
+	Body       string    `gorm:"type:text" json:"body"`
 	Format     string    `gorm:"size:16" json:"format"`
 	CoverURL   string    `gorm:"size:512" json:"coverUrl"`
 	VideoURL   string    `gorm:"size:512" json:"videoUrl"`

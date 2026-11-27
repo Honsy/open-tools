@@ -97,7 +97,7 @@ func MigrateAccounts(db *gorm.DB, username, password string) error {
 
 func usernameAvailable(db *gorm.DB, username string) (bool, error) {
 	var count int64
-	err := db.Model(&models.User{}).Where("username = ?", username).Count(&count).Error
+	err := db.Model(&models.User{}).Where("lower(username) = lower(?)", username).Count(&count).Error
 	return count == 0, err
 }
 

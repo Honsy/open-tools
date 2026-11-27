@@ -6,6 +6,7 @@ const route = useRoute();
 const groups = [
   { name: "内容运营", items: [
     { path: "/", name: "网址审核", icon: "pi-inbox" },
+    { path: "/agent-discovery", name: "Agent 发现", icon: "pi-sparkles" },
     { path: "/links", name: "网址管理", icon: "pi-link" },
     { path: "/categories", name: "分类管理", icon: "pi-folder" },
     { path: "/articles", name: "文章管理", icon: "pi-file-edit" },

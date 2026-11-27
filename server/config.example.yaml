@@ -2,11 +2,12 @@
 # 本机开发是 3306。上海机 MySQL 是 13366，库名 opentools。
 # 部署时也可以用 YOUGO_MYSQL_HOST / YOUGO_MYSQL_PORT / YOUGO_MYSQL_USER / YOUGO_MYSQL_PASSWORD，
 # 库名用 MYSQL_DB=opentools。
-mysqlHost: 127.0.0.1
-mysqlPort: "3306"
-mysqlUser: root
-mysqlPassword: ""
-mysqlDB: opentools
+postgresHost: 127.0.0.1
+postgresPort: "5432"
+postgresUser: kaiwu
+postgresPassword: ""
+postgresDB: opentools
+postgresSSLMode: disable
 adminUser: admin
 adminPassword: change-me
 sessionSecret: change-me-too

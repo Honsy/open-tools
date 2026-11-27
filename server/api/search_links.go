@@ -40,7 +40,7 @@ func matchingLinks(db *gorm.DB, text string) *gorm.DB {
 	query := db.Model(&models.Link{}).Where("status = ?", "online")
 	for _, term := range searchTerms(text) {
 		like := containsSearchTerm(term)
-		query = query.Where("(name LIKE ? ESCAPE '!' OR `desc` LIKE ? ESCAPE '!' OR tags LIKE ? ESCAPE '!' OR alias LIKE ? ESCAPE '!' OR url LIKE ? ESCAPE '!')",
+		query = query.Where("(name ILIKE ? ESCAPE '!' OR \"desc\" ILIKE ? ESCAPE '!' OR tags ILIKE ? ESCAPE '!' OR alias ILIKE ? ESCAPE '!' OR url ILIKE ? ESCAPE '!')",
 			like, like, like, like, like)
 	}
 	return query
@@ -127,9 +127,9 @@ func orderLinkMatches(query *gorm.DB, text string) *gorm.DB {
 	compact := strings.Join(strings.Fields(text), "")
 	phrase, joined := containsSearchTerm(text), containsSearchTerm(compact)
 	return query.Order(clause.OrderBy{Expression: clause.Expr{
-		SQL: "CASE WHEN name IN (?, ?) OR alias IN (?, ?) THEN 0 " +
-			"WHEN name LIKE ? ESCAPE '!' OR name LIKE ? ESCAPE '!' THEN 1 " +
-			"WHEN `desc` LIKE ? ESCAPE '!' OR `desc` LIKE ? ESCAPE '!' THEN 2 " +
+		SQL: "CASE WHEN lower(name) IN (lower(?), lower(?)) OR lower(alias) IN (lower(?), lower(?)) THEN 0 " +
+			"WHEN name ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!' THEN 1 " +
+			"WHEN \"desc\" ILIKE ? ESCAPE '!' OR \"desc\" ILIKE ? ESCAPE '!' THEN 2 " +
 			"ELSE 3 END, clicks DESC, id ASC",
 		Vars: []any{text, compact, text, compact, phrase, joined, phrase, joined},
 	}})

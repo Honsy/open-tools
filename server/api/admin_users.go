@@ -30,7 +30,7 @@ func adminUsers(db *gorm.DB) gin.HandlerFunc {
 				return
 			}
 			like := "%" + escapeLike.Replace(text) + "%"
-			query = query.Where("username LIKE ? ESCAPE '!' OR email LIKE ? ESCAPE '!'", like, like)
+			query = query.Where("username ILIKE ? ESCAPE '!' OR email ILIKE ? ESCAPE '!'", like, like)
 		}
 		readError := gin.H{"error": "读取用户列表失败"}
 		var total int64

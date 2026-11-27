@@ -51,7 +51,7 @@ func TestAdminLinksPaginatesFilteredResults(t *testing.T) {
 		t.Fatalf("unexpected queries: %v", queries)
 	}
 	for _, query := range queries {
-		if !strings.Contains(query, "status = 'online' AND category_slug = 'learn' AND (name LIKE '%foo!%%'") {
+		if !strings.Contains(query, "status = 'online' AND category_slug = 'learn' AND (name ILIKE '%foo!%%'") {
 			t.Fatalf("expected both queries to apply the same filters: %s", query)
 		}
 	}

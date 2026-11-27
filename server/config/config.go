@@ -2,25 +2,26 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/go-sql-driver/mysql"
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	MySQLHost     string `yaml:"mysqlHost"`
-	MySQLPort     string `yaml:"mysqlPort"`
-	MySQLUser     string `yaml:"mysqlUser"`
-	MySQLPassword string `yaml:"mysqlPassword"`
-	MySQLDB       string `yaml:"mysqlDB"`
-	AdminUser     string `yaml:"adminUser"`
-	AdminPassword string `yaml:"adminPassword"`
-	SessionSecret string `yaml:"sessionSecret"`
-	AdminSecret   string `yaml:"adminSecret"`
+	PostgresHost     string `yaml:"postgresHost"`
+	PostgresPort     string `yaml:"postgresPort"`
+	PostgresUser     string `yaml:"postgresUser"`
+	PostgresPassword string `yaml:"postgresPassword"`
+	PostgresDB       string `yaml:"postgresDB"`
+	PostgresSSLMode  string `yaml:"postgresSSLMode"`
+	AdminUser        string `yaml:"adminUser"`
+	AdminPassword    string `yaml:"adminPassword"`
+	SessionSecret    string `yaml:"sessionSecret"`
+	AdminSecret      string `yaml:"adminSecret"`
 
 	R2AccountID       string `yaml:"r2AccountId"`
 	R2AccessKeyID     string `yaml:"r2AccessKeyId"`
@@ -42,11 +43,12 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
-		MySQLHost: "127.0.0.1",
-		MySQLPort: "3306",
-		MySQLUser: "root",
-		MySQLDB:   "opentools",
-		AdminUser: "admin",
+		PostgresHost:    "127.0.0.1",
+		PostgresPort:    "5432",
+		PostgresUser:    "kaiwu",
+		PostgresDB:      "opentools",
+		PostgresSSLMode: "disable",
+		AdminUser:       "admin",
 	}
 	path := "config.yaml"
 	if _, err := os.Stat(path); err != nil {
@@ -60,15 +62,14 @@ func Load() (Config, error) {
 			return cfg, err
 		}
 	}
-	cfg.MySQLHost = first(os.Getenv("YOUGO_MYSQL_HOST"), os.Getenv("MYSQL_HOST"), cfg.MySQLHost)
-	cfg.MySQLPort = first(os.Getenv("YOUGO_MYSQL_PORT"), os.Getenv("MYSQL_PORT"), cfg.MySQLPort)
-	cfg.MySQLUser = first(os.Getenv("YOUGO_MYSQL_USER"), os.Getenv("MYSQL_USER"), cfg.MySQLUser)
-	if v, ok := os.LookupEnv("YOUGO_MYSQL_PASSWORD"); ok {
-		cfg.MySQLPassword = v
-	} else if v, ok := os.LookupEnv("MYSQL_PASSWORD"); ok {
-		cfg.MySQLPassword = v
+	cfg.PostgresHost = first(os.Getenv("KAIWU_PGHOST"), cfg.PostgresHost)
+	cfg.PostgresPort = first(os.Getenv("KAIWU_PGPORT"), cfg.PostgresPort)
+	cfg.PostgresUser = first(os.Getenv("KAIWU_PGUSER"), cfg.PostgresUser)
+	cfg.PostgresDB = first(os.Getenv("KAIWU_PGDATABASE"), cfg.PostgresDB)
+	cfg.PostgresSSLMode = first(os.Getenv("KAIWU_PGSSLMODE"), cfg.PostgresSSLMode)
+	if password, ok := os.LookupEnv("KAIWU_PGPASSWORD"); ok {
+		cfg.PostgresPassword = password
 	}
-	cfg.MySQLDB = first(os.Getenv("MYSQL_DB"), cfg.MySQLDB)
 	cfg.AdminUser = first(os.Getenv("ADMIN_USER"), cfg.AdminUser, "admin")
 	cfg.AdminPassword = first(os.Getenv("ADMIN_PASSWORD"), cfg.AdminPassword)
 	cfg.SessionSecret = first(os.Getenv("SESSION_SECRET"), os.Getenv("ADMIN_SECRET"), cfg.SessionSecret, cfg.AdminSecret)
@@ -97,27 +98,16 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-func (c Config) ServerDSN() string {
-	return c.dsn("")
-}
-
 func (c Config) DSN() string {
-	return c.dsn(c.MySQLDB)
-}
-
-func (c Config) dsn(name string) string {
-	mc := mysql.Config{
-		User:                 c.MySQLUser,
-		Passwd:               c.MySQLPassword,
-		Net:                  "tcp",
-		Addr:                 c.MySQLHost + ":" + c.MySQLPort,
-		DBName:               name,
-		AllowNativePasswords: true,
-		ParseTime:            true,
-		Loc:                  time.Local,
-		Params:               map[string]string{"charset": "utf8mb4"},
+	dsn := url.URL{
+		Scheme: "postgresql",
+		User:   url.UserPassword(c.PostgresUser, c.PostgresPassword),
+		Host:   net.JoinHostPort(c.PostgresHost, c.PostgresPort),
+		Path:   "/" + c.PostgresDB,
 	}
-	return mc.FormatDSN()
+	values := url.Values{"sslmode": {c.PostgresSSLMode}}
+	dsn.RawQuery = values.Encode() + "&TimeZone=Asia/Shanghai"
+	return dsn.String()
 }
 
 func first(values ...string) string {

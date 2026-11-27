@@ -30,8 +30,8 @@ func adminSubmissions(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rows := make([]adminSubmission, 0)
 		query := db.WithContext(c.Request.Context()).Model(&models.Link{}).
-			Select("links.id, links.name, links.url, links.`desc`, links.category_slug, links.user_id, links.created_at, COALESCE(u.username, '') AS submitter, "+
-				"EXISTS (SELECT 1 FROM links AS existing WHERE existing.status = 'online' AND existing.url = links.url) AS `duplicate`").
+			Select("links.id, links.name, links.url, links.\"desc\", links.category_slug, links.user_id, links.created_at, COALESCE(u.username, '') AS submitter, "+
+				"EXISTS (SELECT 1 FROM links AS existing WHERE existing.status = 'online' AND existing.url = links.url) AS duplicate").
 			Joins("LEFT JOIN users AS u ON u.id = links.user_id").Where("links.status = ?", "pending").Order("links.id desc")
 		loadAdminPage(c, query, &rows, "读取待审网址失败")
 	}
